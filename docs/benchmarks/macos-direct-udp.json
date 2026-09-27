@@ -1,0 +1,206 @@
+{
+  "date": "2026-09-27",
+  "direction": "macOS to Windows, direct LAN",
+  "datagram_payload_bytes": 1360,
+  "measured_seconds": 10,
+  "warmup_seconds": 2,
+  "cases": [
+    {
+      "name": "udp3g",
+      "command": [
+        "iperf3",
+        "-c",
+        "192.168.1.226",
+        "-u",
+        "-l",
+        "1360",
+        "-b",
+        "3G",
+        "-t",
+        "10",
+        "-O",
+        "2",
+        "-J",
+        "--connect-timeout",
+        "4000"
+      ],
+      "version": "iperf 3.21",
+      "end": {
+        "streams": [
+          {
+            "udp": {
+              "socket": 5,
+              "start": 0,
+              "end": 10.000603,
+              "seconds": 10.000603,
+              "bytes": 3750209520,
+              "bits_per_second": 2999986716.8009768,
+              "jitter_ms": 0.003584561633857315,
+              "lost_packets": 847530,
+              "packets": 2757506,
+              "lost_percent": 30.735381899441016,
+              "out_of_order": 0,
+              "sender": true
+            }
+          }
+        ],
+        "sum": {
+          "start": 0,
+          "end": 9.99447,
+          "seconds": 9.99447,
+          "bytes": 3750209520,
+          "bits_per_second": 2999986716.8009768,
+          "jitter_ms": 0.003584561633857315,
+          "lost_packets": 847530,
+          "packets": 2757506,
+          "lost_percent": 30.735381899441016,
+          "sender": true
+        },
+        "sum_sent": {
+          "start": 0,
+          "end": 10.000603,
+          "seconds": 10.000603,
+          "bytes": 3750209520,
+          "bits_per_second": 2999986716.8009768,
+          "jitter_ms": 0,
+          "lost_packets": 0,
+          "packets": 2757506,
+          "lost_percent": 0,
+          "sender": true
+        },
+        "sum_received": {
+          "start": 0,
+          "end": 9.99447,
+          "seconds": 9.99447,
+          "bytes": 2595411760,
+          "bits_per_second": 2077478253.4741712,
+          "jitter_ms": 0.003584561633857315,
+          "lost_packets": 847530,
+          "packets": 2755921,
+          "lost_percent": 30.735381899441016,
+          "sender": false
+        },
+        "cpu_utilization_percent": {
+          "host_total": 83.9662829005603,
+          "host_user": 6.804044352415002,
+          "host_system": 77.16226354105356,
+          "remote_total": 48.30548330981805,
+          "remote_user": 21.482065891445735,
+          "remote_system": 26.823417418372316
+        }
+      },
+      "error": null
+    },
+    {
+      "name": "udp9g",
+      "command": [
+        "iperf3",
+        "-c",
+        "192.168.1.226",
+        "-u",
+        "-l",
+        "1360",
+        "-b",
+        "9G",
+        "-t",
+        "10",
+        "-O",
+        "2",
+        "-J",
+        "--connect-timeout",
+        "4000"
+      ],
+      "version": "iperf 3.21",
+      "end": {
+        "streams": [
+          {
+            "udp": {
+              "socket": 5,
+              "start": 0,
+              "end": 9.999419,
+              "seconds": 9.999419,
+              "bytes": 5520295760,
+              "bits_per_second": 4416493206.255283,
+              "jitter_ms": 0.0035806947699443727,
+              "lost_packets": 1753934,
+              "packets": 4059040,
+              "lost_percent": 43.2105621033545,
+              "out_of_order": 0,
+              "sender": true
+            }
+          }
+        ],
+        "sum": {
+          "start": 0,
+          "end": 9.999281,
+          "seconds": 9.999281,
+          "bytes": 5520295760,
+          "bits_per_second": 4416493206.255283,
+          "jitter_ms": 0.0035806947699443727,
+          "lost_packets": 1753934,
+          "packets": 4059040,
+          "lost_percent": 43.2105621033545,
+          "sender": true
+        },
+        "sum_sent": {
+          "start": 0,
+          "end": 9.999419,
+          "seconds": 9.999419,
+          "bytes": 5520295760,
+          "bits_per_second": 4416493206.255283,
+          "jitter_ms": 0,
+          "lost_packets": 0,
+          "packets": 4059040,
+          "lost_percent": 0,
+          "sender": true
+        },
+        "sum_received": {
+          "start": 0,
+          "end": 9.999281,
+          "seconds": 9.999281,
+          "bytes": 3134838080,
+          "bits_per_second": 2508050792.852006,
+          "jitter_ms": 0.0035806947699443727,
+          "lost_packets": 1753934,
+          "packets": 4058962,
+          "lost_percent": 43.2105621033545,
+          "sender": false
+        },
+        "cpu_utilization_percent": {
+          "host_total": 99.73094291449267,
+          "host_user": 6.611589457960987,
+          "host_system": 93.11936178776207,
+          "remote_total": 68.74230659018745,
+          "remote_user": 23.564029459036377,
+          "remote_system": 45.17827713115107
+        }
+      },
+      "error": null
+    },
+    {
+      "name": "udp4streams",
+      "command": [
+        "iperf3",
+        "-c",
+        "192.168.1.226",
+        "-u",
+        "-l",
+        "1360",
+        "-P",
+        "4",
+        "-b",
+        "2250M",
+        "-t",
+        "10",
+        "-O",
+        "2",
+        "-J",
+        "--connect-timeout",
+        "4000"
+      ],
+      "version": "iperf 3.21",
+      "end": {},
+      "error": "unable to read from stream socket: Resource temporarily unavailable"
+    }
+  ]
+}

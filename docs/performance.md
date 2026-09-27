@@ -280,3 +280,10 @@ stage timing. UDP delivered 2.99 Gbit/s at a 3 Gbit/s offered rate with about
 0.4% loss, while TCP remained near 2.07 Gbit/s. At the UDP rate, sampled timing
 attributes roughly 73% of a Mac core to UDP sends, 15% to utun reads, and 9% to
 the complete encryption batch. These are diagnostic estimates, not exact totals.
+
+The investigation also records [direct UDP and offload limitations](bottleneck-investigation.md#follow-up-direct-udp-and-offload-limitations):
+raw iperf sent 4.416 Gbit/s at roughly one core, mostly kernel CPU, while Windows
+received 2.508 Gbit/s with 43.2% loss. TCP's 9.407 Gbit/s baseline has a different
+segmentation-offload path. The newly attached Apple Gigabit Ethernet adapter
+advertises no additional UDP acceleration. These observations support a kernel
+packet-processing bottleneck but do not establish a macOS-wide throughput cap.

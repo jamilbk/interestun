@@ -96,3 +96,74 @@ Distinguishing socket processing, TCP/ACK behavior, and Windows receive/injectio
 requires endpoint profiling. Kernel stacks are needed to separate allocation,
 routing/filtering, and driver cost within the expensive Mac UDP-send syscall.
 Increasing userspace preallocation alone does not address that kernel work.
+
+## Follow-up: direct UDP and offload limitations
+
+The 9.407 Gbit/s direct-LAN baseline above used TCP. Direct iperf UDP with
+1360-byte application datagrams, ten measured seconds and two seconds warmup,
+gave the following single sequential samples on the same Mac-to-Windows path:
+
+| Offered Gbit/s | Sender Gbit/s | Receiver Gbit/s | UDP loss | Sender process CPU | Sender system CPU |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 3 | 3.000 | 2.077 | 30.735% | 83.97% | 77.16% |
+| 9 | 4.416 | 2.508 | 43.211% | 99.73% | 93.12% |
+
+CPU percentages are fractions of one core and describe iperf, not interestun.
+The 9 Gbit/s offered rate was not achieved. A four-stream attempt failed with
+`unable to read from stream socket: Resource temporarily unavailable`; it gives
+no usable scaling result. [Commands and iperf summaries](benchmarks/macos-direct-udp.json).
+
+Small-datagram sending therefore has substantial kernel cost even without
+utun or encryption. This is consistent with the tunnel's sampled attribution.
+It does not locate the direct-UDP packet losses: receiver goodput is a separate
+measurement from sender throughput. The earlier tunnel UDP sample delivered
+more than these direct UDP samples; the receivers, buffering, and scheduling
+paths differ, so that observation is not evidence that encryption improves UDP.
+
+The identified architectural limitation is the absence of UDP segmentation
+offload in our current BSD send path. Connected `sendmsg_x` amortizes syscall
+entry and setup, but the audited XNU path still allocates/copies each packet
+and dispatches UDP/IP processing per datagram. See the
+[source-linked audit](xnu-performance-audit.md). Apple's public
+[UDP header](https://github.com/apple-oss-distributions/xnu/blob/f6217f891ac0bb64f3d375211650a4c1ff8ca1ea/bsd/netinet/udp.h)
+and the installed SDK expose no Linux-style `UDP_SEGMENT` socket option.
+This does not establish the absence of all alternative/private Apple paths.
+
+TCP can instead use segmentation offload (TSO) to pass larger chunks toward
+the NIC for segmentation. The existing Ethernet interface reports TSO enabled;
+we did not trace its use in the baseline transfer. Apple's
+[TCP output implementation](https://github.com/apple-oss-distributions/xnu/blob/f6217f891ac0bb64f3d375211650a4c1ff8ca1ea/bsd/netinet/tcp_output.c)
+contains that path. Checksum offload is a separate capability and can also
+benefit UDP; describing this as a lack of all UDP offloads would be inaccurate.
+
+Thus missing segmentation offload and retained per-packet kernel processing
+explain why TCP's 10 GbE result is not an equivalent performance baseline.
+They are a supported bottleneck hypothesis, not a fully isolated root cause
+for the exact 4.416 Gbit/s direct-UDP or roughly 2 Gbit/s tunnel-TCP ceilings.
+The iperf sender differs from our batch sender. A standalone benchmark of our
+connected batch path with prebuilt packets, successful multi-sender tests,
+and kernel stacks are still needed to separate stack, driver, and scaling costs.
+
+## Adapter capability comparison
+
+Read-only `ifconfig -m en8`, `ifconfig -m en14`, and `system_profiler
+SPEthernetDataType SPThunderboltDataType` identified the newly connected Apple
+adapter. Supported and enabled option masks matched on both interfaces:
+
+| Property | OWC dock / Aquantia (`en8`) | Apple Thunderbolt Ethernet (`en14`) |
+| --- | --- | --- |
+| Controller | Aquantia AQC107 | Apple 57762-A0 |
+| Driver | `AppleEthernetAquantiaAqtion` | `AppleBCM5701Ethernet` |
+| Maximum Ethernet speed | 10 Gbit/s | 1 Gbit/s |
+| Capability/option mask | `0x567` | `0x50b` |
+| RX/TX checksum flags | `RXCSUM,TXCSUM` | `RXCSUM,TXCSUM` |
+| TCP segmentation flags | `TSO4,TSO6` | Not advertised |
+| VLAN flags | `VLAN_MTU` | `VLAN_HWTAGGING` |
+| Other flags | `AV,CHANNEL_IO` | `AV,CHANNEL_IO` |
+| Link at inspection | Active, 10Gbase-T, full duplex, flow control | Inactive |
+
+Both adapters use Apple drivers. The Apple-branded adapter advertises no extra
+UDP acceleration and fewer relevant segmentation capabilities. Its Thunderbolt
+bus reports 10 Gbit/s, but its Ethernet port is limited to 1 Gbit/s. It cannot
+test the existing 3–4 Gbit/s send ceiling. Flags describe driver-advertised
+capabilities, not proof of hardware offload use for a particular packet.
