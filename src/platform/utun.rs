@@ -56,6 +56,32 @@ impl Utun {
                 (&addr as *const libc::sockaddr_ctl).cast(),
                 size_of::<libc::sockaddr_ctl>() as _,
             ))?;
+            // Darwin defaults to one pending packet, which prevents effective
+            // recvmsg_x batches. Allow four batches of 32 before flow control.
+            // UTUN_OPT_MAX_PENDING_PACKETS from bsd/net/if_utun.h.
+            const MAX_PENDING_PACKETS: libc::c_int = 16;
+            let pending: u32 = 128;
+            check(libc::setsockopt(
+                raw,
+                libc::SYSPROTO_CONTROL,
+                MAX_PENDING_PACKETS,
+                (&pending as *const u32).cast(),
+                size_of::<u32>() as _,
+            ))?;
+            let mut actual: u32 = 0;
+            let mut actual_len = size_of::<u32>() as libc::socklen_t;
+            check(libc::getsockopt(
+                raw,
+                libc::SYSPROTO_CONTROL,
+                MAX_PENDING_PACKETS,
+                (&mut actual as *mut u32).cast(),
+                &mut actual_len,
+            ))?;
+            if actual_len as usize != size_of::<u32>() || actual != pending {
+                return Err(io::Error::other(
+                    "utun pending-packet limit was not applied",
+                ));
+            }
             let mut name = [0u8; libc::IFNAMSIZ];
             let mut len = name.len() as libc::socklen_t;
             check(libc::getsockopt(

@@ -32,6 +32,9 @@ that pool. There is a maximum of 4096 configured peers, but practical thread and
 memory limits are lower. Queue/pool pressure intentionally drops packets. A
 worker processes at most four batches per direction before servicing timers and
 other directions, and continues without sleeping when a drain budget was used.
+The utun pending-packet limit is set to 128 and verified with getsockopt at
+startup. Darwin's default of one pending packet prevents effective receive
+batching under load; this limit allows four batches of 32.
 Readiness from kqueue is retained until a syscall returns WouldBlock, including
 across fairness-budget boundaries. Idle descriptors are not probed on unrelated
 wakeups. Buffer-pool exhaustion retains readiness because no syscall occurred.

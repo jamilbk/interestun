@@ -192,3 +192,11 @@ sockets on that peer worker. Counters measure completed kernel I/O, not successf
 packet authentication or application delivery. Fallback per-message calls are
 counted individually. Handshake cookie `send_to` calls are outside these counters.
 Use diagnostic runs for attribution; compare production builds for throughput.
+
+### utun pending queue and XNU audit
+
+Raising the verified utun pending-packet limit from one to 128 produced median
+TCP throughput of 2.014 Gbit/s Mac → Windows and 2.557 Gbit/s Windows → Mac
+in three diagnostic samples per direction. A send-heavy interval averaged
+13.18 UDP messages per send syscall. See the [XNU audit](xnu-performance-audit.md)
+for source links, measurement limitations, and the next optimization experiments.
