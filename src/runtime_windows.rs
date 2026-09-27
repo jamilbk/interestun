@@ -803,6 +803,8 @@ impl Worker {
         let mut tun_rx = Receiver::new(self.pool.clone());
         #[cfg(target_os = "macos")]
         let mut udp_rx = Receiver::new(self.pool.clone());
+        #[cfg(target_os = "macos")]
+        let mut writer = batch::Sender::new();
         let mut events = Events::with_capacity(16);
         let mut snapshot_at = Instant::now();
         #[cfg(target_os = "macos")]
@@ -957,7 +959,7 @@ impl Worker {
                 && !self.udp_blocked
             {
                 for _ in 0..IO_BATCHES {
-                    match batch::flush(socket.as_raw_fd(), false, &mut self.network) {
+                    match writer.flush(socket.as_raw_fd(), false, &mut self.network) {
                         Ok(0) => break,
                         Ok(_) => {}
                         Err(e) if e.kind() == io::ErrorKind::WouldBlock => {
@@ -976,7 +978,7 @@ impl Worker {
                 if tun_blocked {
                     break;
                 }
-                match batch::flush(self.tun.fd.as_raw_fd(), true, &mut self.injection) {
+                match writer.flush(self.tun.fd.as_raw_fd(), true, &mut self.injection) {
                     Ok(0) => break,
                     Ok(_) => {}
                     Err(e) if e.kind() == io::ErrorKind::WouldBlock => {

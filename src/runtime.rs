@@ -395,6 +395,7 @@ impl SendWorker {
     }
     fn run(&mut self) -> Result<()> {
         let mut receiver = Receiver::new(self.pool.clone());
+        let mut writer = batch::Sender::new();
         let mut events = Events::with_capacity(8);
         let mut readable = self.id == 0;
         let mut blocked = false;
@@ -474,6 +475,9 @@ impl SendWorker {
                 self.plain.push_back(p);
             }
             let mut activity = Activity::default();
+            #[cfg(feature = "io-profile")]
+            let encrypt_span =
+                crate::platform::profile::Span::new(crate::platform::profile::Stage::Encrypt);
             // Flush between batches instead of draining an unbounded producer.
             for _ in 0..BATCH {
                 if self.network.len() == QUEUE || self.socket.is_none() {
@@ -507,11 +511,13 @@ impl SendWorker {
                     Err(_) => self.shared.drop_packet(),
                 }
             }
+            #[cfg(feature = "io-profile")]
+            drop(encrypt_span);
             if activity.last_packet.is_some() {
                 self.shared.activity.lock().unwrap().merge(activity);
             }
             if !blocked && let Some(socket) = &self.socket {
-                match batch::flush(socket.as_raw_fd(), false, &mut self.network) {
+                match writer.flush(socket.as_raw_fd(), false, &mut self.network) {
                     Ok(_) => {}
                     Err(e) if e.kind() == io::ErrorKind::WouldBlock => blocked = true,
                     Err(e) if e.kind() == io::ErrorKind::Interrupted => {}
@@ -829,6 +835,7 @@ impl ReceiveWorker {
         }
         self.readable[UDP.0] = self.socket.is_some();
         let mut receiver = Receiver::new(self.pool.clone());
+        let mut writer = batch::Sender::new();
         let mut events = Events::with_capacity(8);
         let mut snapshot_at = Instant::now();
         let mut blocked = false;
@@ -893,7 +900,7 @@ impl ReceiveWorker {
                     .injection_gate
                     .as_ref()
                     .map(|gate| gate.lock().unwrap());
-                match batch::flush(self.tun.fd.as_raw_fd(), true, &mut self.injection) {
+                match writer.flush(self.tun.fd.as_raw_fd(), true, &mut self.injection) {
                     Ok(_) => {}
                     Err(e) if e.kind() == io::ErrorKind::WouldBlock => blocked = true,
                     Err(e) if e.kind() == io::ErrorKind::Interrupted => {}

@@ -1,0 +1,12 @@
+{
+  "os": "ProductName:\t\tmacOS\nProductVersion:\t\t27.0\nBuildVersion:\t\t26A428",
+  "kernel": "27.0.0",
+  "cpu": "Apple M2 Pro",
+  "power": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=38010979)\t100%; charged; 0:00 remaining present: true",
+  "cipher": "aes256-gcm",
+  "mtu": 1420,
+  "batch": 128,
+  "utun_pending": 1024,
+  "profile_sampling": "one in 64 stage calls",
+  "notes": "Single sequential diagnostic samples, not interleaved A/B; thread roles inferred from main/TX/RX creation order; CPU deltas include warmup and process wait; profiler clocks add overhead."
+}

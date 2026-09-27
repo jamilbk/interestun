@@ -1,5 +1,7 @@
 //! Darwin batched datagram I/O, with per-message fallback when private symbols are absent.
 //! ABI and runtime resolution follow Firezone's Apple TUN implementation.
+#[cfg(feature = "io-profile")]
+use super::profile::{self, Span, Stage};
 use crate::packet::{BATCH, CAPACITY, HEADROOM, Packet, Pool};
 use std::{
     collections::VecDeque,
@@ -148,6 +150,39 @@ mod metrics {
 #[cfg(feature = "io-metrics")]
 pub fn report_metrics(peer: usize, now: std::time::Instant) {
     metrics::report(peer, now);
+    #[cfg(feature = "io-profile")]
+    profile::report(peer, now);
+}
+
+// Allocate once on the I/O thread. Descriptor pointers are refreshed for each
+// active slot because pooled payload ownership can change between calls.
+struct Descriptors {
+    afs: [[u8; 4]; BATCH],
+    iovs: [[libc::iovec; 2]; BATCH],
+    msgs: [Msg; BATCH],
+}
+impl Default for Descriptors {
+    fn default() -> Self {
+        Self {
+            afs: [[0; 4]; BATCH],
+            iovs: [[IOV; 2]; BATCH],
+            msgs: [EMPTY; BATCH],
+        }
+    }
+}
+struct ReceiveScratch {
+    descriptors: Descriptors,
+    addresses: [libc::sockaddr_storage; BATCH],
+}
+impl Default for ReceiveScratch {
+    fn default() -> Self {
+        Self {
+            descriptors: Descriptors::default(),
+            // SAFETY: all-zero sockaddr_storage is valid; recv supplies the
+            // complete source address for each successfully received datagram.
+            addresses: unsafe { std::mem::zeroed() },
+        }
+    }
 }
 
 pub struct Received {
@@ -157,12 +192,14 @@ pub struct Received {
 pub struct Receiver {
     slots: Vec<Packet>,
     pool: Pool,
+    scratch: Box<ReceiveScratch>,
 }
 impl Receiver {
     pub fn new(pool: Pool) -> Self {
         Self {
             slots: Vec::with_capacity(BATCH),
             pool,
+            scratch: Box::default(),
         }
     }
     pub fn receive(
@@ -181,13 +218,14 @@ impl Receiver {
             // No syscall was made: callers must retain kernel readiness.
             return Err(io::Error::from(io::ErrorKind::OutOfMemory));
         }
+        #[cfg(feature = "io-profile")]
+        let setup_span = Span::new(Stage::ReceiveSetup);
         let count = self.slots.len();
         let start = if tun { HEADROOM } else { 0 };
-        let mut afs = [[0u8; 4]; BATCH];
-        let mut iovs = [[IOV; 2]; BATCH];
-        let mut msgs = [EMPTY; BATCH];
-        // SAFETY: zero is a valid representation for sockaddr_storage.
-        let mut addresses: [libc::sockaddr_storage; BATCH] = unsafe { std::mem::zeroed() };
+        let ReceiveScratch {
+            descriptors: Descriptors { afs, iovs, msgs },
+            addresses,
+        } = &mut *self.scratch;
         for i in 0..count {
             let payload = libc::iovec {
                 iov_base: self.slots[i].buffer()[start..].as_mut_ptr().cast(),
@@ -218,15 +256,21 @@ impl Receiver {
                 ..EMPTY
             };
         }
+        #[cfg(feature = "io-profile")]
+        drop(setup_span);
         // SAFETY: All message/iovec pointers refer to live, exclusive buffers for this synchronous call.
         let n = unsafe {
             if let Some((recv, _)) = syscalls() {
+                #[cfg(feature = "io-profile")]
+                let span = Span::syscall(tun, false);
                 let result = result(recv(
                     fd,
                     msgs.as_mut_ptr(),
                     count as u32,
                     libc::MSG_DONTWAIT,
                 ));
+                #[cfg(feature = "io-profile")]
+                drop(span);
                 #[cfg(feature = "io-metrics")]
                 metrics::record(tun, false, count, &result);
                 result?
@@ -242,7 +286,11 @@ impl Receiver {
                         msg_controllen: 0,
                         msg_flags: 0,
                     };
+                    #[cfg(feature = "io-profile")]
+                    let span = Span::syscall(tun, false);
                     let result = result(libc::recvmsg(fd, &mut hdr, libc::MSG_DONTWAIT));
+                    #[cfg(feature = "io-profile")]
+                    drop(span);
                     #[cfg(feature = "io-metrics")]
                     metrics::record(
                         tun,
@@ -300,73 +348,94 @@ impl Receiver {
     }
 }
 
-/// Sends a prefix, preserving the unsent tail on short writes / WouldBlock.
-/// On other batch errors progress is ambiguous, so discard the attempted batch.
-pub fn flush(fd: RawFd, tun: bool, queue: &mut VecDeque<Packet>) -> io::Result<usize> {
-    let count = queue.len().min(BATCH);
-    if count == 0 {
-        return Ok(0);
+/// Reusable send descriptors; create one per direction worker.
+#[derive(Default)]
+pub struct Sender {
+    scratch: Box<Descriptors>,
+}
+impl Sender {
+    pub fn new() -> Self {
+        Self::default()
     }
-    let mut afs = [[0u8; 4]; BATCH];
-    let mut iovs = [[IOV; 2]; BATCH];
-    let mut msgs = [EMPTY; BATCH];
-    for (i, packet) in queue.iter().take(count).enumerate() {
-        let data = packet.data();
-        let payload = libc::iovec {
-            iov_base: data.as_ptr() as *mut c_void,
-            iov_len: data.len(),
-        };
-        afs[i] = (if data.first().is_some_and(|b| b >> 4 == 6) {
-            libc::AF_INET6
-        } else {
-            libc::AF_INET
-        } as u32)
-            .to_be_bytes();
-        iovs[i][0] = if tun {
-            libc::iovec {
-                iov_base: afs[i].as_mut_ptr().cast(),
-                iov_len: 4,
-            }
-        } else {
-            payload
-        };
-        iovs[i][1] = payload;
-        msgs[i] = Msg {
-            iov: iovs[i].as_mut_ptr(),
-            iovlen: if tun { 2 } else { 1 },
-            ..EMPTY
-        };
-    }
-    // SAFETY: send does not mutate payloads; every pointer outlives this synchronous call.
-    let result = unsafe {
-        if let Some((_, send)) = syscalls() {
-            result(send(fd, msgs.as_ptr(), count as u32, libc::MSG_DONTWAIT))
-        } else {
-            let msg = &msgs[0];
-            let hdr = libc::msghdr {
-                msg_name: ptr::null_mut(),
-                msg_namelen: 0,
-                msg_iov: msg.iov,
-                msg_iovlen: msg.iovlen,
-                msg_control: ptr::null_mut(),
-                msg_controllen: 0,
-                msg_flags: 0,
+    /// Sends a prefix, preserving the unsent tail on short writes / WouldBlock.
+    /// On other batch errors progress is ambiguous, so discard the attempted batch.
+    pub fn flush(
+        &mut self,
+        fd: RawFd,
+        tun: bool,
+        queue: &mut VecDeque<Packet>,
+    ) -> io::Result<usize> {
+        let count = queue.len().min(BATCH);
+        if count == 0 {
+            return Ok(0);
+        }
+        #[cfg(feature = "io-profile")]
+        let setup_span = Span::new(Stage::SendSetup);
+        let Descriptors { afs, iovs, msgs } = &mut *self.scratch;
+        for (i, packet) in queue.iter().take(count).enumerate() {
+            let data = packet.data();
+            let payload = libc::iovec {
+                iov_base: data.as_ptr() as *mut c_void,
+                iov_len: data.len(),
             };
-            result(libc::sendmsg(fd, &hdr, libc::MSG_DONTWAIT)).map(|_| 1)
+            afs[i] = (if data.first().is_some_and(|b| b >> 4 == 6) {
+                libc::AF_INET6
+            } else {
+                libc::AF_INET
+            } as u32)
+                .to_be_bytes();
+            iovs[i][0] = if tun {
+                libc::iovec {
+                    iov_base: afs[i].as_mut_ptr().cast(),
+                    iov_len: 4,
+                }
+            } else {
+                payload
+            };
+            iovs[i][1] = payload;
+            msgs[i] = Msg {
+                iov: iovs[i].as_mut_ptr(),
+                iovlen: if tun { 2 } else { 1 },
+                ..EMPTY
+            };
         }
-    };
-    #[cfg(feature = "io-metrics")]
-    metrics::record(tun, true, if available() { count } else { 1 }, &result);
-    match result {
-        Ok(0) => Err(io::Error::from(io::ErrorKind::WouldBlock)),
-        Ok(n) => {
-            queue.drain(..n);
-            Ok(n)
-        }
-        Err(e) if e.kind() == io::ErrorKind::WouldBlock => Err(e),
-        Err(e) => {
-            queue.drain(..count);
-            Err(e)
+        #[cfg(feature = "io-profile")]
+        drop(setup_span);
+        #[cfg(feature = "io-profile")]
+        let span = Span::syscall(tun, true);
+        // SAFETY: send does not mutate payloads; every pointer outlives this synchronous call.
+        let result = unsafe {
+            if let Some((_, send)) = syscalls() {
+                result(send(fd, msgs.as_ptr(), count as u32, libc::MSG_DONTWAIT))
+            } else {
+                let msg = &msgs[0];
+                let hdr = libc::msghdr {
+                    msg_name: ptr::null_mut(),
+                    msg_namelen: 0,
+                    msg_iov: msg.iov,
+                    msg_iovlen: msg.iovlen,
+                    msg_control: ptr::null_mut(),
+                    msg_controllen: 0,
+                    msg_flags: 0,
+                };
+                result(libc::sendmsg(fd, &hdr, libc::MSG_DONTWAIT)).map(|_| 1)
+            }
+        };
+        #[cfg(feature = "io-profile")]
+        drop(span);
+        #[cfg(feature = "io-metrics")]
+        metrics::record(tun, true, if available() { count } else { 1 }, &result);
+        match result {
+            Ok(0) => Err(io::Error::from(io::ErrorKind::WouldBlock)),
+            Ok(n) => {
+                queue.drain(..n);
+                Ok(n)
+            }
+            Err(e) if e.kind() == io::ErrorKind::WouldBlock => Err(e),
+            Err(e) => {
+                queue.drain(..count);
+                Err(e)
+            }
         }
     }
 }
@@ -411,7 +480,12 @@ mod tests {
                 pending.push_back(r.packet);
             })
             .unwrap();
-        assert_eq!(flush(app.as_raw_fd(), true, &mut pending).unwrap(), 1);
+        assert_eq!(
+            Sender::new()
+                .flush(app.as_raw_fd(), true, &mut pending)
+                .unwrap(),
+            1
+        );
         let mut out = [0; 2048];
         let len = kernel.recv(&mut out).unwrap();
         assert_eq!(&out[..len], bytes);
@@ -448,29 +522,36 @@ mod tests {
         b.connect(a.local_addr().unwrap()).unwrap();
         a.set_nonblocking(true).unwrap();
         b.set_nonblocking(true).unwrap();
-        let pool = crate::packet::pool(128);
+        let pool = crate::packet::pool(BATCH * 2);
         let mut queue = VecDeque::new();
-        for i in 0..BATCH {
-            let mut p = Packet::new(&pool).unwrap();
-            p.buffer()[0] = i as u8;
-            p.len = 1;
-            queue.push_back(p);
-        }
+        let mut writer = Sender::new();
+        let mut rx = Receiver::new(pool.clone());
         use std::os::fd::AsRawFd;
-        while !queue.is_empty() {
-            flush(a.as_raw_fd(), false, &mut queue).unwrap();
+        // Reuse the same descriptors with both shrinking and growing batches.
+        for count in [BATCH, 1, 7] {
+            for i in 0..count {
+                let mut p = Packet::new(&pool).unwrap();
+                p.buffer()[..count].fill(i as u8);
+                p.len = count;
+                queue.push_back(p);
+            }
+            while !queue.is_empty() {
+                writer.flush(a.as_raw_fd(), false, &mut queue).unwrap();
+            }
+            let mut seen = Vec::new();
+            while seen.len() < count {
+                wait_readable(b.as_raw_fd());
+                rx.receive(b.as_raw_fd(), false, |r| {
+                    assert_eq!(r.source, Some(a.local_addr().unwrap()));
+                    assert_eq!(r.packet.len, count);
+                    let first = r.packet.data()[0];
+                    assert!(r.packet.data().iter().all(|b| *b == first));
+                    seen.push(first);
+                })
+                .unwrap();
+            }
+            assert_eq!(seen, (0..count as u8).collect::<Vec<_>>());
         }
-        let mut rx = Receiver::new(pool);
-        let mut seen = Vec::new();
-        while seen.len() < BATCH {
-            wait_readable(b.as_raw_fd());
-            rx.receive(b.as_raw_fd(), false, |r| {
-                assert_eq!(r.source, Some(a.local_addr().unwrap()));
-                seen.push(r.packet.data()[0]);
-            })
-            .unwrap();
-        }
-        assert_eq!(seen, (0..BATCH as u8).collect::<Vec<_>>());
     }
     #[test]
     fn truncation_and_invalid_utun_family_are_dropped() {
@@ -498,6 +579,17 @@ mod tests {
             1
         );
         assert_eq!(delivered, 0);
+        // A valid UDP packet after truncation and a different descriptor mode
+        // must not inherit stale flags, lengths, or source-address metadata.
+        sender.send(b"valid").unwrap();
+        wait_readable(receiver.as_raw_fd());
+        rx.receive(receiver.as_raw_fd(), false, |r| {
+            assert_eq!(r.packet.data(), b"valid");
+            assert_eq!(r.source, Some(sender.local_addr().unwrap()));
+            delivered += 1;
+        })
+        .unwrap();
+        assert_eq!(delivered, 1);
         drop(rx);
         assert_eq!(pool.len(), 128);
     }

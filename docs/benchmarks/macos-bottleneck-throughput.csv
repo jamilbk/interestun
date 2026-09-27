@@ -1,0 +1,9 @@
+build,case,receiver_bits_per_second,loss_percent,tcp_retransmits,measurement_seconds,warmup_seconds
+bottleneck,tunnel-udp3g,2987713443.987466,0.4149651499637844,,10,2
+bottleneck,tunnel-tcp1,2075000357.2148914,,87,10,2
+bottleneck,lan-tcp1,9406937604.58071,,0,10,2
+bottleneck,tunnel-tcp4,1982612448.631176,,0,10,2
+preallocated,tunnel-udp3g,2987184589.37257,0.4361619920433435,,10,2
+preallocated,tunnel-tcp1,2072149349.9543338,,0,10,2
+profile,tunnel-udp3g,2992302936.238079,0.2561459803612953,,10,2
+profile,tunnel-tcp1,2085591635.6568933,,0,10,2

@@ -54,7 +54,9 @@ UDP test on Darwin 27 and checked against XNU's `bsd/kern/uipc_syscalls.c`.
 Transport data uses one packet allocation through receive, encryption/decryption,
 and batched output. macOS utun receives at offset 16, leaving transport-header
 space; the 16-byte tag fits after the maximum 2000-byte IP packet in the existing
-2048-byte buffer. UDP receives at offset zero; authenticated decryption exposes
+2048-byte buffer. Descriptor, iovec, address-family, and source-address scratch
+storage is allocated once per I/O context and reused across batches. Active
+metadata is reset before each call. UDP receives at offset zero; authenticated decryption exposes
 the plaintext at offset 16 without moving it. Packet ownership transfers between
 workers unchanged. Handshake output still needs a separate buffer. Wintun's
 reader still copies from its temporary receive buffer, but reserves header space

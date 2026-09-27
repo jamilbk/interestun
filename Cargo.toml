@@ -9,6 +9,7 @@ description = "A peer-threaded macOS and Windows userspace tunnel"
 [features]
 default = []
 io-metrics = []
+io-profile = ["io-metrics"]
 
 [dependencies]
 anyhow = "1"
