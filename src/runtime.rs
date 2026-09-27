@@ -426,16 +426,21 @@ struct Worker {
     #[cfg(target_os = "macos")]
     udp_blocked: bool,
 }
+// Bound work independently of syscall batch capacity.
+const PACKET_BUDGET: usize = 128;
+#[cfg(target_os = "macos")]
+const IO_BATCHES: usize = PACKET_BUDGET.div_ceil(BATCH);
+
 impl Worker {
     #[cfg(windows)]
     fn receive_windows(&mut self) -> io::Result<bool> {
         let mut more = false;
         let mut scratch = [0; packet::CAPACITY];
         for family in 0..2 {
-            for index in 0..BATCH * 4 {
+            for index in 0..PACKET_BUDGET {
                 match self.wildcards[family].recv_from(&mut scratch) {
                     Ok((len, source)) => {
-                        more |= index == BATCH * 4 - 1;
+                        more |= index == PACKET_BUDGET - 1;
                         // Reject full buffers conservatively, including truncation.
                         if len == scratch.len() {
                             self.drop_packet();
@@ -462,7 +467,7 @@ impl Worker {
                             ) =>
                     {
                         self.drop_packet();
-                        more |= index == BATCH * 4 - 1;
+                        more |= index == PACKET_BUDGET - 1;
                     }
                     Err(e) => return Err(e),
                 }
@@ -475,7 +480,7 @@ impl Worker {
     fn flush_windows(&mut self) -> io::Result<()> {
         if let Some(endpoint) = self.endpoint {
             let socket = &self.wildcards[usize::from(endpoint.is_ipv6())];
-            for _ in 0..BATCH * 4 {
+            for _ in 0..PACKET_BUDGET {
                 let Some(packet) = self.network.front() else {
                     break;
                 };
@@ -494,7 +499,7 @@ impl Worker {
                 self.network.pop_front();
             }
         }
-        for _ in 0..BATCH * 4 {
+        for _ in 0..PACKET_BUDGET {
             let Some(packet) = self.injection.front() else {
                 break;
             };
@@ -696,7 +701,7 @@ impl Worker {
     }
     fn plaintext(&mut self) -> bool {
         let mut processed = 0;
-        while processed < BATCH * 4 && self.network.len() < QUEUE {
+        while processed < PACKET_BUDGET && self.network.len() < QUEUE {
             if self.endpoint.is_none() {
                 break;
             }
@@ -737,7 +742,7 @@ impl Worker {
                 }
             }
         }
-        processed == BATCH * 4
+        processed == PACKET_BUDGET
     }
     #[cfg(target_os = "macos")]
     fn interests(&mut self) -> io::Result<()> {
@@ -815,7 +820,7 @@ impl Worker {
             // Bounded draining keeps timers and other directions live under continuous traffic.
             #[cfg(target_os = "macos")]
             if self.id == 0 {
-                for _ in 0..4 {
+                for _ in 0..IO_BATCHES {
                     if !self.readable[TUN.0] {
                         break;
                     }
@@ -849,7 +854,7 @@ impl Worker {
                 }
                 for family in 0..2 {
                     let token = [WILDCARD4, WILDCARD6][family];
-                    for _ in 0..4 {
+                    for _ in 0..IO_BATCHES {
                         if !self.readable[token.0] {
                             break;
                         }
@@ -882,7 +887,7 @@ impl Worker {
             }
             #[cfg(target_os = "macos")]
             if let Some(fd) = self.socket.as_ref().map(AsRawFd::as_raw_fd) {
-                for _ in 0..4 {
+                for _ in 0..IO_BATCHES {
                     if !self.readable[UDP.0]
                         || self.socket.as_ref().map(AsRawFd::as_raw_fd) != Some(fd)
                     {
@@ -917,7 +922,7 @@ impl Worker {
                 more |= self.receive_windows()?;
             }
             self.shared.notified.store(false, Ordering::Release);
-            for _ in 0..BATCH * 4 {
+            for _ in 0..PACKET_BUDGET {
                 match self.shared.inbox.pop() {
                     Some(Input::Plain(p)) => self.enqueue_plain(p),
                     Some(Input::Wire(p, source)) => self.wire(p, source),
@@ -950,7 +955,7 @@ impl Worker {
             if let Some(socket) = &self.socket
                 && !self.udp_blocked
             {
-                for _ in 0..4 {
+                for _ in 0..IO_BATCHES {
                     match batch::flush(socket.as_raw_fd(), false, &mut self.network) {
                         Ok(0) => break,
                         Ok(_) => {}
@@ -966,7 +971,7 @@ impl Worker {
                 }
             }
             #[cfg(target_os = "macos")]
-            for _ in 0..4 {
+            for _ in 0..IO_BATCHES {
                 if tun_blocked {
                     break;
                 }

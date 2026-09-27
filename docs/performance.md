@@ -200,3 +200,26 @@ TCP throughput of 2.014 Gbit/s Mac → Windows and 2.557 Gbit/s Windows → Mac
 in three diagnostic samples per direction. A send-heavy interval averaged
 13.18 UDP messages per send syscall. See the [XNU audit](xnu-performance-audit.md)
 for source links, measurement limitations, and the next optimization experiments.
+
+### Syscall batches 128, utun pending limit 1024
+
+The same single-stream AES-256-GCM test, MTU 1420, three alternating samples
+per direction, one second warmup and five measured seconds, with `io-metrics`:
+
+| Direction | Samples, Gbit/s | Median | Previous batch 32 / pending 128 median |
+| --- | --- | ---: | ---: |
+| Mac → Windows | 2.018, 1.725, 2.022 | 2.018 | 2.014 |
+| Windows → Mac | 2.539, 2.565, 2.566 | 2.565 | 2.557 |
+
+There is no clear throughput improvement in these short sequential runs. The
+per-direction packet budget remains 128, now one batch instead of four, to
+avoid increasing drain bursts beyond the 256-packet userspace queues. This also
+changes syscall scheduling frequency; the experiment does not isolate the two
+capacity settings. A send-heavy counter interval averaged 10.23 UDP messages
+per syscall (681,052 / 66,582), so capacity 128 does not imply full batches.
+The requested pending limit is verified by getsockopt, but byte-buffer capacity
+can constrain the effective backlog before 1024 MTU-sized packets accumulate.
+
+[Raw samples](benchmarks/macos-batch128-pending1024.csv). Normal tests, clippy
+with all targets/features, and real-utun tests for both ciphers and IP families
+passed. No loaded-latency or multi-peer throughput comparison was performed.

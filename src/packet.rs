@@ -4,7 +4,7 @@ use std::{
     sync::Arc,
 };
 pub const CAPACITY: usize = 2048;
-pub const BATCH: usize = 32;
+pub const BATCH: usize = 128;
 pub const HEADROOM: usize = 16;
 pub type Pool = Arc<ArrayQueue<Box<[u8; CAPACITY]>>>;
 pub struct Packet {

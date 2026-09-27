@@ -1,0 +1,7 @@
+direction,sample,receiver_bits_per_second,warmup_seconds,measurement_seconds,utun_pending_packets,batch_capacity,packet_budget,io_metrics
+send,0,2018432098.1101828,1,5,1024,128,128,True
+receive,0,2538868546.133188,1,5,1024,128,128,True
+send,1,1725232647.3237138,1,5,1024,128,128,True
+receive,1,2564987211.1508207,1,5,1024,128,128,True
+send,2,2022055653.7889583,1,5,1024,128,128,True
+receive,2,2566297720.63995,1,5,1024,128,128,True
