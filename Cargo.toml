@@ -1,0 +1,30 @@
+[package]
+name = "interestun"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+license = "BSD-3-Clause"
+description = "A peer-threaded macOS userspace tunnel"
+
+[dependencies]
+anyhow = "1"
+boringtun = { git = "https://github.com/jamilbk/boringtun", rev = "d60ac5643f8241e12fa6d35aa8e353079e96e703", default-features = false }
+clap = { version = "4", features = ["derive"] }
+hex = "0.4"
+ipnet = "2"
+ip_network = "0.4"
+ip_network_table = "0.2"
+libc = "0.2"
+mio = { version = "1", features = ["os-poll", "os-ext", "net"] }
+socket2 = { version = "0.6", features = ["all"] }
+crossbeam-queue = "0.3"
+rand = "0.10"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+debug = 1
+
+[[bench]]
+name = "transport"
+harness = false

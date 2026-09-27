@@ -1,0 +1,33 @@
+{
+  "started_utc": "2026-09-27T16:53:46.103212+00:00",
+  "rustc": "rustc 1.94.0 (4a4ef493e 2026-03-02)\nbinary: rustc\ncommit-hash: 4a4ef493e3a1488c6e321570238084b38948f6db\ncommit-date: 2026-03-02\nhost: aarch64-apple-darwin\nrelease: 1.94.0\nLLVM version: 21.1.8",
+  "os": "Darwin 27.0.0 arm64",
+  "cpu": "Apple M2 Pro",
+  "logical_cpus": "12",
+  "power_before": "Now drawing from 'Battery Power'\n -InternalBattery-0 (id=38010979)\t78%; discharging; 7:06 remaining present: true",
+  "power_settings": "Battery Power:\n Sleep On Power Button 1\n lowpowermode         1\n standby              1\n ttyskeepawake        1\n hibernatemode        3\n powernap             1\n hibernatefile        /var/vm/sleepimage\n displaysleep         10\n womp                 1\n networkoversleep     0\n sleep                1\n lessbright           0\n tcpkeepalive         1\n disksleep            10\nAC Power:\n Sleep On Power Button 1\n lowpowermode         0\n standby              1\n ttyskeepawake        1\n hibernatemode        3\n powernap             1\n hibernatefile        /var/vm/sleepimage\n displaysleep         30\n womp                 1\n networkoversleep     0\n sleep                0\n tcpkeepalive         1\n disksleep            10",
+  "qos": "inherited default; no affinity or QoS changes",
+  "profile": "release/bench, thin LTO, codegen-units=1, debug=1; no target-cpu override",
+  "rustflags": "",
+  "packets_per_worker": 100000,
+  "samples": 5,
+  "workers": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+  ],
+  "cargo_lock_sha256": "b4f075c55d464ffde6f859ddc2bf5f38bc805e3630ab6300ed6ca7bff5bcc4af",
+  "harness_sha256": "18225ee4aca1efdea516c2dc085d0871929feee914d7377e28eda4e443fc08b9",
+  "scope": "seal+open Tunn roundtrip; payload bytes counted once; no socket/utun I/O",
+  "power_after": "Now drawing from 'Battery Power'\n -InternalBattery-0 (id=38010979)\t78%; discharging; 7:06 remaining present: true",
+  "finished_utc": "2026-09-27T16:54:21.504086+00:00"
+}
