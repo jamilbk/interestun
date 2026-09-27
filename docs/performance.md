@@ -78,9 +78,49 @@ and latency under load. Use iperf3 for TCP/UDP baseline traffic and Instruments
 for CPU attribution. Repeat on AC power and record QoS/power conditions explicitly.
 
 The next likely limits are the shared utun reader, shared packet-pool atomics,
-cross-worker dispatch, and kernel utun/socket locking. They have not yet been
-profiled on a real tunnel. Real-utun integration testing now passes on Darwin
+cross-worker dispatch, and kernel utun/socket locking. Full stack attribution on a real tunnel is still pending. Real-utun integration testing now passes on Darwin
 27.0.0 with two local BoringTun echo peers, both ciphers, IPv4/IPv6, and packet
 bursts. This establishes
 functional packet flow, not network throughput or interoperability with an
 independent WireGuard implementation.
+
+
+## macOS readiness handling: two-host TCP observation
+
+On 2026-09-27, a macOS M2 Pro peer and a separate Windows interestun peer
+exchanged AES-256-GCM traffic with MTU 1420 over a LAN that previously measured
+9.40/9.41 Gbit/s without the tunnel. The Mac used en8 (10Gbase-T), AC power,
+Low Power Mode disabled for AC, and inherited thread QoS. The macOS release
+build used the same compiler, cipher dependency, and release profile above.
+Windows hardware, build provenance, and power settings were not captured.
+
+The baseline was macOS commit a660fb9. The changed build uses kqueue readiness
+instead of probing every descriptor on each iteration and waits for writable
+readiness after WouldBlock. The same keys, ports, peer, cipher, and addresses
+were retained across a daemon restart.
+
+Each sample used one TCP stream, five measured seconds after one omitted second,
+with three samples per direction. Rates count receiver TCP payload bytes.
+All baseline samples preceded the changed build; send/receive alternated.
+These are short desktop observations, not isolated laboratory results. A brief
+local correctness test overlapped part of baseline collection, and background
+workloads were not controlled. Treat small deltas cautiously; no maximum
+throughput or precise kernel/crypto attribution is established.
+
+| Direction | Baseline median Gbit/s | Readiness median Gbit/s | Change |
+| --- | ---: | ---: | ---: |
+| Mac to Windows | 1.021 | 1.288 | +26.2% |
+| Windows to Mac | 2.303 | 2.492 | +8.2% |
+
+[All twelve samples](benchmarks/macos-readiness.csv) retain receiver bytes,
+measurement durations, rates, and sender retransmits when reported.
+Commands (add `-R` for Windows to Mac):
+
+```sh
+iperf3 -c 10.20.0.1 -t 5 -O 1 --connect-timeout 3000 -J
+```
+
+Validation includes 192-packet bursts exceeding the 128-packet worker drain
+budget, traffic resuming after idle, two peers, IPv4/IPv6, endpoint roaming,
+both ciphers, pool exhaustion versus kernel WouldBlock, and the opt-in real-utun
+integration test. Crypto and thread ownership were not changed.

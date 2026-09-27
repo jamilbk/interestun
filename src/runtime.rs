@@ -295,6 +295,10 @@ impl Runtime {
                 udp_writable: false,
                 #[cfg(target_os = "macos")]
                 tun_writable: false,
+                #[cfg(target_os = "macos")]
+                readable: [false; 5],
+                #[cfg(target_os = "macos")]
+                udp_blocked: false,
             };
             #[cfg(windows)]
             let _ = socket;
@@ -414,6 +418,10 @@ struct Worker {
     udp_writable: bool,
     #[cfg(target_os = "macos")]
     tun_writable: bool,
+    #[cfg(target_os = "macos")]
+    readable: [bool; 5],
+    #[cfg(target_os = "macos")]
+    udp_blocked: bool,
 }
 impl Worker {
     #[cfg(windows)]
@@ -530,6 +538,8 @@ impl Worker {
         self.socket = Some(socket);
         self.endpoint = Some(endpoint);
         self.udp_writable = false;
+        self.udp_blocked = false;
+        self.readable[UDP.0] = true;
         Ok(())
     }
     #[cfg(windows)]
@@ -754,12 +764,26 @@ impl Worker {
         let mut udp_rx = Receiver::new(self.pool.clone());
         let mut events = Events::with_capacity(16);
         let mut snapshot_at = Instant::now();
+        #[cfg(target_os = "macos")]
+        let mut tun_blocked = false;
+        // Probe once at startup, then retain readiness until WouldBlock. Mio is
+        // edge-triggered: hitting our fairness budget must not lose a ready fd.
+        #[cfg(target_os = "macos")]
+        {
+            self.readable[UDP.0] = self.socket.is_some();
+            for token in [TUN, WILDCARD4, WILDCARD6] {
+                self.readable[token.0] = self.id == 0;
+            }
+        }
         while !self.stop.load(Ordering::Acquire) {
             let mut more = false;
             // Bounded draining keeps timers and other directions live under continuous traffic.
             #[cfg(target_os = "macos")]
             if self.id == 0 {
                 for _ in 0..4 {
+                    if !self.readable[TUN.0] {
+                        break;
+                    }
                     let fd = self.tun.fd.as_raw_fd();
                     match tun_rx.receive(fd, true, |received| {
                         if let Some(id) = packet::addresses(received.packet.data())
@@ -775,18 +799,25 @@ impl Worker {
                         }
                     }) {
                         Ok(n) => {
-                            more |= n == BATCH;
                             if n == 0 {
                                 anyhow::bail!("utun closed");
                             }
                         }
-                        Err(e) if e.kind() == io::ErrorKind::WouldBlock => break,
+                        Err(e) if e.kind() == io::ErrorKind::WouldBlock => {
+                            self.readable[TUN.0] = false;
+                            break;
+                        }
                         Err(e) if e.kind() == io::ErrorKind::Interrupted => continue,
+                        Err(e) if e.kind() == io::ErrorKind::OutOfMemory => break,
                         Err(e) => return Err(e.into()),
                     }
                 }
                 for family in 0..2 {
+                    let token = [WILDCARD4, WILDCARD6][family];
                     for _ in 0..4 {
+                        if !self.readable[token.0] {
+                            break;
+                        }
                         let fd = self.wildcards[family].as_raw_fd();
                         match udp_rx.receive(fd, false, |received| {
                             if let Some(source) = received.source {
@@ -794,13 +825,19 @@ impl Worker {
                             }
                         }) {
                             Ok(n) => {
-                                more |= n == BATCH;
                                 if n == 0 {
+                                    self.readable[token.0] = false;
                                     break;
                                 }
                             }
-                            Err(e) if e.kind() == io::ErrorKind::WouldBlock => break,
+                            Err(e) if e.kind() == io::ErrorKind::WouldBlock => {
+                                self.readable[token.0] = false;
+                                break;
+                            }
+                            Err(e) if e.kind() == io::ErrorKind::Interrupted => continue,
+                            Err(e) if e.kind() == io::ErrorKind::OutOfMemory => break,
                             Err(_) => {
+                                // A socket error does not prove the receive queue is drained.
                                 self.drop_packet();
                                 break;
                             }
@@ -811,18 +848,28 @@ impl Worker {
             #[cfg(target_os = "macos")]
             if let Some(fd) = self.socket.as_ref().map(AsRawFd::as_raw_fd) {
                 for _ in 0..4 {
+                    if !self.readable[UDP.0]
+                        || self.socket.as_ref().map(AsRawFd::as_raw_fd) != Some(fd)
+                    {
+                        break;
+                    }
                     match udp_rx.receive(fd, false, |received| {
                         if let Some(source) = received.source {
                             self.wire(received.packet, source);
                         }
                     }) {
                         Ok(n) => {
-                            more |= n == BATCH;
                             if n == 0 {
+                                self.readable[UDP.0] = false;
                                 break;
                             }
                         }
-                        Err(e) if e.kind() == io::ErrorKind::WouldBlock => break,
+                        Err(e) if e.kind() == io::ErrorKind::WouldBlock => {
+                            self.readable[UDP.0] = false;
+                            break;
+                        }
+                        Err(e) if e.kind() == io::ErrorKind::Interrupted => continue,
+                        Err(e) if e.kind() == io::ErrorKind::OutOfMemory => break,
                         Err(_) => {
                             self.drop_packet();
                             break;
@@ -865,12 +912,17 @@ impl Worker {
             }
 
             #[cfg(target_os = "macos")]
-            if let Some(socket) = &self.socket {
+            if let Some(socket) = &self.socket
+                && !self.udp_blocked
+            {
                 for _ in 0..4 {
                     match batch::flush(socket.as_raw_fd(), false, &mut self.network) {
                         Ok(0) => break,
-                        Ok(_) => more |= !self.network.is_empty(),
-                        Err(e) if e.kind() == io::ErrorKind::WouldBlock => break,
+                        Ok(_) => {}
+                        Err(e) if e.kind() == io::ErrorKind::WouldBlock => {
+                            self.udp_blocked = true;
+                            break;
+                        }
                         Err(_) => {
                             self.drop_packet();
                             break;
@@ -880,10 +932,16 @@ impl Worker {
             }
             #[cfg(target_os = "macos")]
             for _ in 0..4 {
+                if tun_blocked {
+                    break;
+                }
                 match batch::flush(self.tun.fd.as_raw_fd(), true, &mut self.injection) {
                     Ok(0) => break,
-                    Ok(_) => more |= !self.injection.is_empty(),
-                    Err(e) if e.kind() == io::ErrorKind::WouldBlock => break,
+                    Ok(_) => {}
+                    Err(e) if e.kind() == io::ErrorKind::WouldBlock => {
+                        tun_blocked = true;
+                        break;
+                    }
                     Err(_) => {
                         self.drop_packet();
                         break;
@@ -907,7 +965,12 @@ impl Worker {
                 snapshot_at = now + Duration::from_millis(250);
             }
             #[cfg(target_os = "macos")]
-            self.interests()?;
+            {
+                more |= self.readable.iter().any(|ready| *ready)
+                    || (self.socket.is_some() && !self.network.is_empty() && !self.udp_blocked)
+                    || (!self.injection.is_empty() && !tun_blocked);
+                self.interests()?;
+            }
             let deadline = self
                 .tunnel
                 .next_timer_update()
@@ -928,7 +991,26 @@ impl Worker {
                 timeout
             };
             match self.poll.poll(&mut events, Some(timeout)) {
-                Ok(()) => {}
+                Ok(()) =>
+                {
+                    #[cfg(target_os = "macos")]
+                    for event in &events {
+                        let token = event.token();
+                        if matches!(token, UDP | TUN | WILDCARD4 | WILDCARD6)
+                            && (event.is_readable() || event.is_read_closed() || event.is_error())
+                            && (token == UDP || self.id == 0)
+                        {
+                            self.readable[token.0] = true;
+                        }
+                        if event.is_writable() || event.is_write_closed() || event.is_error() {
+                            match token {
+                                UDP => self.udp_blocked = false,
+                                TUN => tun_blocked = false,
+                                _ => {}
+                            }
+                        }
+                    }
+                }
                 Err(e) if e.kind() == io::ErrorKind::Interrupted => {}
                 Err(e) => return Err(e.into()),
             }

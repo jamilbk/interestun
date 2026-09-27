@@ -32,7 +32,12 @@ that pool. There is a maximum of 4096 configured peers, but practical thread and
 memory limits are lower. Queue/pool pressure intentionally drops packets. A
 worker processes at most four batches per direction before servicing timers and
 other directions, and continues without sleeping when a drain budget was used.
-Readiness interests enable writable events only while output is pending.
+Readiness from kqueue is retained until a syscall returns WouldBlock, including
+across fairness-budget boundaries. Idle descriptors are not probed on unrelated
+wakeups. Buffer-pool exhaustion retains readiness because no syscall occurred.
+Readiness interests enable writable events only while output is pending; after
+WouldBlock, writes wait for a writable event. Endpoint replacement resets the
+connected socket's readiness state.
 Receive buffers deliberately exceed the maximum supported datagram size. Full
 buffers are rejected even without MSG_TRUNC: Darwin's legacy recvmsg_x path can
 lose that flag during per-message copyout. This was reproduced by the oversized
@@ -66,7 +71,7 @@ threading, backpressure, control ownership, and validation differences.
 - utun and UDP batching uses private Darwin symbols, with symbol-absence fallback.
   The real utun path passed IPv4/IPv6 UDP echo and burst testing with two peers
   and both ciphers on Darwin 27.0.0. Other supported macOS releases, Network
-  Extension entitlements, and end-to-end throughput still need validation.
+  Extension entitlements, and broader end-to-end performance still need validation.
 - AES is an experimental protocol extension using ring's AES-256-GCM transport.
   Handshake encryption remains ChaCha20-Poly1305, cookies use XChaCha20, and the
   suite-specific initial transcript separates keys/protocols. No custom AES
@@ -75,7 +80,8 @@ threading, backpressure, control ownership, and validation differences.
 
 ## Next performance experiments
 
-Measure a two-host, real-utun path first, including loss and CPU per packet. Sweep
+The first two-host TCP measurements are recorded in [performance](performance.md).
+Measure loss and CPU per packet, sweep
 batch sizes and peer counts, then profile the dispatcher, packet-pool contention,
 queue wakeups, encryption, kernel socket locks, and utun injection independently.
 Connected flow sockets and utun writes still contend on kernel resources.

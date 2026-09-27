@@ -146,6 +146,30 @@ fn two_peers_share_adapter_and_use_their_own_workers() {
             let len = kernel_a.recv(&mut output).unwrap();
             assert_eq!(&output[..len], sent);
         }
+        // More than one worker drain budget, followed by idle and a fresh edge.
+        // Exercise both the dispatcher-owned flow and the other peer's worker.
+        #[cfg(target_os = "macos")]
+        for round in 0..2 {
+            for (n, kernel) in [(2, &kernel_b), (3, &kernel_c)] {
+                for marker in 0..192 {
+                    kernel_a.send(&ip(1, n, marker)).unwrap();
+                }
+                for marker in 0..192 {
+                    let len = kernel.recv(&mut output).unwrap();
+                    assert_eq!(&output[..len], ip(1, n, marker));
+                }
+                for marker in 0..192 {
+                    kernel.send(&ip(n, 1, marker)).unwrap();
+                }
+                for marker in 0..192 {
+                    let len = kernel_a.recv(&mut output).unwrap();
+                    assert_eq!(&output[..len], ip(n, 1, marker));
+                }
+            }
+            if round == 0 {
+                std::thread::sleep(Duration::from_millis(300));
+            }
+        }
         // Authenticated peer B is not allowed to inject peer C's source address.
         kernel_a
             .set_read_timeout(Some(Duration::from_millis(300)))

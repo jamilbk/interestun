@@ -124,7 +124,8 @@ impl Receiver {
             self.slots.push(packet);
         }
         if self.slots.is_empty() {
-            return Err(io::Error::from(io::ErrorKind::WouldBlock));
+            // No syscall was made: callers must retain kernel readiness.
+            return Err(io::Error::from(io::ErrorKind::OutOfMemory));
         }
         let count = self.slots.len();
         let mut afs = [[0u8; 4]; BATCH];
@@ -310,6 +311,28 @@ mod tests {
         };
         // SAFETY: pfd is a live, initialized single-element poll array.
         assert_eq!(unsafe { libc::poll(&mut pfd, 1, 1000) }, 1);
+    }
+    #[test]
+    fn pool_exhaustion_is_not_socket_would_block() {
+        use std::os::fd::AsRawFd;
+        let socket = UdpSocket::bind("127.0.0.1:0").unwrap();
+        socket.set_nonblocking(true).unwrap();
+        let pool = crate::packet::pool(1);
+        let held = Packet::new(&pool).unwrap();
+        let mut rx = Receiver::new(pool);
+        assert_eq!(
+            rx.receive(socket.as_raw_fd(), false, |_| unreachable!())
+                .unwrap_err()
+                .kind(),
+            io::ErrorKind::OutOfMemory
+        );
+        drop(held);
+        assert_eq!(
+            rx.receive(socket.as_raw_fd(), false, |_| unreachable!())
+                .unwrap_err()
+                .kind(),
+            io::ErrorKind::WouldBlock
+        );
     }
     #[test]
     fn layout_and_connected_udp_batch() {
