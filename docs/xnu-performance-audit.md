@@ -69,3 +69,23 @@ that the kernel accepted the requested limit.
 4. Investigate channel availability and ownership semantics before committing
    to a new backend. Source support alone does not establish usable privileges,
    zero-copy operation, or a throughput benefit on this machine.
+
+## Follow-up: concurrent writes on a shared descriptor
+
+The duplex multi-peer test repeatedly lost injected packets despite successful
+batch counts and zero application drops. Increasing the fake adapter's socket
+buffers did not fix it; serializing shared-utun batch writes did.
+
+In the audited source, [sendit_x](https://github.com/apple-oss-distributions/xnu/blob/f6217f891ac0bb64f3d375211650a4c1ff8ca1ea/bsd/kern/uipc_syscalls.c#L1855)
+passes the prepared packet count into `sosend_list`.
+[sosendcheck](https://github.com/apple-oss-distributions/xnu/blob/f6217f891ac0bb64f3d375211650a4c1ff8ca1ea/bsd/kern/uipc_socket.c#L1875)
+can fail on nonblocking send-lock contention before protocol dispatch resets the
+count. The syscall's completion path suppresses WouldBlock when that count is
+nonzero. This is a source-based explanation of the observation, not tracing of
+the exact installed kernel.
+
+macOS now serializes only shared-utun batch writes when there are multiple peers.
+Crypto remains independent and peer UDP sockets have one batch writer each.
+The concurrent multi-peer regression test passes with this guard. The original
+single-thread-per-peer design also allowed concurrent shared-utun writes across
+peers; the new simultaneous-traffic test exposed this existing vulnerability.

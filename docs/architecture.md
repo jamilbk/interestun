@@ -3,13 +3,15 @@
 The library is the Rust data-plane/service boundary a future native or Rust GUI
 can control. The binary is a minimal foreground service. It follows Firezone's
 separation of platform I/O from the cryptographic state machine, without pulling
-in its authentication, portal, Tauri UI, or per-direction TUN threads.
+in its authentication, portal, or Tauri UI.
 
 | Execution context | Ownership |
 | --- | --- |
 | Main thread | UAPI clients, configuration, rate-limiter maintenance, worker lifecycle, shutdown |
-| Peer worker | One BoringTun, one connected UDP socket after endpoint discovery, timers, queues, encryption/decryption, UDP and utun writes |
-| First peer worker, additional work | Shared utun reads, wildcard IPv4/IPv6 UDP reads, outbound prefix routing, first-handshake dispatch |
+| Peer send thread | Exclusive transmit key/counter, encryption, connected UDP batch writes, outbound queues |
+| Peer receive thread | BoringTun handshake/session lifecycle, receive keys/replay, timers, UDP reads, decryption, utun injection |
+| Peer 0 send thread, additional work | Shared utun reads and outbound prefix dispatch |
+| Peer 0 receive thread, additional work | Wildcard IPv4/IPv6 UDP reads and first-handshake dispatch |
 
 Workers are created only when a private key is configured. The first worker is
 chosen from the stable public-key ordering for each configuration generation.
@@ -26,20 +28,23 @@ consume two rate-limit checks. Public keys are authenticated before an endpoint
 is changed. Cipher selection is fixed per interface, with no negotiation.
 
 Queue capacities are 256 packets per inbox / pending-plaintext / output direction.
-The shared packet pool allocates 864 buffers per worker, capped at 16384 buffers
-(32 MiB of payload storage), with a minimum of 128. RX scratch slots borrow from
+The shared packet pool allocates 1664 buffers per peer, capped at 16384 buffers
+(32 MiB of payload storage), with a minimum of 384. RX scratch slots borrow from
 that pool. There is a maximum of 4096 configured peers, but practical thread and
 memory limits are lower. Queue/pool pressure intentionally drops packets. A
-worker processes at most 128 packets per direction (one syscall batch) before servicing timers and
-other directions, and continues without sleeping when a drain budget was used.
+direction worker reads/encrypts/flushes in 128-packet batches, retaining readiness
+between batches. Send and receive no longer alternate on one worker. Bounded
+queues, flushing between batches, and control checks still prevent unbounded
+work and starvation of handshakes or shutdown. A congested peer cannot stop the
+shared utun reader from dispatching packets to other peers.
 The utun pending-packet limit is set to 1024 and verified with getsockopt at
 startup. Darwin's default of one pending packet prevents effective receive
 batching under load; this limit allows eight batches of 128.
 Readiness from kqueue is retained until a syscall returns WouldBlock, including
 across fairness-budget boundaries. Idle descriptors are not probed on unrelated
 wakeups. Buffer-pool exhaustion retains readiness because no syscall occurred.
-Readiness interests enable writable events only while output is pending; after
-WouldBlock, writes wait for a writable event. Endpoint replacement resets the
+After WouldBlock, writable interest is enabled and writes wait for a writable
+event. Endpoint replacement resets the
 connected socket's readiness state.
 Receive buffers deliberately exceed the maximum supported datagram size. Full
 buffers are rejected even without MSG_TRUNC: Darwin's legacy recvmsg_x path can
@@ -55,6 +60,31 @@ workers unchanged. Handshake output still needs a separate buffer. Wintun's
 reader still copies from its temporary receive buffer, but reserves header space
 so crypto no longer needs another copy. Buffer recycling remains shared/atomic.
 
+The fork exports a non-cloneable `TransportSender`: key and nonce ownership move
+out of the receive/control tunnel after session promotion. The initial handshake
+confirmation is encrypted before that handoff, so the moved counter continues
+at the next nonce. Regular timer keepalives are forwarded to the send owner.
+Session destruction revokes detached handles atomically; handles also enforce
+lifetime and message limits without depending on the receive thread's timer
+schedule. Idle send owners check validity at least every 250 ms and drop invalid
+handles. A packet already being encrypted can finish during revocation.
+
+Unauthenticated cookie replies are sent directly by receive workers on wildcard
+sockets; authenticated control output is handed to the send worker.
+
+Cipher operations do not acquire a shared tunnel mutex. Send activity is merged
+once per batch under a short metadata mutex and consumed by the receive owner
+before timer updates (at most 250 ms while idle). First/last send timestamps
+bound the no-response timer conservatively within a batch; delayed reports do
+not regress receive timestamps. Session/socket changes use a separate control
+mailbox; key ownership changes cannot be dropped because a packet inbox is full.
+
+With multiple peers, only shared-utun batch writes use an interface mutex.
+Concurrent nonblocking `sendmsg_x` calls on one socket reproduced silent loss
+in the duplex test; XNU's send-lock/error-count path explains the observation.
+Single-peer injection avoids this mutex. See the [XNU audit](xnu-performance-audit.md).
+Windows retains the previous combined peer worker in `runtime_windows.rs`.
+
 Control clients have five-second deadlines, a 1 MiB request limit, and a 32-client
 limit. The main thread uses poll for control sockets only. Signal handlers store
 to an atomic; there is no signal handling thread. Secrets are returned only over
@@ -62,8 +92,8 @@ the permission-restricted UAPI, as required by `wg showconf`.
 
 ## Current limitations
 
-The execution table and Darwin I/O details above describe macOS. Windows uses
-the same peer crypto/routing logic, one additional Wintun reader, shared exclusive
+The execution table and Darwin I/O details above describe macOS. Windows retains
+combined peer crypto/routing workers, one additional Wintun reader, shared exclusive
 UDP listeners, and named-pipe control. See [Windows backend](windows.md) for the
 threading, backpressure, control ownership, and validation differences.
 

@@ -175,8 +175,8 @@ throughput improvement is claimed for this change.
 
 ### Measure actual batch utilization
 
-A diagnostic build reports per-peer utun/UDP receive/send counts to stderr every
-five seconds. Production builds compile out the counters and thread-local state.
+A diagnostic build reports per-thread utun/UDP receive/send counts to stderr every
+five seconds; `peer` and `worker` identify the owner. Production builds compile out the counters and thread-local state.
 
 ```sh
 CARGO_TARGET_DIR=target cargo build --release --locked --features io-metrics
@@ -188,7 +188,7 @@ one direction over that interval. `packets / calls` is effective syscall batch
 size including unsuccessful calls. For sends, compare packets with requested
 messages to spot partial writes/backpressure. Receive requests describe slot
 capacity, not known queued packets. UDP counters combine connected and wildcard
-sockets on that peer worker. Counters measure completed kernel I/O, not successful
+sockets on that receive worker. Counters measure completed kernel I/O, not successful
 packet authentication or application delivery. Fallback per-message calls are
 counted individually. Handshake cookie `send_to` calls are outside these counters.
 Use diagnostic runs for attribution; compare production builds for throughput.
@@ -223,3 +223,51 @@ can constrain the effective backlog before 1024 MTU-sized packets accumulate.
 [Raw samples](benchmarks/macos-batch128-pending1024.csv). Normal tests, clippy
 with all targets/features, and real-utun tests for both ciphers and IP families
 passed. No loaded-latency or multi-peer throughput comparison was performed.
+
+### Separate macOS send and receive threads
+
+macOS now has one TX and one RX thread per peer, using the exclusive sender
+handoff in fork `ea898e7`. A TX key/counter moves once; RX retains replay and
+handshake state. No cipher operation holds a shared tunnel mutex. The Windows
+peer used for these measurements was not rebuilt during this experiment.
+
+With AES-256-GCM, MTU 1420, batch 128, pending limit 1024, and `io-metrics`:
+
+| One-way direction | Split-thread samples, Gbit/s | Split median | Previous median |
+| --- | --- | ---: | ---: |
+| Mac → Windows | 2.025, 2.019, 1.976 | 2.019 | 2.018 |
+| Windows → Mac | 2.514, 2.542, 2.553 | 2.542 | 2.565 |
+
+Each sample measured five seconds after one second warmup. There is no clear
+one-way throughput improvement. To check simultaneous traffic, the previous
+`18d7bc5` build was rebuilt separately and run on the same interface, followed
+by the split-thread build. Each bidirectional sample measured ten seconds after
+two seconds warmup, one TCP stream each way:
+
+| Build | Mac → Windows samples, Gbit/s | Windows → Mac samples, Gbit/s | Median aggregate |
+| --- | --- | --- | ---: |
+| Previous combined worker | 1.104, 1.809, 1.125 | 1.176, 0.403, 1.201 | 2.280 |
+| Split TX/RX | 1.113, 1.121, 1.115 | 1.177, 1.175, 1.184 | 2.296 |
+
+This also does not establish a throughput gain. The asymmetric second baseline
+sample illustrates run-to-run variation. Neither endpoint was CPU-pinned;
+Windows worker CPU and kernel attribution were not measured. These results do
+not identify which endpoint limits throughput. The thread split permits
+independent processing but does not establish a faster end-to-end ceiling.
+
+[Raw samples](benchmarks/macos-duplex.csv). The adapter and peer cipher remain
+wire-compatible with the previous build. Correctness gates include concurrent
+two-peer bidirectional traffic, authenticated roaming, real-utun tests with both
+ciphers and IP families, and fork tests for concurrent transport, exclusive
+nonce handoff, replay, expiry/revocation, rekey replacement, deferred keepalives,
+and delayed activity reporting. Fork suites passed 82 default / 80 no-default
+checks. Shared-utun injection is serialized per batch only with multiple peers;
+see the [kernel finding](xnu-performance-audit.md#follow-up-concurrent-writes-on-a-shared-descriptor).
+
+A subsequent 130-second send transfer completed with fresh handshakes observed
+while traffic continued (including AES message-budget rekeys). Receiver rate was
+2.060 Gbit/s; TCP reported 4,313 retransmissions, so this is not a loss-free
+result. No measured one-second interval stopped transferring data. This was a
+sustained correctness check, not a controlled performance comparison.
+[Intervals](benchmarks/macos-duplex-sustained.csv) and
+[summary](benchmarks/macos-duplex-sustained.json) preserve the evidence.

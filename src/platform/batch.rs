@@ -137,8 +137,8 @@ mod metrics {
         METRICS.with_borrow_mut(|m| {
             if now < m.next { return; }
             for (name, c) in ["utun-rx", "utun-tx", "udp-rx", "udp-tx"].into_iter().zip(m.counts) {
-                eprintln!("peer={peer} io={name} calls={} requested={} packets={} would_block={} errors={}",
-                    c.calls, c.requested, c.packets, c.blocked, c.errors);
+                eprintln!("peer={peer} worker={} io={name} calls={} requested={} packets={} would_block={} errors={}",
+                    std::thread::current().name().unwrap_or("unnamed"), c.calls, c.requested, c.packets, c.blocked, c.errors);
             }
             m.counts = [Counts::default(); 4];
             m.next = now + Duration::from_secs(5);

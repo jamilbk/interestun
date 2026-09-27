@@ -12,6 +12,16 @@ fn key(n: u8) -> [u8; 32] {
 fn fake_tun() -> (Arc<Utun>, UdpSocket) {
     let app = UdpSocket::bind("127.0.0.1:0").unwrap();
     let kernel = UdpSocket::bind("127.0.0.1:0").unwrap();
+    // The fake adapter must hold concurrent peer bursts; small OS defaults
+    // otherwise drop packets before the test's consumer gets scheduled.
+    for socket in [&app, &kernel] {
+        socket2::SockRef::from(socket)
+            .set_recv_buffer_size(1024 * 1024)
+            .unwrap();
+        socket2::SockRef::from(socket)
+            .set_send_buffer_size(1024 * 1024)
+            .unwrap();
+    }
     app.connect(kernel.local_addr().unwrap()).unwrap();
     kernel.connect(app.local_addr().unwrap()).unwrap();
     app.set_nonblocking(true).unwrap();
@@ -169,6 +179,53 @@ fn two_peers_share_adapter_and_use_their_own_workers() {
             if round == 0 {
                 std::thread::sleep(Duration::from_millis(300));
             }
+        }
+        // Concurrent duplex traffic through both peers. Bounded rounds keep
+        // the fake UDP adapter below its receive capacity; scoped joins also
+        // let a socket timeout fail the test rather than deadlock a barrier.
+        #[cfg(target_os = "macos")]
+        for round in 0..8 {
+            std::thread::scope(|scope| {
+                for (n, kernel) in [(2, &kernel_b), (3, &kernel_c)] {
+                    scope.spawn(move || {
+                        let mut out = [0; 2048];
+                        for marker in round * 16..(round + 1) * 16 {
+                            kernel.send(&ip(n, 1, marker)).unwrap();
+                        }
+                        for marker in round * 16..(round + 1) * 16 {
+                            let len = kernel.recv(&mut out).unwrap();
+                            assert_eq!(&out[..len], ip(1, n, marker));
+                        }
+                    });
+                }
+                for marker in round * 16..(round + 1) * 16 {
+                    kernel_a.send(&ip(1, 2, marker)).unwrap();
+                    kernel_a.send(&ip(1, 3, marker)).unwrap();
+                }
+                let mut seen = std::collections::BTreeSet::new();
+                for _ in 0..32 {
+                    let len = kernel_a.recv(&mut output).unwrap_or_else(|e| {
+                        eprintln!("round={round} seen={seen:?}");
+                        for (name, runtime) in [("a", &ra), ("b", &rb), ("c", &rc)] {
+                            for (key, peer) in &runtime.peers {
+                                let stats = peer.stats.lock().unwrap();
+                                eprintln!(
+                                    "{name} key={} drops={} tx={} rx={}",
+                                    key[0],
+                                    peer.drops.load(std::sync::atomic::Ordering::Relaxed),
+                                    stats.tx,
+                                    stats.rx
+                                );
+                            }
+                        }
+                        panic!("{e}")
+                    });
+                    let p = payload(&output[..len]);
+                    assert!((round * 16..(round + 1) * 16).contains(&p[20]));
+                    assert!(seen.insert((p[15], p[20])));
+                }
+                assert_eq!(seen.len(), 32);
+            });
         }
         // Authenticated peer B is not allowed to inject peer C's source address.
         kernel_a

@@ -1,0 +1,9 @@
+{
+  "measurement_seconds": 130,
+  "warmup_seconds": 2,
+  "receiver_bits_per_second": 2060410932.9183242,
+  "sender_retransmits": 4313,
+  "handshake_before_unix": 1790535631,
+  "handshake_after_unix": 1790535789,
+  "purpose": "sustained transfer and rekey validation, not a controlled throughput comparison"
+}

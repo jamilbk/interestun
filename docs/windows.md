@@ -82,7 +82,7 @@ New-NetRoute -InterfaceAlias interestun -DestinationPrefix 10.20.0.2/32 -NextHop
 
 ## Data path and validation
 
-Windows shares the existing BoringTun peer workers, routing, authentication,
+Windows retains the combined BoringTun peer workers in `runtime_windows.rs`, routing, authentication,
 bounded queues, and packet pool. One additional reader waits on Wintun's read
 event and dispatches packets to those workers. Shutdown waits at most 100 ms for
 an idle reader. The first peer worker receives both shared UDP listeners through

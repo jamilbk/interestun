@@ -1,8 +1,9 @@
 # interestun
 
 A barebones Rust userspace tunnel for macOS and Windows, based on Firezone's BoringTun fork.
-One main housekeeping/control thread, one I/O thread per configured peer, and one
-shared adapter (BSD utun or Wintun). Windows adds one Wintun reader thread.
+One main housekeeping/control thread and one shared adapter (BSD utun or Wintun).
+macOS uses one send thread and one receive thread per peer. Windows currently
+retains one I/O thread per peer plus a Wintun reader thread.
 This is an experimental implementation, not a production VPN.
 
 The default transport cipher is **AES-256-GCM**. It uses a distinct authenticated
@@ -61,13 +62,12 @@ testing; stock `wg` uses its compile-time `/var/run/wireguard` directory.
 The details below describe macOS; see the [Windows data path](docs/windows.md#data-path-and-validation)
 for Wintun, shared UDP listeners, and IOCP differences.
 
-- Mio uses kqueue on macOS. Each peer worker owns its BoringTun state, deadlines,
-  and connected UDP socket. Connected sockets share the interface's listen port
-  with IPv4/IPv6 wildcard sockets using Darwin's `SO_REUSEPORT` behavior.
-- The first peer worker additionally drains the shared utun and wildcard sockets,
-  dispatching to peer workers through bounded queues. The main thread does no
-  tunnel packet I/O. No extra acceptor, signal, Tokio, or per-socket threads.
-- `sendmsg_x` / `recvmsg_x` batch up to 32 packets on utun and connected UDP. Runtime
+- Mio uses kqueue on macOS. Each peer has a send thread owning its transmit key
+  and nonce counter, and a receive thread owning replay, handshake, and timer
+  state. They share a connected UDP socket with separate read/write readiness.
+- Peer 0's send thread reads the shared utun; its receive thread reads wildcard
+  UDP sockets. Both dispatch through bounded peer queues. Main does no packet I/O.
+- `sendmsg_x` / `recvmsg_x` batch up to 128 packets on utun and connected UDP. Runtime
   symbol resolution falls back to `sendmsg` / `recvmsg` if those private APIs are
   absent. utun's four-byte big-endian address-family header uses scatter/gather I/O.
 - Transport payloads are encrypted/decrypted in their receive buffer. utun reads

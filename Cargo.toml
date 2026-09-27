@@ -12,7 +12,7 @@ io-metrics = []
 
 [dependencies]
 anyhow = "1"
-boringtun = { git = "https://github.com/jamilbk/boringtun", rev = "74e450f6072b04d5dc198473eb9859ac04899f7f", default-features = false }
+boringtun = { git = "https://github.com/jamilbk/boringtun", rev = "ea898e76dc58cd470433bd1efa9b9632ff179129", default-features = false }
 clap = { version = "4", features = ["derive"] }
 hex = "0.4"
 ipnet = "2"
