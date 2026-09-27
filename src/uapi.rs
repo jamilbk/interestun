@@ -108,6 +108,7 @@ fn request(
     runtime: &mut Option<Runtime>,
     tun: &Arc<Tunnel>,
     cipher: Cipher,
+    backend: crate::platform::udp::Backend,
 ) -> Result<String> {
     let input = match std::str::from_utf8(input) {
         Ok(s) => s,
@@ -139,7 +140,7 @@ fn request(
     };
     // Initial implementation uses a coordinated restart for set. No data-plane locks or partially applied settings.
     drop(runtime.take());
-    match Runtime::start(&next, cipher, tun.clone()) {
+    match Runtime::start_with_backend(&next, cipher, tun.clone(), backend) {
         Ok(new_runtime) => {
             *config = next;
             config.listen_port = new_runtime.port;
@@ -149,7 +150,7 @@ fn request(
         Err(error) => {
             eprintln!("configuration resource setup failed: {error:#}");
             *runtime = Some(
-                Runtime::start(&base, cipher, tun.clone())
+                Runtime::start_with_backend(&base, cipher, tun.clone(), backend)
                     .context("restore previous configuration")?,
             );
             Ok(format!("errno={}\n\n", libc::EIO))
@@ -158,6 +159,20 @@ fn request(
 }
 #[cfg(target_os = "macos")]
 pub fn serve(tun: Arc<Tunnel>, directory: &Path, cipher: Cipher) -> Result<()> {
+    serve_with_backend(
+        tun,
+        directory,
+        cipher,
+        crate::platform::udp::Backend::default(),
+    )
+}
+#[cfg(target_os = "macos")]
+pub fn serve_with_backend(
+    tun: Arc<Tunnel>,
+    directory: &Path,
+    cipher: Cipher,
+    backend: crate::platform::udp::Backend,
+) -> Result<()> {
     if !directory.exists() {
         use std::os::unix::fs::DirBuilderExt;
         fs::DirBuilder::new().mode(0o700).create(directory)?;
@@ -184,14 +199,20 @@ pub fn serve(tun: Arc<Tunnel>, directory: &Path, cipher: Cipher) -> Result<()> {
     fs::set_permissions(&path, fs::Permissions::from_mode(0o600))?;
     listener.set_nonblocking(true)?;
     let mut config = Config::default();
-    let mut runtime = Some(Runtime::start(&config, cipher, tun.clone())?);
+    let mut runtime = Some(Runtime::start_with_backend(
+        &config,
+        cipher,
+        tun.clone(),
+        backend,
+    )?);
     config.listen_port = runtime.as_ref().unwrap().port;
     let mut clients: Vec<Client> = Vec::new();
     eprintln!(
-        "{} ready; UAPI {}; cipher {:?}; batch syscalls {}",
+        "{} ready; UAPI {}; cipher {:?}; UDP backend {:?}; batch syscalls {}",
         tun.name,
         path.display(),
         cipher,
+        backend,
         crate::platform::batch::available()
     );
     while !STOP.load(Ordering::Relaxed) {
@@ -268,6 +289,7 @@ pub fn serve(tun: Arc<Tunnel>, directory: &Path, cipher: Cipher) -> Result<()> {
                                         &mut runtime,
                                         &tun,
                                         cipher,
+                                        backend,
                                     )?
                                     .into_bytes();
                                 }

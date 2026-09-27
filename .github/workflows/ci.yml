@@ -15,4 +15,8 @@ jobs:
       - run: cargo clippy --locked --all-targets --all-features -- -D warnings
       - run: cargo test --locked --all-features
       - if: runner.os == 'macOS'
+        run: |
+          cargo build --locked --features network-bench --example network_bench
+          python3 scripts/test-network-bench.py --binary target/debug/examples/network_bench
+      - if: runner.os == 'macOS'
         run: ./scripts/test-wg.sh

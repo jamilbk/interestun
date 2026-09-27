@@ -7,9 +7,14 @@ license = "BSD-3-Clause"
 description = "A peer-threaded macOS and Windows userspace tunnel"
 
 [features]
-default = []
+default = ["apple-network"]
 io-metrics = []
 io-profile = ["io-metrics"]
+apple-network = []
+network-bench = ["apple-network"]
+
+[build-dependencies]
+cc = "1"
 
 [dependencies]
 anyhow = "1"
@@ -41,3 +46,8 @@ harness = false
 [[bench]]
 name = "injection"
 harness = false
+
+[[example]]
+name = "network_bench"
+path = "examples/network_bench/main.rs"
+required-features = ["network-bench"]

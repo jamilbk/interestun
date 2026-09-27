@@ -1,0 +1,306 @@
+{
+  "date": "2026-09-27",
+  "note": "Sequential diagnostic samples, not a controlled A/B. Network runs 5s measured + 1s warmup; preceding BSD 3s + 1s. Network implementation includes staging copies.",
+  "cases": [
+    {
+      "case": "tcp-send",
+      "start": {
+        "version": "iperf 3.21",
+        "test_start": {
+          "protocol": "TCP",
+          "num_streams": 1,
+          "blksize": 131072,
+          "omit": 1,
+          "duration": 5,
+          "bytes": 0,
+          "blocks": 0,
+          "reverse": 0,
+          "tos": 0,
+          "target_bitrate": 0,
+          "bidir": 0,
+          "fqrate": 0,
+          "interval": 1,
+          "gso": 0,
+          "gro": 0
+        }
+      },
+      "end": {
+        "streams": [
+          {
+            "sender": {
+              "socket": 5,
+              "start": 0,
+              "end": 5.002787,
+              "seconds": 5.002787,
+              "bytes": 426115072,
+              "bits_per_second": 681404300.4429332,
+              "retransmits": 0,
+              "reorder": -1,
+              "max_snd_cwnd": 523981,
+              "max_snd_wnd": 0,
+              "max_rtt": 3,
+              "min_rtt": 2,
+              "mean_rtt": 2,
+              "sender": true
+            },
+            "receiver": {
+              "socket": 5,
+              "start": 0,
+              "end": 4.993826,
+              "seconds": 5.002787,
+              "bytes": 425328640,
+              "bits_per_second": 681367176.1891583,
+              "sender": true
+            }
+          }
+        ],
+        "sum_sent": {
+          "start": 0,
+          "end": 5.002787,
+          "seconds": 5.002787,
+          "bytes": 426115072,
+          "bits_per_second": 681404300.4429332,
+          "retransmits": 0,
+          "sender": true
+        },
+        "sum_received": {
+          "start": 0,
+          "end": 4.993826,
+          "seconds": 4.993826,
+          "bytes": 425328640,
+          "bits_per_second": 681367176.1891583,
+          "sender": true
+        },
+        "cpu_utilization_percent": {
+          "host_total": 10.860574282147315,
+          "host_user": 0.040482729920932166,
+          "host_system": 10.820091552226383,
+          "remote_total": 20.81845854470314,
+          "remote_user": 9.110157459162096,
+          "remote_system": 11.708301085541049
+        }
+      },
+      "error": null
+    },
+    {
+      "case": "tcp-receive",
+      "start": {
+        "version": "iperf 3.21",
+        "test_start": {
+          "protocol": "TCP",
+          "num_streams": 1,
+          "blksize": 131072,
+          "omit": 1,
+          "duration": 5,
+          "bytes": 0,
+          "blocks": 0,
+          "reverse": 1,
+          "tos": 0,
+          "target_bitrate": 0,
+          "bidir": 0,
+          "fqrate": 0,
+          "interval": 1,
+          "gso": 0,
+          "gro": 0
+        }
+      },
+      "end": {
+        "streams": [
+          {
+            "sender": {
+              "socket": 5,
+              "start": 0,
+              "end": 4.988756,
+              "seconds": 4.988756,
+              "bytes": 287178752,
+              "bits_per_second": 460521624.22856516,
+              "sender": false
+            },
+            "receiver": {
+              "socket": 5,
+              "start": 0,
+              "end": 5.000907,
+              "seconds": 5.000907,
+              "bytes": 287834112,
+              "bits_per_second": 460451053.3789171,
+              "sender": false
+            }
+          }
+        ],
+        "sum_sent": {
+          "start": 0,
+          "end": 4.988756,
+          "seconds": 4.988756,
+          "bytes": 287178752,
+          "bits_per_second": 460521624.22856516,
+          "sender": false
+        },
+        "sum_received": {
+          "start": 0,
+          "end": 5.000907,
+          "seconds": 5.000907,
+          "bytes": 287834112,
+          "bits_per_second": 460451053.3789171,
+          "sender": false
+        },
+        "cpu_utilization_percent": {
+          "host_total": 19.36409238208425,
+          "host_user": 0.7925317458268407,
+          "host_system": 18.57157729308267,
+          "remote_total": 4.1657099419499986,
+          "remote_user": 1.8162495346901995,
+          "remote_system": 2.3494604072597993
+        }
+      },
+      "error": null
+    },
+    {
+      "case": "udp3g-send",
+      "start": {
+        "version": "iperf 3.21",
+        "test_start": {
+          "protocol": "UDP",
+          "num_streams": 1,
+          "blksize": 1360,
+          "omit": 1,
+          "duration": 5,
+          "bytes": 0,
+          "blocks": 0,
+          "reverse": 0,
+          "tos": 0,
+          "target_bitrate": 3000000000,
+          "bidir": 0,
+          "fqrate": 0,
+          "interval": 1,
+          "gso": 0,
+          "gro": 0
+        }
+      },
+      "end": {
+        "streams": [
+          {
+            "udp": {
+              "socket": 5,
+              "start": 0,
+              "end": 4.998043,
+              "seconds": 4.998043,
+              "bytes": 1874259520,
+              "bits_per_second": 2999989427.8620653,
+              "jitter_ms": 0.0011345367118598473,
+              "lost_packets": 149,
+              "packets": 1378131,
+              "lost_percent": 0.010811744311680095,
+              "out_of_order": 0,
+              "sender": true
+            }
+          }
+        ],
+        "sum": {
+          "start": 0,
+          "end": 4.990721,
+          "seconds": 4.990721,
+          "bytes": 1874259520,
+          "bits_per_second": 2999989427.8620653,
+          "jitter_ms": 0.0011345367118598473,
+          "lost_packets": 149,
+          "packets": 1378131,
+          "lost_percent": 0.010811744311680095,
+          "sender": true
+        },
+        "sum_sent": {
+          "start": 0,
+          "end": 4.998043,
+          "seconds": 4.998043,
+          "bytes": 1874259520,
+          "bits_per_second": 2999989427.8620653,
+          "jitter_ms": 0,
+          "lost_packets": 0,
+          "packets": 1378131,
+          "lost_percent": 0,
+          "sender": true
+        },
+        "sum_received": {
+          "start": 0,
+          "end": 4.990721,
+          "seconds": 4.990721,
+          "bytes": 1871399440,
+          "bits_per_second": 2999806144.2424855,
+          "jitter_ms": 0.0011345367118598473,
+          "lost_packets": 149,
+          "packets": 1376178,
+          "lost_percent": 0.010811744311680095,
+          "sender": false
+        },
+        "cpu_utilization_percent": {
+          "host_total": 91.1468491143701,
+          "host_user": 6.558729768494158,
+          "host_system": 84.58811934587594,
+          "remote_total": 73.66991313082467,
+          "remote_user": 26.8117824536297,
+          "remote_system": 46.85813067719497
+        }
+      },
+      "error": null
+    },
+    {
+      "case": "preceding-bsd-tcp-send-shorter",
+      "end": {
+        "streams": [
+          {
+            "sender": {
+              "socket": 5,
+              "start": 0,
+              "end": 2.99574,
+              "seconds": 2.99574,
+              "bytes": 756809728,
+              "bits_per_second": 2021029136.039843,
+              "retransmits": 0,
+              "reorder": -1,
+              "max_snd_cwnd": 523981,
+              "max_snd_wnd": 0,
+              "max_rtt": 1,
+              "min_rtt": 1,
+              "mean_rtt": 1,
+              "sender": true
+            },
+            "receiver": {
+              "socket": 5,
+              "start": 0,
+              "end": 2.991549,
+              "seconds": 2.99574,
+              "bytes": 756023296,
+              "bits_per_second": 2021757413.2999325,
+              "sender": true
+            }
+          }
+        ],
+        "sum_sent": {
+          "start": 0,
+          "end": 2.99574,
+          "seconds": 2.99574,
+          "bytes": 756809728,
+          "bits_per_second": 2021029136.039843,
+          "retransmits": 0,
+          "sender": true
+        },
+        "sum_received": {
+          "start": 0,
+          "end": 2.991549,
+          "seconds": 2.991549,
+          "bytes": 756023296,
+          "bits_per_second": 2021757413.2999325,
+          "sender": true
+        },
+        "cpu_utilization_percent": {
+          "host_total": 13.801311656522,
+          "host_user": 0.08977620129047983,
+          "host_system": 13.711485510196027,
+          "remote_total": 55.81012660126077,
+          "remote_user": 26.143032881737017,
+          "remote_system": 29.667093719523745
+        }
+      },
+      "error": null
+    }
+  ]
+}

@@ -86,6 +86,60 @@ fn ip(src: u8, dst: u8, marker: u8) -> Vec<u8> {
 }
 #[test]
 fn two_peers_share_adapter_and_use_their_own_workers() {
+    exercise_two_peers(bsd_fixture);
+}
+
+fn bsd_fixture(config: &Config, cipher: Cipher, tun: Arc<Utun>) -> anyhow::Result<Runtime> {
+    #[cfg(target_os = "macos")]
+    {
+        Runtime::start_with_backend(config, cipher, tun, interestun::platform::udp::Backend::Bsd)
+    }
+    #[cfg(windows)]
+    {
+        Runtime::start(config, cipher, tun)
+    }
+}
+
+#[cfg(all(target_os = "macos", feature = "apple-network"))]
+#[test]
+fn network_framework_configured_peers_against_wireguard_fixtures() {
+    exercise_two_peers(|config, cipher, tun| {
+        Runtime::start_with_backend(
+            config,
+            cipher,
+            tun,
+            if config.private_key == [1; 32] {
+                interestun::platform::udp::Backend::Network
+            } else {
+                interestun::platform::udp::Backend::Bsd
+            },
+        )
+    });
+}
+
+#[cfg(all(target_os = "macos", feature = "apple-network"))]
+#[test]
+fn network_framework_rejects_unknown_endpoint_without_fallback() {
+    let (tun, _kernel) = fake_tun();
+    let mut config = Config {
+        private_key: [1; 32],
+        ..Config::default()
+    };
+    config.peers.insert(
+        key(2),
+        Peer {
+            public_key: key(2),
+            ..Peer::default()
+        },
+    );
+    let error = match Runtime::start(&config, Cipher::Aes256Gcm, tun) {
+        Ok(_) => panic!("Network.framework unexpectedly accepted an unknown endpoint"),
+        Err(error) => error,
+    };
+    assert!(error.to_string().contains("requires a configured endpoint"));
+}
+
+fn exercise_two_peers(start: fn(&Config, Cipher, Arc<Utun>) -> anyhow::Result<Runtime>) {
     for cipher in [Cipher::Aes256Gcm, Cipher::Chacha20Poly1305] {
         let (tun_a, kernel_a) = fake_tun();
         let (tun_b, kernel_b) = fake_tun();
@@ -108,8 +162,8 @@ fn two_peers_share_adapter_and_use_their_own_workers() {
             ..Config::default()
         };
         c.peers.insert(key(1), peer_a);
-        let rb = Runtime::start(&b, cipher, tun_b).unwrap();
-        let rc = Runtime::start(&c, cipher, tun_c).unwrap();
+        let rb = start(&b, cipher, tun_b).unwrap();
+        let rc = start(&c, cipher, tun_c).unwrap();
         let mut a = Config {
             private_key: [1; 32],
             ..Config::default()
@@ -136,7 +190,7 @@ fn two_peers_share_adapter_and_use_their_own_workers() {
                 },
             );
         }
-        let ra = Runtime::start(&a, cipher, tun_a).unwrap();
+        let ra = start(&a, cipher, tun_a).unwrap();
         assert_eq!(ra.peers.len(), 2);
         let mut output = [0u8; 2048];
         for (n, kernel) in [(2, &kernel_b), (3, &kernel_c)] {
@@ -298,6 +352,10 @@ fn ip6(src: u8, dst: u8) -> Vec<u8> {
 
 #[test]
 fn only_authenticated_packets_roam_the_udp_endpoint() {
+    exercise_roaming(bsd_fixture);
+}
+
+fn exercise_roaming(start: fn(&Config, Cipher, Arc<Utun>) -> anyhow::Result<Runtime>) {
     use boringtun::noise::{Index, Tunn, TunnResult, cipher::CipherSuite};
     use std::time::{Instant, SystemTime, UNIX_EPOCH};
     let (tun, kernel) = fake_tun();
@@ -313,7 +371,7 @@ fn only_authenticated_packets_roam_the_udp_endpoint() {
             ..Peer::default()
         },
     );
-    let runtime = Runtime::start(&config, Cipher::Aes256Gcm, tun).unwrap();
+    let runtime = start(&config, Cipher::Aes256Gcm, tun).unwrap();
     let socket = || {
         let s = UdpSocket::bind("127.0.0.1:0").unwrap();
         s.connect((std::net::Ipv4Addr::LOCALHOST, runtime.port))

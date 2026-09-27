@@ -4,6 +4,7 @@ use crate::{
     platform::{
         Tunnel,
         batch::{self, Receiver},
+        udp::{Backend, PeerSocket, bind as bind_udp},
     },
 };
 use anyhow::{Context, Result};
@@ -16,7 +17,6 @@ use boringtun::{
 };
 use crossbeam_queue::ArrayQueue;
 use mio::{Events, Interest, Poll, Token, Waker, unix::SourceFd};
-use socket2::{Domain, Protocol, Socket, Type};
 use std::{
     collections::{BTreeMap, VecDeque},
     io,
@@ -73,7 +73,7 @@ impl<T> Inbox<T> {
 }
 #[derive(Default)]
 struct TxControl {
-    socket: Option<Arc<UdpSocket>>,
+    socket: Option<Arc<PeerSocket>>,
     sender: Option<TransportSender>,
     packets: VecDeque<Packet>,
     keepalive: bool,
@@ -159,45 +159,7 @@ pub struct Runtime {
     pub port: u16,
     pub failed: Arc<AtomicBool>,
     limiter: Arc<RateLimiter>,
-    _wildcards: Arc<[UdpSocket; 2]>,
-}
-fn bind_udp(local: SocketAddr, endpoint: Option<SocketAddr>) -> io::Result<UdpSocket> {
-    let socket = Socket::new(
-        if local.is_ipv4() {
-            Domain::IPV4
-        } else {
-            Domain::IPV6
-        },
-        Type::DGRAM,
-        Some(Protocol::UDP),
-    )?;
-    if local.is_ipv6() {
-        socket.set_only_v6(true)?;
-    }
-    socket.set_reuse_address(true)?;
-    socket.set_reuse_port(true)?;
-    socket.set_nonblocking(true)?;
-    // macOS caps these per host; retain kernel defaults if larger buffers are rejected.
-    let _ = socket.set_recv_buffer_size(4 * 1024 * 1024);
-    let _ = socket.set_send_buffer_size(4 * 1024 * 1024);
-    socket.bind(&local.into())?;
-    if let Some(endpoint) = endpoint {
-        socket.connect(&endpoint.into())?;
-    }
-    Ok(socket.into())
-}
-fn flow(port: u16, endpoint: SocketAddr) -> io::Result<UdpSocket> {
-    bind_udp(
-        SocketAddr::new(
-            if endpoint.is_ipv4() {
-                "0.0.0.0".parse().unwrap()
-            } else {
-                "::".parse().unwrap()
-            },
-            port,
-        ),
-        Some(endpoint),
-    )
+    _wildcards: Arc<Vec<UdpSocket>>,
 }
 fn register(poll: &Poll, fd: i32, token: Token, interest: Interest) -> io::Result<()> {
     poll.registry()
@@ -206,10 +168,32 @@ fn register(poll: &Poll, fd: i32, token: Token, interest: Interest) -> io::Resul
 
 impl Runtime {
     pub fn start(config: &Config, cipher: Cipher, tun: Arc<Tunnel>) -> Result<Self> {
-        let v4 = bind_udp(([0, 0, 0, 0], config.listen_port).into(), None)?;
-        let port = v4.local_addr()?.port();
-        let v6 = bind_udp((std::net::Ipv6Addr::UNSPECIFIED, port).into(), None)?;
-        let wildcards = Arc::new([v4, v6]);
+        Self::start_with_backend(config, cipher, tun, Backend::default())
+    }
+    pub fn start_with_backend(
+        config: &Config,
+        cipher: Cipher,
+        tun: Arc<Tunnel>,
+        backend: Backend,
+    ) -> Result<Self> {
+        let (port, wildcards) = match backend {
+            Backend::Bsd => {
+                let v4 = bind_udp(([0, 0, 0, 0], config.listen_port).into(), None)?;
+                let port = v4.local_addr()?.port();
+                let v6 = bind_udp((std::net::Ipv6Addr::UNSPECIFIED, port).into(), None)?;
+                (port, vec![v4, v6])
+            }
+            #[cfg(feature = "apple-network")]
+            Backend::Network => {
+                anyhow::ensure!(
+                    config.private_key == [0; 32]
+                        || config.peers.values().all(|peer| peer.endpoint.is_some()),
+                    "Network.framework experiment requires a configured endpoint for every peer"
+                );
+                (config.listen_port, Vec::new())
+            }
+        };
+        let wildcards = Arc::new(wildcards);
         let stop = Arc::new(AtomicBool::new(false));
         let failed = Arc::new(AtomicBool::new(false));
         let private = x25519::StaticSecret::from(config.private_key);
@@ -223,10 +207,10 @@ impl Runtime {
                 let tx_poll = Poll::new()?;
                 let socket = peer
                     .endpoint
-                    .map(|e| flow(port, e).map(Arc::new))
+                    .map(|e| PeerSocket::connect(backend, port, e).map(Arc::new))
                     .transpose()?;
                 if let Some(s) = &socket {
-                    register(&rx_poll, s.as_raw_fd(), UDP, Interest::READABLE)?;
+                    register(&rx_poll, s.rx_fd(), UDP, Interest::READABLE)?;
                 }
                 let shared = Arc::new(SharedPeer {
                     rx: Inbox::new(&rx_poll)?,
@@ -309,6 +293,7 @@ impl Runtime {
                 socket,
                 endpoint: peer.endpoint,
                 port,
+                backend,
                 tun: tun.clone(),
                 routing: routing.clone(),
                 pool: pool.clone(),
@@ -376,7 +361,7 @@ struct SendWorker {
     id: usize,
     poll: Poll,
     shared: Arc<SharedPeer>,
-    socket: Option<Arc<UdpSocket>>,
+    socket: Option<Arc<PeerSocket>>,
     sender: Option<TransportSender>,
     tun: Arc<Tunnel>,
     routing: Arc<Routing>,
@@ -410,9 +395,9 @@ impl SendWorker {
                 let control = std::mem::take(&mut *self.shared.control.lock().unwrap());
                 if let Some(socket) = control.socket {
                     if registered {
-                        self.poll.registry().deregister(&mut SourceFd(
-                            &self.socket.as_ref().unwrap().as_raw_fd(),
-                        ))?;
+                        self.poll
+                            .registry()
+                            .deregister(&mut SourceFd(&self.socket.as_ref().unwrap().tx_fd()))?;
                         registered = false;
                     }
                     self.socket = Some(socket);
@@ -517,10 +502,11 @@ impl SendWorker {
                 self.shared.activity.lock().unwrap().merge(activity);
             }
             if !blocked && let Some(socket) = &self.socket {
-                match writer.flush(socket.as_raw_fd(), false, &mut self.network) {
+                match socket.flush(&mut writer, &mut self.network) {
                     Ok(_) => {}
                     Err(e) if e.kind() == io::ErrorKind::WouldBlock => blocked = true,
                     Err(e) if e.kind() == io::ErrorKind::Interrupted => {}
+                    Err(e) if socket.is_network() => return Err(e.into()),
                     Err(_) => {
                         // flush already discarded the ambiguous attempted prefix.
                         self.shared.drop_packet();
@@ -529,12 +515,12 @@ impl SendWorker {
             }
             if let Some(socket) = &self.socket {
                 if blocked && !registered {
-                    register(&self.poll, socket.as_raw_fd(), UDP, Interest::WRITABLE)?;
+                    register(&self.poll, socket.tx_fd(), UDP, socket.tx_interest())?;
                     registered = true;
                 } else if !blocked && registered {
                     self.poll
                         .registry()
-                        .deregister(&mut SourceFd(&socket.as_raw_fd()))?;
+                        .deregister(&mut SourceFd(&socket.tx_fd()))?;
                     registered = false;
                 }
             }
@@ -564,7 +550,11 @@ impl SendWorker {
                             readable = true;
                         }
                         if e.token() == UDP
-                            && (e.is_writable() || e.is_error() || e.is_write_closed())
+                            && (e.is_writable()
+                                || e.is_readable()
+                                || e.is_error()
+                                || e.is_write_closed()
+                                || e.is_read_closed())
                         {
                             blocked = false;
                         }
@@ -582,13 +572,14 @@ struct ReceiveWorker {
     tunnel: Tunn,
     poll: Poll,
     shared: Arc<SharedPeer>,
-    socket: Option<Arc<UdpSocket>>,
+    socket: Option<Arc<PeerSocket>>,
     endpoint: Option<SocketAddr>,
     port: u16,
+    backend: Backend,
     tun: Arc<Tunnel>,
     routing: Arc<Routing>,
     pool: Pool,
-    wildcards: Arc<[UdpSocket; 2]>,
+    wildcards: Arc<Vec<UdpSocket>>,
     stop: Arc<AtomicBool>,
     private: x25519::StaticSecret,
     public: x25519::PublicKey,
@@ -614,12 +605,12 @@ impl ReceiveWorker {
         if self.endpoint == Some(endpoint) && self.socket.is_some() {
             return Ok(());
         }
-        let socket = Arc::new(flow(self.port, endpoint)?);
-        register(&self.poll, socket.as_raw_fd(), UDP, Interest::READABLE)?;
+        let socket = Arc::new(PeerSocket::connect(self.backend, self.port, endpoint)?);
+        register(&self.poll, socket.rx_fd(), UDP, Interest::READABLE)?;
         if let Some(old) = &self.socket {
             self.poll
                 .registry()
-                .deregister(&mut SourceFd(&old.as_raw_fd()))?;
+                .deregister(&mut SourceFd(&old.rx_fd()))?;
         }
         self.socket = Some(socket.clone());
         self.endpoint = Some(endpoint);
@@ -703,8 +694,13 @@ impl ReceiveWorker {
             self.output(output);
         } else {
             // Unauthenticated cookie replies go only to the requesting address.
-            let socket = &self.wildcards[usize::from(source.is_ipv6())];
-            let _ = socket.send_to(output.data(), source);
+            if let Some(socket) = self.wildcards.get(usize::from(source.is_ipv6())) {
+                let _ = socket.send_to(output.data(), source);
+            } else {
+                // In the Network.framework experiment, connected callbacks
+                // can only deliver the already configured peer endpoint.
+                self.output(output);
+            }
         }
     }
     fn inject(&mut self, packet: Packet) {
@@ -847,15 +843,19 @@ impl ReceiveWorker {
                 if !self.readable[token.0] || self.injection.len() > QUEUE - BATCH {
                     continue;
                 }
+                let connected = self.socket.clone();
                 let socket = if token == UDP {
-                    self.socket.as_ref().map(|s| s.as_raw_fd())
+                    connected.as_ref().map(|s| s.rx_fd())
                 } else {
-                    Some(self.wildcards[usize::from(token == WILDCARD6)].as_raw_fd())
+                    self.wildcards
+                        .get(usize::from(token == WILDCARD6))
+                        .map(|s| s.as_raw_fd())
                 };
                 let Some(fd) = socket else {
                     continue;
                 };
-                match receiver.receive(fd, false, |r| {
+                let pool = self.pool.clone();
+                let consume = |r: batch::Received| {
                     if let Some(source) = r.source {
                         if token == UDP {
                             self.wire(r.packet, source);
@@ -863,12 +863,21 @@ impl ReceiveWorker {
                             self.dispatch_wire(r.packet, source);
                         }
                     }
-                }) {
+                };
+                let result = if token == UDP {
+                    connected
+                        .as_ref()
+                        .unwrap()
+                        .receive(&mut receiver, &pool, consume)
+                } else {
+                    receiver.receive(fd, false, consume)
+                };
+                match result {
                     Ok(0) => self.readable[token.0] = false,
                     Ok(_) => {}
                     Err(e) if e.kind() == io::ErrorKind::WouldBlock => {
                         // A roaming update may have installed a different fd during dispatch.
-                        if token != UDP || self.socket.as_ref().map(|s| s.as_raw_fd()) == Some(fd) {
+                        if token != UDP || self.socket.as_ref().map(|s| s.rx_fd()) == Some(fd) {
                             self.readable[token.0] = false;
                         }
                     }
@@ -877,6 +886,11 @@ impl ReceiveWorker {
                             e.kind(),
                             io::ErrorKind::Interrupted | io::ErrorKind::OutOfMemory
                         ) => {}
+                    Err(e)
+                        if token == UDP && connected.as_ref().is_some_and(|s| s.is_network()) =>
+                    {
+                        return Err(e.into());
+                    }
                     Err(_) => {
                         self.shared.drop_packet();
                     }

@@ -287,3 +287,7 @@ received 2.508 Gbit/s with 43.2% loss. TCP's 9.407 Gbit/s baseline has a differe
 segmentation-offload path. The newly attached Apple Gigabit Ethernet adapter
 advertises no additional UDP acceleration. These observations support a kernel
 packet-processing bottleneck but do not establish a macOS-wide throughput cap.
+
+The [Network.framework experiment](network-framework-benchmark.md) provides an
+opt-in transmit benchmark with raw/AES/ChaCha modes and a portable remote sink.
+It tests an alternative userspace transport API without changing the daemon.

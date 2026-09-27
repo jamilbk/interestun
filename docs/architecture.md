@@ -128,6 +128,12 @@ threading, backpressure, control ownership, and validation differences.
 
 ## Next performance experiments
 
+The macOS experiment selects the [UDP backend at build time](apple-udp-backends.md).
+Network.framework is now the default and uses no BSD UDP listeners. It retains
+BoringTun's TX/RX ownership, with bounded callback staging and notification
+descriptors. It currently requires configured peer endpoints; the discovery and
+roaming behavior described above applies to the BSD comparison build.
+
 The first two-host TCP measurements are recorded in [performance](performance.md).
 Measure loss and CPU per packet, sweep
 batch sizes and peer counts, then profile the dispatcher, packet-pool contention,

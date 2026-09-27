@@ -167,3 +167,14 @@ UDP acceleration and fewer relevant segmentation capabilities. Its Thunderbolt
 bus reports 10 Gbit/s, but its Ethernet port is limited to 1 Gbit/s. It cannot
 test the existing 3–4 Gbit/s send ceiling. Flags describe driver-advertised
 capabilities, not proof of hardware offload use for a particular packet.
+
+## Alternative transport path
+
+The missing UDP segmentation API does not exhaust the available approaches.
+Network.framework can use Apple's userspace transport stack, with a different
+packet exchange path from BSD UDP. The opt-in
+[Network.framework benchmark](network-framework-benchmark.md) compares raw and
+BoringTun-encrypted sends through both APIs without changing the live tunnel.
+API selection alone does not prove a particular connection uses that path.
+The [build-time daemon experiment](apple-udp-backends.md) also tests the actual
+tunnel using Network.framework exclusively for UDP.
