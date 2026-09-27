@@ -13,6 +13,7 @@ parser.add_argument("--max-workers", type=int, default=1)
 parser.add_argument("--samples", type=int, default=5)
 parser.add_argument("--packets", type=int, default=200000)
 parser.add_argument("--output", type=Path, default=Path("transport.csv"))
+parser.add_argument("--in-place", action="store_true")
 args = parser.parse_args()
 
 
@@ -42,9 +43,11 @@ metadata = {
     "workers": list(range(1, args.max_workers + 1)),
     "cargo_lock_sha256": sha("Cargo.lock"),
     "harness_sha256": sha("benches/transport.rs"),
+    "in_place": args.in_place,
     "scope": "seal+open Tunn roundtrip; payload bytes counted once; no socket/utun I/O",
 }
 env = os.environ.copy()
+env["IN_PLACE"] = "1" if args.in_place else "0"
 env.update(MAX_WORKERS=str(args.max_workers), SAMPLES=str(args.samples), PACKETS=str(args.packets))
 with args.output.open("w") as output:
     subprocess.run(["cargo", "bench", "--locked", "--bench", "transport"], env=env, stdout=output, check=True)

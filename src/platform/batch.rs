@@ -1,6 +1,6 @@
 //! Darwin batched datagram I/O, with per-message fallback when private symbols are absent.
 //! ABI and runtime resolution follow Firezone's Apple TUN implementation.
-use crate::packet::{BATCH, CAPACITY, Packet, Pool};
+use crate::packet::{BATCH, CAPACITY, HEADROOM, Packet, Pool};
 use std::{
     collections::VecDeque,
     ffi::c_void,
@@ -96,6 +96,60 @@ fn address(a: &libc::sockaddr_storage) -> Option<SocketAddr> {
     }
 }
 
+// Diagnostic builds only; production builds have no counter or TLS overhead.
+#[cfg(feature = "io-metrics")]
+mod metrics {
+    use std::{
+        cell::RefCell,
+        io,
+        time::{Duration, Instant},
+    };
+    #[derive(Clone, Copy, Default)]
+    struct Counts {
+        calls: u64,
+        requested: u64,
+        packets: u64,
+        blocked: u64,
+        errors: u64,
+    }
+    struct Metrics {
+        counts: [Counts; 4],
+        next: Instant,
+    }
+    thread_local! {
+        static METRICS: RefCell<Metrics> = RefCell::new(Metrics {
+            counts: [Counts::default(); 4], next: Instant::now() + Duration::from_secs(5),
+        });
+    }
+    pub(super) fn record(tun: bool, send: bool, requested: usize, result: &io::Result<usize>) {
+        METRICS.with_borrow_mut(|m| {
+            let c = &mut m.counts[usize::from(!tun) * 2 + usize::from(send)];
+            c.calls += 1;
+            c.requested += requested as u64;
+            match result {
+                Ok(n) => c.packets += *n as u64,
+                Err(e) if e.kind() == io::ErrorKind::WouldBlock => c.blocked += 1,
+                Err(_) => c.errors += 1,
+            }
+        });
+    }
+    pub(super) fn report(peer: usize, now: Instant) {
+        METRICS.with_borrow_mut(|m| {
+            if now < m.next { return; }
+            for (name, c) in ["utun-rx", "utun-tx", "udp-rx", "udp-tx"].into_iter().zip(m.counts) {
+                eprintln!("peer={peer} io={name} calls={} requested={} packets={} would_block={} errors={}",
+                    c.calls, c.requested, c.packets, c.blocked, c.errors);
+            }
+            m.counts = [Counts::default(); 4];
+            m.next = now + Duration::from_secs(5);
+        });
+    }
+}
+#[cfg(feature = "io-metrics")]
+pub fn report_metrics(peer: usize, now: std::time::Instant) {
+    metrics::report(peer, now);
+}
+
 pub struct Received {
     pub packet: Packet,
     pub source: Option<SocketAddr>,
@@ -128,6 +182,7 @@ impl Receiver {
             return Err(io::Error::from(io::ErrorKind::OutOfMemory));
         }
         let count = self.slots.len();
+        let start = if tun { HEADROOM } else { 0 };
         let mut afs = [[0u8; 4]; BATCH];
         let mut iovs = [[IOV; 2]; BATCH];
         let mut msgs = [EMPTY; BATCH];
@@ -135,8 +190,8 @@ impl Receiver {
         let mut addresses: [libc::sockaddr_storage; BATCH] = unsafe { std::mem::zeroed() };
         for i in 0..count {
             let payload = libc::iovec {
-                iov_base: self.slots[i].buffer().as_mut_ptr().cast(),
-                iov_len: CAPACITY,
+                iov_base: self.slots[i].buffer()[start..].as_mut_ptr().cast(),
+                iov_len: CAPACITY - start,
             };
             iovs[i][0] = if tun {
                 libc::iovec {
@@ -166,12 +221,15 @@ impl Receiver {
         // SAFETY: All message/iovec pointers refer to live, exclusive buffers for this synchronous call.
         let n = unsafe {
             if let Some((recv, _)) = syscalls() {
-                result(recv(
+                let result = result(recv(
                     fd,
                     msgs.as_mut_ptr(),
                     count as u32,
                     libc::MSG_DONTWAIT,
-                ))?
+                ));
+                #[cfg(feature = "io-metrics")]
+                metrics::record(tun, false, count, &result);
+                result?
             } else {
                 let mut n = 0;
                 for msg in &mut msgs[..count] {
@@ -184,7 +242,18 @@ impl Receiver {
                         msg_controllen: 0,
                         msg_flags: 0,
                     };
-                    match result(libc::recvmsg(fd, &mut hdr, libc::MSG_DONTWAIT)) {
+                    let result = result(libc::recvmsg(fd, &mut hdr, libc::MSG_DONTWAIT));
+                    #[cfg(feature = "io-metrics")]
+                    metrics::record(
+                        tun,
+                        false,
+                        1,
+                        &result
+                            .as_ref()
+                            .map(|_| 1)
+                            .map_err(|e| io::Error::from(e.kind())),
+                    );
+                    match result {
                         Ok(len) => {
                             msg.datalen = len;
                             msg.flags = hdr.msg_flags;
@@ -204,10 +273,11 @@ impl Receiver {
             // Valid MTU <= 2000 traffic (plus <= 32 WireGuard bytes) never fills
             // this buffer, so reject a full slot even when flags are missing.
             if msgs[i].flags & (libc::MSG_TRUNC | libc::MSG_CTRUNC) != 0
-                || len >= CAPACITY + if tun { 4 } else { 0 }
+                || len >= CAPACITY - start + if tun { 4 } else { 0 }
             {
                 continue;
             }
+            packet.start = start;
             if tun {
                 let af = u32::from_be_bytes(afs[i]) as i32;
                 if len < 4 || !matches!(af, libc::AF_INET | libc::AF_INET6) {
@@ -285,6 +355,8 @@ pub fn flush(fd: RawFd, tun: bool, queue: &mut VecDeque<Packet>) -> io::Result<u
             result(libc::sendmsg(fd, &hdr, libc::MSG_DONTWAIT)).map(|_| 1)
         }
     };
+    #[cfg(feature = "io-metrics")]
+    metrics::record(tun, true, if available() { count } else { 1 }, &result);
     match result {
         Ok(0) => Err(io::Error::from(io::ErrorKind::WouldBlock)),
         Ok(n) => {
@@ -311,6 +383,38 @@ mod tests {
         };
         // SAFETY: pfd is a live, initialized single-element poll array.
         assert_eq!(unsafe { libc::poll(&mut pfd, 1, 1000) }, 1);
+    }
+    #[test]
+    fn maximum_utun_packet_roundtrips_with_header_space() {
+        use std::os::fd::AsRawFd;
+        let app = UdpSocket::bind("127.0.0.1:0").unwrap();
+        let kernel = UdpSocket::bind("127.0.0.1:0").unwrap();
+        app.connect(kernel.local_addr().unwrap()).unwrap();
+        kernel.connect(app.local_addr().unwrap()).unwrap();
+        app.set_nonblocking(true).unwrap();
+        kernel
+            .set_read_timeout(Some(std::time::Duration::from_secs(1)))
+            .unwrap();
+        let mut bytes = vec![0; 2004];
+        bytes[..4].copy_from_slice(&(libc::AF_INET as u32).to_be_bytes());
+        bytes[4] = 0x45;
+        bytes[6..8].copy_from_slice(&2000u16.to_be_bytes());
+        bytes[2003] = 123;
+        kernel.send(&bytes).unwrap();
+        wait_readable(app.as_raw_fd());
+        let mut receiver = Receiver::new(crate::packet::pool(32));
+        let mut pending = VecDeque::new();
+        receiver
+            .receive(app.as_raw_fd(), true, |r| {
+                assert_eq!(r.packet.start, HEADROOM);
+                assert_eq!(r.packet.data(), &bytes[4..]);
+                pending.push_back(r.packet);
+            })
+            .unwrap();
+        assert_eq!(flush(app.as_raw_fd(), true, &mut pending).unwrap(), 1);
+        let mut out = [0; 2048];
+        let len = kernel.recv(&mut out).unwrap();
+        assert_eq!(&out[..len], bytes);
     }
     #[test]
     fn pool_exhaustion_is_not_socket_would_block() {

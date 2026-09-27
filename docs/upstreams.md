@@ -5,6 +5,8 @@
 - Cipher extension commit: `d60ac5643f8241e12fa6d35aa8e353079e96e703`.
   Branch:
   https://github.com/jamilbk/boringtun/tree/interestun-cipher-suites
+- In-place transport API commit: `74e450f6072b04d5dc198473eb9859ac04899f7f`
+  (current dependency pin; same cipher transcript and wire format).
 - Firezone reference checkout: `f533bded5ea40d3d24ac3498f5df8421546dffbc`,
   https://github.com/firezone/firezone/tree/f533bded5ea40d3d24ac3498f5df8421546dffbc
   - `rust/libs/connlib/tun/src/apple/{sys,bulk}.rs`: Darwin batch ABI,

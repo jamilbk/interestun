@@ -365,12 +365,15 @@ fn read_wintun(
     let mut scratch = [0; packet::CAPACITY];
     while !stop.load(Ordering::Acquire) {
         match tun.receive(&mut scratch) {
+            Ok(len) if len > packet::CAPACITY - 32 => continue,
             Ok(len) => {
                 if let Some(id) =
                     packet::addresses(&scratch[..len]).and_then(|(_, dst)| routing.lookup(dst))
                 {
                     if let Some(mut packet) = Packet::new(pool) {
-                        packet.buffer()[..len].copy_from_slice(&scratch[..len]);
+                        packet.start = packet::HEADROOM;
+                        packet.buffer()[packet::HEADROOM..packet::HEADROOM + len]
+                            .copy_from_slice(&scratch[..len]);
                         packet.len = len;
                         routing.peers[id].send(Input::Plain(packet));
                     } else {
@@ -547,7 +550,32 @@ impl Worker {
         self.endpoint = Some(endpoint);
         Ok(())
     }
-    fn wire(&mut self, input: Packet, source: SocketAddr) {
+    fn wire(&mut self, mut input: Packet, source: SocketAddr) {
+        if input.data().first() == Some(&4) {
+            let len = match self
+                .tunnel
+                .decapsulate_data_in_place_at(input.data_mut(), Instant::now())
+            {
+                TunnResult::WriteToTunnelV4(data, _) | TunnResult::WriteToTunnelV6(data, _) => {
+                    data.len()
+                }
+                TunnResult::Done => 0,
+                _ => {
+                    self.drop_packet();
+                    return;
+                }
+            };
+            if self.new_endpoint(source).is_err() {
+                self.drop_packet();
+                return;
+            }
+            if len != 0 {
+                input.start += packet::HEADROOM;
+                input.len = len;
+                self.inject(input);
+            }
+            return;
+        }
         let Some(mut output) = Packet::new(&self.pool) else {
             self.drop_packet();
             return;
@@ -593,15 +621,7 @@ impl Worker {
         }
         output.len = len;
         if inject {
-            // Inbound source validation must use the same global longest-prefix lookup as outbound routing.
-            if packet::addresses(output.data())
-                .is_some_and(|(src, _)| self.routing.lookup(src) == Some(self.id))
-                && self.injection.len() < QUEUE
-            {
-                self.injection.push_back(output);
-            } else {
-                self.drop_packet();
-            }
+            self.inject(output);
         } else if authenticated {
             if self.network.len() < QUEUE {
                 self.network.push_back(output);
@@ -612,6 +632,17 @@ impl Worker {
             // Unauthenticated cookie replies go only to the requesting address.
             let socket = &self.wildcards[usize::from(source.is_ipv6())];
             let _ = socket.send_to(output.data(), source);
+        }
+    }
+    fn inject(&mut self, packet: Packet) {
+        // Validate against the global longest-prefix route before injection.
+        if packet::addresses(packet.data())
+            .is_some_and(|(src, _)| self.routing.lookup(src) == Some(self.id))
+            && self.injection.len() < QUEUE
+        {
+            self.injection.push_back(packet);
+        } else {
+            self.drop_packet();
         }
     }
     fn dispatch_wire(&mut self, packet: Packet, source: SocketAddr) {
@@ -666,26 +697,31 @@ impl Worker {
     fn plaintext(&mut self) -> bool {
         let mut processed = 0;
         while processed < BATCH * 4 && self.network.len() < QUEUE {
-            let Some(input) = self.plain.front() else {
-                break;
-            };
             if self.endpoint.is_none() {
                 break;
             }
-            let Some(mut output) = Packet::new(&self.pool) else {
+            let Some(mut input) = self.plain.pop_front() else {
                 break;
             };
-            match self
-                .tunnel
-                .encapsulate_data_at(input.data(), output.buffer(), Instant::now())
-            {
+            debug_assert_eq!(input.start, packet::HEADROOM);
+            let plaintext_len = input.len;
+            match self.tunnel.encapsulate_data_in_place_at(
+                plaintext_len,
+                input.buffer(),
+                Instant::now(),
+            ) {
                 Ok(len) => {
-                    output.len = len;
-                    self.network.push_back(output);
-                    self.plain.pop_front();
+                    input.start = 0;
+                    input.len = len;
+                    self.network.push_back(input);
                     processed += 1;
                 }
                 Err(boringtun::noise::errors::WireGuardError::NoCurrentSession) => {
+                    // NoCurrentSession leaves the plaintext untouched.
+                    self.plain.push_front(input);
+                    let Some(mut output) = Packet::new(&self.pool) else {
+                        break;
+                    };
                     if let TunnResult::WriteToNetwork(data) = self
                         .tunnel
                         .format_handshake_initiation_at(output.buffer(), false, Instant::now())
@@ -696,7 +732,6 @@ impl Worker {
                     break;
                 }
                 Err(_) => {
-                    self.plain.pop_front();
                     self.drop_packet();
                     processed += 1;
                 }
@@ -951,6 +986,8 @@ impl Worker {
             #[cfg(windows)]
             self.flush_windows()?;
             if now >= snapshot_at {
+                #[cfg(all(target_os = "macos", feature = "io-metrics"))]
+                batch::report_metrics(self.id, now);
                 let (elapsed, tx, rx, _, _) = self.tunnel.stats_at(now);
                 let handshake = elapsed
                     .and_then(|d| SystemTime::now().checked_sub(d))

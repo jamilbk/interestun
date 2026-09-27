@@ -70,6 +70,10 @@ for Wintun, shared UDP listeners, and IOCP differences.
 - `sendmsg_x` / `recvmsg_x` batch up to 32 packets on utun and connected UDP. Runtime
   symbol resolution falls back to `sendmsg` / `recvmsg` if those private APIs are
   absent. utun's four-byte big-endian address-family header uses scatter/gather I/O.
+- Transport payloads are encrypted/decrypted in their receive buffer. utun reads
+  reserve 16 bytes for the transport header; UDP decrypts retain that header and
+  inject the plaintext slice directly. Handshakes use the existing separate-buffer
+  path. Kernel socket/utun copies still exist.
 - Reusable 2048-byte packet buffers, bounded queues, coalesced worker wakeups, a
   prefix trie, and bounded drain budgets avoid unbounded allocation and keep
   timers responsive under load. MTU is explicitly set, default 1420, range 1280–2000.

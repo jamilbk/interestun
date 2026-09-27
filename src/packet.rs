@@ -5,10 +5,12 @@ use std::{
 };
 pub const CAPACITY: usize = 2048;
 pub const BATCH: usize = 32;
+pub const HEADROOM: usize = 16;
 pub type Pool = Arc<ArrayQueue<Box<[u8; CAPACITY]>>>;
 pub struct Packet {
     buffer: Option<Box<[u8; CAPACITY]>>,
     pub len: usize,
+    pub start: usize,
     pool: Pool,
 }
 impl Packet {
@@ -16,11 +18,16 @@ impl Packet {
         Some(Self {
             buffer: Some(pool.pop()?),
             len: 0,
+            start: 0,
             pool: pool.clone(),
         })
     }
     pub fn data(&self) -> &[u8] {
-        &self.buffer.as_ref().unwrap()[..self.len]
+        &self.buffer.as_ref().unwrap()[self.start..self.start + self.len]
+    }
+    pub fn data_mut(&mut self) -> &mut [u8] {
+        let end = self.start + self.len;
+        &mut self.buffer.as_mut().unwrap()[self.start..end]
     }
     pub fn buffer(&mut self) -> &mut [u8] {
         self.buffer.as_mut().unwrap().as_mut_slice()

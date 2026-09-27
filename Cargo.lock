@@ -95,7 +95,7 @@ dependencies = [
 [[package]]
 name = "boringtun"
 version = "0.7.0"
-source = "git+https://github.com/jamilbk/boringtun?rev=d60ac5643f8241e12fa6d35aa8e353079e96e703#d60ac5643f8241e12fa6d35aa8e353079e96e703"
+source = "git+https://github.com/jamilbk/boringtun?rev=74e450f6072b04d5dc198473eb9859ac04899f7f#74e450f6072b04d5dc198473eb9859ac04899f7f"
 dependencies = [
  "aead",
  "blake2",

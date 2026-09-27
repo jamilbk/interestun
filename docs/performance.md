@@ -124,3 +124,71 @@ Validation includes 192-packet bursts exceeding the 128-packet worker drain
 budget, traffic resuming after idle, two peers, IPv4/IPv6, endpoint roaming,
 both ciphers, pool exhaustion versus kernel WouldBlock, and the opt-in real-utun
 integration test. Crypto and thread ownership were not changed.
+
+
+## In-place transport API
+
+The in-place fork (`74e450f`) preserves the cipher, transcript, framing, counters,
+replay policy, timers, and IP validation. It removes the payload copies performed
+by BoringTun's separate-buffer API. The macOS worker also avoids acquiring and
+recycling a second pooled buffer for every transport packet.
+
+The following comparison uses the in-memory harness on the same M2 Pro, on AC
+power with AC Low Power Mode disabled, inherited QoS, one worker, three samples,
+one million measured roundtrips and 10,000 warmup records per sample. Payload
+bytes (including IP headers) are counted once. These rates include both seal and
+open; they are not tunnel throughput. The copy run preceded the in-place run;
+background load, core placement, and thermal state were not fixed. The in-place
+harness recycles the decrypted payload for the next record; it does not measure
+kernel receive, send, pools, or inter-worker dispatch.
+
+| Cipher / IP bytes | Copy Gbit/s | In-place Gbit/s | Change |
+| --- | ---: | ---: | ---: |
+| Aes256Gcm / 64 | 3.791 | 4.445 | +17.3% |
+| Aes256Gcm / 1420 | 18.437 | 20.875 | +13.2% |
+| ChaCha20Poly1305 / 64 | 1.204 | 1.258 | +4.5% |
+| ChaCha20Poly1305 / 1420 | 5.229 | 5.383 | +2.9% |
+
+Raw measurements and environment/build metadata:
+[copy CSV](benchmarks/transport-copy-ac.csv),
+[copy metadata](benchmarks/transport-copy-ac.json),
+[in-place CSV](benchmarks/transport-inplace-ac.csv),
+[in-place metadata](benchmarks/transport-inplace-ac.json).
+
+```sh
+python3 scripts/bench.py --samples 3 --packets 1000000 --output copy.csv
+python3 scripts/bench.py --in-place --samples 3 --packets 1000000 --output inplace.csv
+```
+
+Correctness gates: the fork's default and no-default-feature suites, 512
+payload/alignment differential cases per cipher against the existing API,
+known-answer coverage, invalid tags, wrong indices, replay, size/nonce boundaries,
+public API/session/statistics behavior, interestun's two-peer dataplane/roaming
+tests, maximum-MTU header-space roundtrip, and real-utun IPv4/IPv6 tests using
+both ciphers. No AEAD primitive/assembly was changed and no new constant-time
+or sanitizer audit was performed. Fork library/test clippy passes; its existing
+x25519 benchmark has an unrelated redundant-closure lint under all-target clippy.
+
+Two-host testing was interrupted when the Windows tunnel address stopped
+responding; LAN iperf remained reachable and handshakes continued. No two-host
+throughput improvement is claimed for this change.
+
+### Measure actual batch utilization
+
+A diagnostic build reports per-peer utun/UDP receive/send counts to stderr every
+five seconds. Production builds compile out the counters and thread-local state.
+
+```sh
+CARGO_TARGET_DIR=target cargo build --release --locked --features io-metrics
+sudo ./target/release/interestun utun
+```
+
+Each row reports `calls`, `requested`, `packets`, `would_block`, and `errors` for
+one direction over that interval. `packets / calls` is effective syscall batch
+size including unsuccessful calls. For sends, compare packets with requested
+messages to spot partial writes/backpressure. Receive requests describe slot
+capacity, not known queued packets. UDP counters combine connected and wildcard
+sockets on that peer worker. Counters measure completed kernel I/O, not successful
+packet authentication or application delivery. Fallback per-message calls are
+counted individually. Handshake cookie `send_to` calls are outside these counters.
+Use diagnostic runs for attribution; compare production builds for throughput.

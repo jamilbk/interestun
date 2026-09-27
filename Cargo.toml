@@ -6,9 +6,13 @@ rust-version = "1.88"
 license = "BSD-3-Clause"
 description = "A peer-threaded macOS and Windows userspace tunnel"
 
+[features]
+default = []
+io-metrics = []
+
 [dependencies]
 anyhow = "1"
-boringtun = { git = "https://github.com/jamilbk/boringtun", rev = "d60ac5643f8241e12fa6d35aa8e353079e96e703", default-features = false }
+boringtun = { git = "https://github.com/jamilbk/boringtun", rev = "74e450f6072b04d5dc198473eb9859ac04899f7f", default-features = false }
 clap = { version = "4", features = ["derive"] }
 hex = "0.4"
 ipnet = "2"

@@ -16,6 +16,7 @@ fn env_number(name: &str, default: u64) -> u64 {
         .unwrap_or(default)
 }
 fn main() {
+    let in_place = env_number("IN_PLACE", 0) != 0;
     let count = env_number("PACKETS", 200_000).clamp(1, 8_000_000);
     let samples = env_number("SAMPLES", 5);
     let max_workers = env_number("MAX_WORKERS", 1).clamp(1, 64) as usize;
@@ -80,18 +81,32 @@ fn main() {
                             let mut ip = vec![0; size];
                             ip[0] = 0x45;
                             ip[2..4].copy_from_slice(&(size as u16).to_be_bytes());
+                            x[16..16 + size].copy_from_slice(&ip);
+                            let mut roundtrip = || {
+                                if in_place {
+                                    let n = a
+                                        .encapsulate_data_in_place_at(size, black_box(&mut x), now)
+                                        .unwrap();
+                                    assert!(matches!(
+                                        black_box(b.decapsulate_data_in_place_at(&mut x[..n], now)),
+                                        TunnResult::WriteToTunnelV4(_, _)
+                                    ));
+                                } else {
+                                    let n =
+                                        a.encapsulate_data_at(black_box(&ip), &mut x, now).unwrap();
+                                    assert!(matches!(
+                                        black_box(b.decapsulate_at(None, &x[..n], &mut y, now)),
+                                        TunnResult::WriteToTunnelV4(_, _)
+                                    ));
+                                }
+                            };
                             for _ in 0..10_000 {
-                                let n = a.encapsulate_data_at(&ip, &mut x, now).unwrap();
-                                black_box(b.decapsulate_at(None, &x[..n], &mut y, now));
+                                roundtrip();
                             }
                             ready.wait();
                             go.wait();
                             for _ in 0..count {
-                                let n = a.encapsulate_data_at(black_box(&ip), &mut x, now).unwrap();
-                                assert!(matches!(
-                                    black_box(b.decapsulate_at(None, &x[..n], &mut y, now)),
-                                    TunnResult::WriteToTunnelV4(_, _)
-                                ));
+                                roundtrip();
                             }
                             start.get().unwrap().elapsed()
                         }));

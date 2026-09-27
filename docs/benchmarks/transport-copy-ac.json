@@ -1,0 +1,23 @@
+{
+  "started_utc": "2026-09-27T18:18:17.786348+00:00",
+  "rustc": "rustc 1.94.0 (4a4ef493e 2026-03-02)\nbinary: rustc\ncommit-hash: 4a4ef493e3a1488c6e321570238084b38948f6db\ncommit-date: 2026-03-02\nhost: aarch64-apple-darwin\nrelease: 1.94.0\nLLVM version: 21.1.8",
+  "os": "Darwin 27.0.0 arm64",
+  "cpu": "Apple M2 Pro",
+  "logical_cpus": "12",
+  "power_before": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=38010979)\t98%; charging; 0:28 remaining present: true",
+  "power_settings": "Battery Power:\n Sleep On Power Button 1\n lowpowermode         1\n standby              1\n ttyskeepawake        1\n hibernatemode        3\n powernap             1\n hibernatefile        /var/vm/sleepimage\n displaysleep         10\n womp                 1\n networkoversleep     0\n sleep                1\n lessbright           0\n tcpkeepalive         1\n disksleep            10\nAC Power:\n Sleep On Power Button 1\n lowpowermode         0\n standby              1\n ttyskeepawake        1\n hibernatemode        3\n powernap             1\n hibernatefile        /var/vm/sleepimage\n displaysleep         30\n womp                 1\n networkoversleep     0\n sleep                0\n tcpkeepalive         1\n disksleep            10",
+  "qos": "inherited default; no affinity or QoS changes",
+  "profile": "release/bench, thin LTO, codegen-units=1, debug=1; no target-cpu override",
+  "rustflags": "",
+  "packets_per_worker": 1000000,
+  "samples": 3,
+  "workers": [
+    1
+  ],
+  "cargo_lock_sha256": "94ebb3d87bbe033a1bf81c8e3d33d83248f331c8741de1a847753f076cdccba1",
+  "harness_sha256": "ad9421f4d1394b2a5e51181d9a1b72b281686b0542095ea447fb00a20d0e84e5",
+  "in_place": false,
+  "scope": "seal+open Tunn roundtrip; payload bytes counted once; no socket/utun I/O",
+  "power_after": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=38010979)\t98%; charging; 0:28 remaining present: true",
+  "finished_utc": "2026-09-27T18:18:34.463518+00:00"
+}

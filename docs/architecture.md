@@ -43,6 +43,15 @@ buffers are rejected even without MSG_TRUNC: Darwin's legacy recvmsg_x path can
 lose that flag during per-message copyout. This was reproduced by the oversized
 UDP test on Darwin 27 and checked against XNU's `bsd/kern/uipc_syscalls.c`.
 
+Transport data uses one packet allocation through receive, encryption/decryption,
+and batched output. macOS utun receives at offset 16, leaving transport-header
+space; the 16-byte tag fits after the maximum 2000-byte IP packet in the existing
+2048-byte buffer. UDP receives at offset zero; authenticated decryption exposes
+the plaintext at offset 16 without moving it. Packet ownership transfers between
+workers unchanged. Handshake output still needs a separate buffer. Wintun's
+reader still copies from its temporary receive buffer, but reserves header space
+so crypto no longer needs another copy. Buffer recycling remains shared/atomic.
+
 Control clients have five-second deadlines, a 1 MiB request limit, and a 32-client
 limit. The main thread uses poll for control sockets only. Signal handlers store
 to an atomic; there is no signal handling thread. Secrets are returned only over
