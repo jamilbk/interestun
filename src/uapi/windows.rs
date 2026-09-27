@@ -360,6 +360,11 @@ mod tests {
             );
         }
         assert_eq!(exchange(&name, b"get=1\n\n"), before);
+        let stats = exchange(&name, b"stats=1\n\n");
+        assert!(stats.contains("wintun_writes=0\n"));
+        assert!(stats.contains("coalesced_segments=0\n"));
+        assert!(!stats.contains("private_key="));
+        assert!(!stats.contains("preshared_key="));
         drop(idle);
         drop(stop);
         server.join().unwrap().unwrap();

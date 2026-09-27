@@ -16,9 +16,17 @@ pub enum Stage {
     SendSetup,
 }
 const STAGES: [&str; 7] = [
-    "utun-read",
+    if cfg!(windows) {
+        "wintun-read"
+    } else {
+        "utun-read"
+    },
     "udp-read",
-    "utun-write",
+    if cfg!(windows) {
+        "wintun-write"
+    } else {
+        "utun-write"
+    },
     "udp-write",
     "encrypt-batch",
     "receive-setup",
@@ -41,6 +49,7 @@ thread_local! {
         counts: [Counts::default(); 7], next: Instant::now() + Duration::from_secs(5),
     });
 }
+#[cfg(target_os = "macos")]
 fn cpu_ns() -> Option<u64> {
     let mut t = libc::timespec {
         tv_sec: 0,
@@ -50,6 +59,30 @@ fn cpu_ns() -> Option<u64> {
     // CPU consumed by the calling thread, excluding time blocked/descheduled.
     let rc = unsafe { libc::clock_gettime(libc::CLOCK_THREAD_CPUTIME_ID, &mut t) };
     (rc == 0).then(|| t.tv_sec as u64 * 1_000_000_000 + t.tv_nsec as u64)
+}
+#[cfg(windows)]
+fn cpu_ns() -> Option<u64> {
+    use windows_sys::Win32::{
+        Foundation::FILETIME,
+        System::Threading::{GetCurrentThread, GetThreadTimes},
+    };
+    let mut created = FILETIME::default();
+    let mut exited = FILETIME::default();
+    let mut kernel = FILETIME::default();
+    let mut user = FILETIME::default();
+    // SAFETY: the pseudo-handle refers to this live thread; all output pointers
+    // reference initialized FILETIME storage. Values are in 100 ns units.
+    let ok = unsafe {
+        GetThreadTimes(
+            GetCurrentThread(),
+            &mut created,
+            &mut exited,
+            &mut kernel,
+            &mut user,
+        )
+    };
+    let ticks = |t: FILETIME| (u64::from(t.dwHighDateTime) << 32) | u64::from(t.dwLowDateTime);
+    (ok != 0).then(|| (ticks(kernel) + ticks(user)) * 100)
 }
 /// A sampled timing span. Scope it around one non-overlapping stage; clocks
 /// themselves have a cost, so use these estimates for attribution, not ceilings.

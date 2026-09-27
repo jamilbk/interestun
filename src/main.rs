@@ -22,6 +22,14 @@ struct Args {
     #[cfg(windows)]
     #[arg(long)]
     wintun_dll: Option<std::path::PathBuf>,
+    /// Disable receive-side TCP coalescing for an A/B throughput comparison.
+    #[cfg(windows)]
+    #[arg(long)]
+    no_tcp_coalescing: bool,
+    /// Ring capacity per direction in MiB (power of two, 1..64).
+    #[cfg(windows)]
+    #[arg(long, default_value_t = 16, value_parser = clap::value_parser!(u32).range(1..=64))]
+    wintun_ring_mib: u32,
     /// Accepted for userspace implementation / wg-quick conventions. Always runs in foreground.
     #[arg(short, long)]
     foreground: bool,
@@ -45,16 +53,21 @@ fn main() -> anyhow::Result<()> {
             Some(path) => path,
             None => std::env::current_exe()?.with_file_name("wintun.dll"),
         };
-        let tun = std::sync::Arc::new(
-            interestun::platform::wintun::Wintun::open(&args.interface, args.mtu, &dll)
-                .with_context(|| {
-                    format!(
-                        "create Wintun adapter using {} (requires Administrator)",
-                        dll.display()
-                    )
-                })?,
-        );
-        interestun::uapi::serve(tun, args.cipher)
+        let mut tun = interestun::platform::wintun::Wintun::open_with_ring_capacity(
+            &args.interface,
+            args.mtu,
+            &dll,
+            args.wintun_ring_mib * 1024 * 1024,
+        )
+        .with_context(|| {
+            format!(
+                "create Wintun adapter using {} (requires Administrator)",
+                dll.display()
+            )
+        })?;
+        tun.set_tcp_coalescing(!args.no_tcp_coalescing);
+        eprintln!("Wintun TCP coalescing: {}", !args.no_tcp_coalescing);
+        interestun::uapi::serve(std::sync::Arc::new(tun), args.cipher)
     }
     #[cfg(not(any(target_os = "macos", windows)))]
     {

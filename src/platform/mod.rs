@@ -1,6 +1,8 @@
 #[cfg(target_os = "macos")]
 pub mod batch;
-#[cfg(all(target_os = "macos", feature = "io-profile"))]
+#[cfg(any(windows, test))]
+pub mod coalesce;
+#[cfg(all(any(windows, target_os = "macos"), feature = "io-profile"))]
 pub mod profile;
 #[cfg(target_os = "macos")]
 pub mod utun;

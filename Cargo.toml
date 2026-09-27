@@ -37,3 +37,7 @@ debug = 1
 [[bench]]
 name = "transport"
 harness = false
+
+[[bench]]
+name = "injection"
+harness = false

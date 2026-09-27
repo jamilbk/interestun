@@ -2,8 +2,8 @@
 
 A barebones Rust userspace tunnel for macOS and Windows, based on Firezone's BoringTun fork.
 One main housekeeping/control thread and one shared adapter (BSD utun or Wintun).
-macOS uses one send thread and one receive thread per peer. Windows currently
-retains one I/O thread per peer plus a Wintun reader thread.
+Both platforms use one send thread and one receive thread per peer. Windows
+also uses a Wintun reader thread and receive-side TCP coalescing.
 This is an experimental implementation, not a production VPN.
 
 The default transport cipher is **AES-256-GCM**. It uses a distinct authenticated

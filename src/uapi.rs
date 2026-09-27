@@ -116,6 +116,16 @@ fn request(
     if input == "get=1\n\n" {
         return Ok(show(config, runtime.as_ref().unwrap()));
     }
+    #[cfg(windows)]
+    if input == "stats=1\n\n" {
+        let mut out = format!("tcp_coalescing={}\n", u8::from(tun.tcp_coalescing()));
+        for (key, peer) in &runtime.as_ref().unwrap().peers {
+            let stats = peer.stats.lock().unwrap().injection;
+            writeln!(out, "public_key={}\nwintun_writes={}\ncoalesced_segments={}\nring_full_retries={}\ndrops={}", hex::encode(key), stats.writes, stats.merged, stats.blocked, peer.drops.load(std::sync::atomic::Ordering::Relaxed)).unwrap();
+        }
+        out.push_str("errno=0\n\n");
+        return Ok(out);
+    }
     let mut base = config.clone();
     // Preserve authenticated endpoint roaming across unrelated configuration requests.
     for (key, shared) in &runtime.as_ref().unwrap().peers {

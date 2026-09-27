@@ -17,6 +17,10 @@ use windows_sys::Win32::{
 /// Raw IP packets, without utun's address-family prefix. Implementations must be
 /// safe for concurrent writes; the runtime uses one receive/wait thread.
 pub trait PacketIo: Send + Sync {
+    /// Whether the adapter accepts fully checksummed TCP packets larger than MTU.
+    fn tcp_coalescing(&self) -> bool {
+        false
+    }
     fn name(&self) -> &str;
     /// Nonblocking read. Oversized packets must be consumed and rejected.
     fn receive(&self, buffer: &mut [u8]) -> io::Result<usize>;
@@ -92,6 +96,7 @@ pub struct Wintun {
     adapter: Handle,
     session: Handle,
     pub name: String,
+    tcp_coalescing: bool,
 }
 // SAFETY: Wintun documents packet operations as thread-safe. Handles are only
 // destroyed with exclusive ownership in Drop, after all Arc users have gone.
@@ -114,6 +119,9 @@ pub(crate) fn validate_name(name: &str) -> io::Result<()> {
 }
 
 impl Wintun {
+    pub fn set_tcp_coalescing(&mut self, enabled: bool) {
+        self.tcp_coalescing = enabled;
+    }
     /// Windows interface identity for address/route configuration by a caller.
     pub fn interface_luid(&self) -> u64 {
         // SAFETY: The adapter is live and Wintun initializes the complete LUID.
@@ -127,7 +135,23 @@ impl Wintun {
     /// Creates a temporary adapter (Administrator required). Never adopts an
     /// existing adapter. Drop ends its session and removes the created adapter.
     pub fn open(name: &str, mtu: u32, dll: &Path) -> io::Result<Self> {
+        Self::open_with_ring_capacity(name, mtu, dll, 16 * 1024 * 1024)
+    }
+
+    /// Capacity is per direction; Wintun allocates two rings.
+    pub fn open_with_ring_capacity(
+        name: &str,
+        mtu: u32,
+        dll: &Path,
+        capacity: u32,
+    ) -> io::Result<Self> {
         validate_name(name)?;
+        if !capacity.is_power_of_two() || !(128 * 1024..=64 * 1024 * 1024).contains(&capacity) {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "Wintun ring must be a power of two between 128 KiB and 64 MiB",
+            ));
+        }
         if !(1280..=2000).contains(&mtu) {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidInput,
@@ -153,10 +177,11 @@ impl Wintun {
             adapter,
             session: ptr::null_mut(),
             name: name.into(),
+            tcp_coalescing: true,
         };
         tun.set_mtu(mtu)?;
-        // SAFETY: Adapter is live; 4 MiB is a valid power-of-two ring capacity.
-        tun.session = unsafe { (tun.api.start)(tun.adapter, 4 * 1024 * 1024) };
+        // SAFETY: Adapter is live and ring capacity was validated above.
+        tun.session = unsafe { (tun.api.start)(tun.adapter, capacity) };
         if tun.session.is_null() {
             return Err(io::Error::last_os_error());
         }
@@ -192,6 +217,9 @@ impl Wintun {
     }
 }
 impl PacketIo for Wintun {
+    fn tcp_coalescing(&self) -> bool {
+        self.tcp_coalescing
+    }
     fn name(&self) -> &str {
         &self.name
     }

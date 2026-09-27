@@ -59,8 +59,10 @@ storage is allocated once per I/O context and reused across batches. Active
 metadata is reset before each call. UDP receives at offset zero; authenticated decryption exposes
 the plaintext at offset 16 without moving it. Packet ownership transfers between
 workers unchanged. Handshake output still needs a separate buffer. Wintun's
-reader still copies from its temporary receive buffer, but reserves header space
-so crypto no longer needs another copy. Buffer recycling remains shared/atomic.
+reader copies directly from the ring into the pooled packet at offset 16, leaving
+space for the header and authentication tag; UDP receives directly into the same
+pool at offset zero. Windows retains socket readiness until WouldBlock and keeps
+processing after a fairness budget is exhausted. Buffer recycling remains shared/atomic.
 
 The fork exports a non-cloneable `TransportSender`: key and nonce ownership move
 out of the receive/control tunnel after session promotion. The initial handshake
@@ -85,7 +87,9 @@ With multiple peers, only shared-utun batch writes use an interface mutex.
 Concurrent nonblocking `sendmsg_x` calls on one socket reproduced silent loss
 in the duplex test; XNU's send-lock/error-count path explains the observation.
 Single-peer injection avoids this mutex. See the [XNU audit](xnu-performance-audit.md).
-Windows retains the previous combined peer worker in `runtime_windows.rs`.
+Windows uses the same split ownership in `runtime_windows.rs`, with one additional
+Wintun reader. Its receive workers coalesce compatible authenticated TCP packets
+before adapter injection; Wintun's thread-safe ring API needs no XNU write mutex.
 
 Control clients have five-second deadlines, a 1 MiB request limit, and a 32-client
 limit. The main thread uses poll for control sockets only. Signal handlers store
@@ -94,9 +98,9 @@ the permission-restricted UAPI, as required by `wg showconf`.
 
 ## Current limitations
 
-The execution table and Darwin I/O details above describe macOS. Windows retains
-combined peer crypto/routing workers, one additional Wintun reader, shared exclusive
-UDP listeners, and named-pipe control. See [Windows backend](windows.md) for the
+The execution table's Darwin I/O details above describe macOS. Windows also has
+independent send/receive workers, but uses one additional Wintun reader, shared
+exclusive UDP listeners, and named-pipe control. See [Windows backend](windows.md) for the
 threading, backpressure, control ownership, and validation differences.
 
 - `wg set`, `setconf`, and `syncconf` validate a complete proposed configuration,
