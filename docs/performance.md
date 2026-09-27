@@ -79,5 +79,8 @@ for CPU attribution. Repeat on AC power and record QoS/power conditions explicit
 
 The next likely limits are the shared utun reader, shared packet-pool atomics,
 cross-worker dispatch, and kernel utun/socket locking. They have not yet been
-profiled on a real tunnel. The current root-free tests establish correctness of
-the user-space I/O path, not end-to-end performance.
+profiled on a real tunnel. Real-utun integration testing now passes on Darwin
+27.0.0 with two local BoringTun echo peers, both ciphers, IPv4/IPv6, and packet
+bursts. This establishes
+functional packet flow, not network throughput or interoperability with an
+independent WireGuard implementation.

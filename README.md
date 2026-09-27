@@ -93,7 +93,26 @@ tampering, and UAPI transactions. BoringTun's fork also tests a known AES-GCM
 answer and nonce-counter boundaries, plus its upstream protocol/timer suite.
 The optional real-`wg` integration test is described in `scripts/test-wg.sh`.
 
-The actual privileged utun smoke test is separate:
+The real-utun integration test launches the release daemon through `sudo -n`,
+configures temporary IPv4/IPv6 addresses and host routes, and exchanges UDP echoes
+with two unprivileged BoringTun peers. It tests both cipher suites, six payload
+sizes, 64-packet bursts, `wg` handshake reporting, and interface cleanup. This has
+passed on Apple M2 Pro / Darwin 27.0.0. It is a correctness test, not a throughput
+benchmark or independent WireGuard implementation interoperability test.
+
+```sh
+CARGO_TARGET_DIR=target cargo build --release --locked
+cargo test --locked --test live_macos -- --ignored --nocapture
+```
+
+It requires noninteractive sudo for the absolute `target/release/interestun` path,
+`/sbin/ifconfig`, `/sbin/route`, `/opt/homebrew/bin/wg`, and `/bin/kill`. The test
+uses reserved `198.18.254.1–3` and ULA `fd7a:115c:a1::1–3` addresses, refuses existing
+test addresses/routes, and removes its temporary configuration on success/failure.
+The daemon uses the normal `/var/run/wireguard` UAPI directory. The test is ignored
+in ordinary `cargo test` and CI because it changes host networking.
+
+A smaller root-only adapter smoke test is also available:
 
 ```sh
 CARGO_TARGET_DIR=target cargo test --test utun_privileged --no-run

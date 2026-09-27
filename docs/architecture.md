@@ -59,9 +59,9 @@ the permission-restricted UAPI, as required by `wg showconf`.
 - No PMTU discovery, route/DNS management, privilege separation, daemonization,
   launchd packaging, Network Extension integration, GUI, or WinTUN backend yet.
 - utun and UDP batching uses private Darwin symbols, with symbol-absence fallback.
-  The real utun path still needs privileged integration validation on supported
-  macOS releases; user-space socket simulation does not establish kernel utun
-  behavior, entitlement requirements, or throughput.
+  The real utun path passed IPv4/IPv6 UDP echo and burst testing with two peers
+  and both ciphers on Darwin 27.0.0. Other supported macOS releases, Network
+  Extension entitlements, and end-to-end throughput still need validation.
 - AES is an experimental protocol extension using ring's AES-256-GCM transport.
   Handshake encryption remains ChaCha20-Poly1305, cookies use XChaCha20, and the
   suite-specific initial transcript separates keys/protocols. No custom AES
