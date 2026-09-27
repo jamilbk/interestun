@@ -59,7 +59,7 @@ impl Config {
                 "private_key" if current.is_none() => next.private_key = key(value)?,
                 "listen_port" if current.is_none() => next.listen_port = value.parse()?,
                 "fwmark" if current.is_none() => {
-                    ensure!(value == "0", "fwmark unsupported on macOS")
+                    ensure!(value == "0", "fwmark unsupported")
                 }
                 "replace_peers" if current.is_none() => {
                     ensure!(value == "true", "invalid boolean");

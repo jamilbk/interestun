@@ -1,8 +1,8 @@
-#![cfg(target_os = "macos")]
+#![cfg(any(target_os = "macos", windows))]
 use boringtun::x25519::{PublicKey, StaticSecret};
 use interestun::{
     config::{Cipher, Config, Peer},
-    platform::utun::Utun,
+    platform::Tunnel as Utun,
     runtime::Runtime,
 };
 use std::{net::UdpSocket, sync::Arc, time::Duration};
@@ -18,13 +18,42 @@ fn fake_tun() -> (Arc<Utun>, UdpSocket) {
     kernel
         .set_read_timeout(Some(Duration::from_secs(5)))
         .unwrap();
-    (
-        Arc::new(Utun {
-            fd: app.into(),
-            name: "utun-test".into(),
-        }),
-        kernel,
-    )
+    #[cfg(target_os = "macos")]
+    let tun = Arc::new(Utun {
+        fd: app.into(),
+        name: "utun-test".into(),
+    });
+    #[cfg(windows)]
+    let tun = Arc::new(FakeWintun(app));
+    (tun, kernel)
+}
+#[cfg(windows)]
+struct FakeWintun(UdpSocket);
+#[cfg(windows)]
+impl interestun::platform::wintun::PacketIo for FakeWintun {
+    fn name(&self) -> &str {
+        "wintun-test"
+    }
+    fn receive(&self, buffer: &mut [u8]) -> std::io::Result<usize> {
+        self.0.recv(buffer)
+    }
+    fn send(&self, packet: &[u8]) -> std::io::Result<()> {
+        self.0.send(packet).map(|_| ())
+    }
+    fn wait_readable(&self, timeout: Duration) -> std::io::Result<()> {
+        std::thread::sleep(timeout.min(Duration::from_millis(1)));
+        Ok(())
+    }
+}
+fn payload(packet: &[u8]) -> &[u8] {
+    #[cfg(target_os = "macos")]
+    {
+        &packet[4..]
+    }
+    #[cfg(windows)]
+    {
+        packet
+    }
 }
 fn ip(src: u8, dst: u8, marker: u8) -> Vec<u8> {
     let mut p = vec![0; 32];
@@ -33,10 +62,17 @@ fn ip(src: u8, dst: u8, marker: u8) -> Vec<u8> {
     p[12..16].copy_from_slice(&[10, 0, 0, src]);
     p[16..20].copy_from_slice(&[10, 0, 0, dst]);
     p[20] = marker;
-    [&(libc::AF_INET as u32).to_be_bytes()[..], &p].concat()
+    #[cfg(target_os = "macos")]
+    {
+        [&(libc::AF_INET as u32).to_be_bytes()[..], &p].concat()
+    }
+    #[cfg(windows)]
+    {
+        p
+    }
 }
 #[test]
-fn two_peers_share_utun_and_use_their_own_workers() {
+fn two_peers_share_adapter_and_use_their_own_workers() {
     for cipher in [Cipher::Aes256Gcm, Cipher::Chacha20Poly1305] {
         let (tun_a, kernel_a) = fake_tun();
         let (tun_b, kernel_b) = fake_tun();
@@ -137,7 +173,14 @@ fn ip6(src: u8, dst: u8) -> Vec<u8> {
             .unwrap()
             .octets(),
     );
-    [&(libc::AF_INET6 as u32).to_be_bytes()[..], &p].concat()
+    #[cfg(target_os = "macos")]
+    {
+        [&(libc::AF_INET6 as u32).to_be_bytes()[..], &p].concat()
+    }
+    #[cfg(windows)]
+    {
+        p
+    }
 }
 
 #[test]
@@ -202,7 +245,7 @@ fn only_authenticated_packets_roam_the_udp_endpoint() {
     // A data packet on the new port with a corrupt tag must not move the endpoint.
     let inner = ip(1, 2, 41);
     let n = peer
-        .encapsulate_data_at(&inner[4..], &mut x, Instant::now())
+        .encapsulate_data_at(payload(&inner), &mut x, Instant::now())
         .unwrap();
     let valid = x[..n].to_vec();
     x[n - 1] ^= 1;
@@ -219,7 +262,7 @@ fn only_authenticated_packets_roam_the_udp_endpoint() {
     ));
     let inner = ip(1, 2, 43);
     let n = peer
-        .encapsulate_data_at(&inner[4..], &mut x, Instant::now())
+        .encapsulate_data_at(payload(&inner), &mut x, Instant::now())
         .unwrap();
     new.send(&x[..n]).unwrap();
     let n = kernel.recv(&mut y).unwrap();
@@ -231,4 +274,107 @@ fn only_authenticated_packets_roam_the_udp_endpoint() {
         TunnResult::WriteToTunnelV4(_, _)
     ));
     drop(runtime);
+}
+
+#[cfg(windows)]
+#[test]
+fn windows_ring_backpressure_oversized_udp_and_shutdown() {
+    use interestun::platform::wintun::PacketIo;
+    use std::{
+        io,
+        sync::atomic::{AtomicBool, AtomicUsize, Ordering},
+        time::Instant,
+    };
+    struct Congested {
+        inner: Arc<Utun>,
+        blocked: AtomicBool,
+        failed: AtomicBool,
+        attempts: AtomicUsize,
+    }
+    impl PacketIo for Congested {
+        fn name(&self) -> &str {
+            "congested"
+        }
+        fn receive(&self, buffer: &mut [u8]) -> io::Result<usize> {
+            if self.failed.load(Ordering::Relaxed) {
+                return Err(io::ErrorKind::BrokenPipe.into());
+            }
+            self.inner.receive(buffer)
+        }
+        fn send(&self, packet: &[u8]) -> io::Result<()> {
+            if self.blocked.load(Ordering::Relaxed) {
+                self.attempts.fetch_add(1, Ordering::Relaxed);
+                return Err(io::ErrorKind::WouldBlock.into());
+            }
+            self.inner.send(packet)
+        }
+        fn wait_readable(&self, timeout: Duration) -> io::Result<()> {
+            self.inner.wait_readable(timeout)
+        }
+    }
+    let (tun_a, kernel_a) = fake_tun();
+    let (tun_b, kernel_b) = fake_tun();
+    let tun_b = Arc::new(Congested {
+        inner: tun_b,
+        blocked: AtomicBool::new(true),
+        failed: AtomicBool::new(false),
+        attempts: AtomicUsize::new(0),
+    });
+    let mut b = Config {
+        private_key: [2; 32],
+        ..Config::default()
+    };
+    b.peers.insert(
+        key(1),
+        Peer {
+            public_key: key(1),
+            allowed_ips: vec!["10.0.0.1/32".parse().unwrap()],
+            ..Peer::default()
+        },
+    );
+    let mut rb = Runtime::start(&b, Cipher::Aes256Gcm, tun_b.clone()).unwrap();
+    // A second runtime cannot share/steal a Windows listener's bound port.
+    b.listen_port = rb.port;
+    assert!(Runtime::start(&b, Cipher::Aes256Gcm, tun_b.clone()).is_err());
+    let mut a = Config {
+        private_key: [1; 32],
+        ..Config::default()
+    };
+    a.peers.insert(
+        key(2),
+        Peer {
+            public_key: key(2),
+            endpoint: Some(([127, 0, 0, 1], rb.port).into()),
+            allowed_ips: vec!["10.0.0.2/32".parse().unwrap()],
+            ..Peer::default()
+        },
+    );
+    let mut ra = Runtime::start(&a, Cipher::Aes256Gcm, tun_a).unwrap();
+    let junk = UdpSocket::bind("127.0.0.1:0").unwrap();
+    junk.send_to(&[0; 8192], ("127.0.0.1", rb.port)).unwrap();
+    for marker in 0..20 {
+        kernel_a.send(&ip(1, 2, marker)).unwrap();
+    }
+    let deadline = Instant::now() + Duration::from_secs(3);
+    while tun_b.attempts.load(Ordering::Relaxed) == 0 {
+        assert!(Instant::now() < deadline);
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    tun_b.blocked.store(false, Ordering::Relaxed);
+    let mut buffer = [0; 2048];
+    for marker in 0..20 {
+        let len = kernel_b.recv(&mut buffer).unwrap();
+        assert_eq!(&buffer[..len], ip(1, 2, marker));
+    }
+    // A fatal adapter failure is surfaced to control/housekeeping.
+    tun_b.failed.store(true, Ordering::Relaxed);
+    let deadline = Instant::now() + Duration::from_secs(3);
+    while !rb.failed.load(Ordering::Acquire) {
+        assert!(Instant::now() < deadline);
+        std::thread::sleep(Duration::from_millis(5));
+    }
+    let start = Instant::now();
+    ra.stop();
+    rb.stop();
+    assert!(start.elapsed() < Duration::from_secs(1));
 }

@@ -1,12 +1,18 @@
 //! WireGuard userspace IPC. The main thread owns configuration and bounded clients.
 use crate::{
     config::{Cipher, Config},
-    platform::utun::Utun,
+    platform::Tunnel,
     runtime::Runtime,
 };
-use anyhow::{Context, Result, ensure};
+#[cfg(target_os = "macos")]
+use anyhow::ensure;
+use anyhow::{Context, Result};
 use std::{
     fmt::Write as _,
+    sync::{Arc, atomic::AtomicBool},
+};
+#[cfg(target_os = "macos")]
+use std::{
     fs,
     io::{self, Read, Write},
     os::{
@@ -17,17 +23,20 @@ use std::{
         },
     },
     path::{Path, PathBuf},
-    sync::{
-        Arc,
-        atomic::{AtomicBool, Ordering},
-    },
+    sync::atomic::Ordering,
     time::{Duration, Instant},
 };
 
 pub static STOP: AtomicBool = AtomicBool::new(false);
+#[cfg(windows)]
+mod windows;
+#[cfg(windows)]
+pub use windows::{install_signals, serve};
+#[cfg(target_os = "macos")]
 extern "C" fn stop(_: libc::c_int) {
     STOP.store(true, Ordering::Relaxed);
 }
+#[cfg(target_os = "macos")]
 pub fn install_signals() -> io::Result<()> {
     // SAFETY: The handler only stores to a lock-free atomic. sigaction is initialized and has no borrowed state.
     unsafe {
@@ -42,10 +51,12 @@ pub fn install_signals() -> io::Result<()> {
     }
     Ok(())
 }
+#[cfg(target_os = "macos")]
 struct SocketPath {
     path: PathBuf,
     inode: u64,
 }
+#[cfg(target_os = "macos")]
 impl Drop for SocketPath {
     fn drop(&mut self) {
         if fs::symlink_metadata(&self.path).is_ok_and(|m| m.ino() == self.inode) {
@@ -53,6 +64,7 @@ impl Drop for SocketPath {
         }
     }
 }
+#[cfg(target_os = "macos")]
 struct Client {
     stream: UnixStream,
     input: Vec<u8>,
@@ -94,7 +106,7 @@ fn request(
     input: &[u8],
     config: &mut Config,
     runtime: &mut Option<Runtime>,
-    tun: &Arc<Utun>,
+    tun: &Arc<Tunnel>,
     cipher: Cipher,
 ) -> Result<String> {
     let input = match std::str::from_utf8(input) {
@@ -134,7 +146,8 @@ fn request(
         }
     }
 }
-pub fn serve(tun: Arc<Utun>, directory: &Path, cipher: Cipher) -> Result<()> {
+#[cfg(target_os = "macos")]
+pub fn serve(tun: Arc<Tunnel>, directory: &Path, cipher: Cipher) -> Result<()> {
     if !directory.exists() {
         use std::os::unix::fs::DirBuilderExt;
         fs::DirBuilder::new().mode(0o700).create(directory)?;

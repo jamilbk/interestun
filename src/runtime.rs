@@ -1,10 +1,9 @@
+#[cfg(target_os = "macos")]
+use crate::platform::batch::{self, Receiver};
 use crate::{
     config::{Cipher, Config},
     packet::{self, BATCH, Packet, Pool},
-    platform::{
-        batch::{self, Receiver},
-        utun::Utun,
-    },
+    platform::Tunnel,
 };
 use anyhow::{Context, Result};
 use boringtun::{
@@ -15,13 +14,14 @@ use boringtun::{
     x25519,
 };
 use crossbeam_queue::ArrayQueue;
-use mio::{Events, Interest, Poll, Token, Waker, unix::SourceFd};
+#[cfg(windows)]
+use mio::net::UdpSocket;
+use mio::{Events, Interest, Poll, Token, Waker};
 use socket2::{Domain, Protocol, Socket, Type};
 use std::{
     collections::{BTreeMap, VecDeque},
     io,
-    net::{IpAddr, SocketAddr, UdpSocket},
-    os::fd::AsRawFd,
+    net::{IpAddr, SocketAddr},
     sync::{
         Arc, Mutex,
         atomic::{AtomicBool, AtomicU64, Ordering},
@@ -29,9 +29,16 @@ use std::{
     thread::{self, JoinHandle},
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
+#[cfg(target_os = "macos")]
+use {
+    mio::unix::SourceFd,
+    std::{net::UdpSocket, os::fd::AsRawFd},
+};
 
 const QUEUE: usize = 256;
+#[cfg(target_os = "macos")]
 const UDP: Token = Token(1);
+#[cfg(target_os = "macos")]
 const TUN: Token = Token(2);
 const WILDCARD4: Token = Token(3);
 const WILDCARD6: Token = Token(4);
@@ -100,8 +107,33 @@ fn bind_udp(local: SocketAddr, endpoint: Option<SocketAddr>) -> io::Result<UdpSo
     if local.is_ipv6() {
         socket.set_only_v6(true)?;
     }
-    socket.set_reuse_address(true)?;
-    socket.set_reuse_port(true)?;
+    #[cfg(target_os = "macos")]
+    {
+        socket.set_reuse_address(true)?;
+        socket.set_reuse_port(true)?;
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::io::AsRawSocket;
+        use windows_sys::Win32::Networking::WinSock::{
+            SO_EXCLUSIVEADDRUSE, SOL_SOCKET, WSAGetLastError, setsockopt,
+        };
+        let enabled: i32 = 1;
+        // SAFETY: Live socket and a correctly sized BOOL option. Exclusive bind
+        // prevents another Windows socket from stealing the shared listen port.
+        if unsafe {
+            setsockopt(
+                socket.as_raw_socket() as _,
+                SOL_SOCKET,
+                SO_EXCLUSIVEADDRUSE,
+                (&enabled as *const i32).cast(),
+                4,
+            )
+        } != 0
+        {
+            return Err(io::Error::from_raw_os_error(unsafe { WSAGetLastError() }));
+        }
+    }
     socket.set_nonblocking(true)?;
     // macOS caps these per host; retain kernel defaults if larger buffers are rejected.
     let _ = socket.set_recv_buffer_size(4 * 1024 * 1024);
@@ -110,8 +142,16 @@ fn bind_udp(local: SocketAddr, endpoint: Option<SocketAddr>) -> io::Result<UdpSo
     if let Some(endpoint) = endpoint {
         socket.connect(&endpoint.into())?;
     }
-    Ok(socket.into())
+    #[cfg(target_os = "macos")]
+    {
+        Ok(socket.into())
+    }
+    #[cfg(windows)]
+    {
+        Ok(UdpSocket::from_std(socket.into()))
+    }
 }
+#[cfg(target_os = "macos")]
 fn flow(port: u16, endpoint: SocketAddr) -> io::Result<UdpSocket> {
     bind_udp(
         SocketAddr::new(
@@ -125,17 +165,20 @@ fn flow(port: u16, endpoint: SocketAddr) -> io::Result<UdpSocket> {
         Some(endpoint),
     )
 }
+#[cfg(target_os = "macos")]
 fn register(poll: &Poll, fd: i32, token: Token, interest: Interest) -> io::Result<()> {
     poll.registry()
         .register(&mut SourceFd(&fd), token, interest)
 }
 
 impl Runtime {
-    pub fn start(config: &Config, cipher: Cipher, tun: Arc<Utun>) -> Result<Self> {
+    pub fn start(config: &Config, cipher: Cipher, tun: Arc<Tunnel>) -> Result<Self> {
         let v4 = bind_udp(([0, 0, 0, 0], config.listen_port).into(), None)?;
         let port = v4.local_addr()?.port();
         let v6 = bind_udp((std::net::Ipv6Addr::UNSPECIFIED, port).into(), None)?;
-        let wildcards = Arc::new([v4, v6]);
+        let wildcards = [v4, v6];
+        #[cfg(windows)]
+        let mut wildcards = wildcards;
         let stop = Arc::new(AtomicBool::new(false));
         let failed = Arc::new(AtomicBool::new(false));
         let private = x25519::StaticSecret::from(config.private_key);
@@ -157,17 +200,30 @@ impl Runtime {
                     }),
                     drops: AtomicU64::new(0),
                 });
+                #[cfg(target_os = "macos")]
                 let socket = peer
                     .endpoint
                     .map(|endpoint| flow(port, endpoint))
                     .transpose()?;
+                #[cfg(target_os = "macos")]
                 if let Some(socket) = &socket {
                     register(&poll, socket.as_raw_fd(), UDP, Interest::READABLE)?;
                 }
+                #[cfg(windows)]
+                let socket: Option<UdpSocket> = None;
                 peers.insert(*key, shared.clone());
                 prepared.push((peer.clone(), poll, shared, socket));
             }
         }
+        // Mio's Windows sockets must be registered before sharing ownership.
+        #[cfg(windows)]
+        if let Some((_, poll, _, _)) = prepared.first() {
+            for (socket, token) in wildcards.iter_mut().zip([WILDCARD4, WILDCARD6]) {
+                poll.registry()
+                    .register(socket, token, Interest::READABLE)?;
+            }
+        }
+        let wildcards = Arc::new(wildcards);
         let mut routing = Routing {
             routes: ip_network_table::IpNetworkTable::new(),
             keys: BTreeMap::new(),
@@ -216,8 +272,10 @@ impl Runtime {
                 tunnel,
                 poll,
                 shared,
+                #[cfg(target_os = "macos")]
                 socket,
                 endpoint: peer.endpoint,
+                #[cfg(target_os = "macos")]
                 port,
                 tun: tun.clone(),
                 routing: routing.clone(),
@@ -231,10 +289,15 @@ impl Runtime {
                 plain: VecDeque::with_capacity(QUEUE),
                 network: VecDeque::with_capacity(QUEUE),
                 injection: VecDeque::with_capacity(QUEUE),
+                #[cfg(target_os = "macos")]
                 tun_registered: false,
+                #[cfg(target_os = "macos")]
                 udp_writable: false,
+                #[cfg(target_os = "macos")]
                 tun_writable: false,
             };
+            #[cfg(windows)]
+            let _ = socket;
             let failed = failed.clone();
             let handle = thread::Builder::new()
                 .name(format!("peer-{id}"))
@@ -245,6 +308,21 @@ impl Runtime {
                     }
                 })
                 .context("spawn peer worker")?;
+            runtime.threads.push(handle);
+        }
+        #[cfg(windows)]
+        if !routing.peers.is_empty() {
+            // Wintun exposes a waitable event rather than a socket that Mio can
+            // register. One reader dispatches raw IP packets to bounded inboxes.
+            let handle = thread::Builder::new()
+                .name("wintun-reader".into())
+                .spawn(move || {
+                    if let Err(error) = read_wintun(&tun, &routing, &pool, &stop) {
+                        eprintln!("Wintun reader stopped: {error:#}");
+                        failed.store(true, Ordering::Release);
+                    }
+                })
+                .context("spawn Wintun reader")?;
             runtime.threads.push(handle);
         }
         Ok(runtime)
@@ -273,15 +351,52 @@ impl Drop for Runtime {
     }
 }
 
+#[cfg(windows)]
+fn read_wintun(
+    tun: &Arc<Tunnel>,
+    routing: &Routing,
+    pool: &Pool,
+    stop: &AtomicBool,
+) -> io::Result<()> {
+    let mut scratch = [0; packet::CAPACITY];
+    while !stop.load(Ordering::Acquire) {
+        match tun.receive(&mut scratch) {
+            Ok(len) => {
+                if let Some(id) =
+                    packet::addresses(&scratch[..len]).and_then(|(_, dst)| routing.lookup(dst))
+                {
+                    if let Some(mut packet) = Packet::new(pool) {
+                        packet.buffer()[..len].copy_from_slice(&scratch[..len]);
+                        packet.len = len;
+                        routing.peers[id].send(Input::Plain(packet));
+                    } else {
+                        routing.peers[id].drops.fetch_add(1, Ordering::Relaxed);
+                    }
+                }
+            }
+            Err(e) if e.kind() == io::ErrorKind::WouldBlock => {
+                tun.wait_readable(Duration::from_millis(100))?
+            }
+            Err(e)
+                if e.kind() == io::ErrorKind::Interrupted
+                    || (e.kind() == io::ErrorKind::InvalidData && e.raw_os_error().is_none()) => {}
+            Err(e) => return Err(e),
+        }
+    }
+    Ok(())
+}
+
 struct Worker {
     id: usize,
     tunnel: Tunn,
     poll: Poll,
     shared: Arc<SharedPeer>,
+    #[cfg(target_os = "macos")]
     socket: Option<UdpSocket>,
     endpoint: Option<SocketAddr>,
+    #[cfg(target_os = "macos")]
     port: u16,
-    tun: Arc<Utun>,
+    tun: Arc<Tunnel>,
     routing: Arc<Routing>,
     pool: Pool,
     wildcards: Arc<[UdpSocket; 2]>,
@@ -293,11 +408,103 @@ struct Worker {
     plain: VecDeque<Packet>,
     network: VecDeque<Packet>,
     injection: VecDeque<Packet>,
+    #[cfg(target_os = "macos")]
     tun_registered: bool,
+    #[cfg(target_os = "macos")]
     udp_writable: bool,
+    #[cfg(target_os = "macos")]
     tun_writable: bool,
 }
 impl Worker {
+    #[cfg(windows)]
+    fn receive_windows(&mut self) -> io::Result<bool> {
+        let mut more = false;
+        let mut scratch = [0; packet::CAPACITY];
+        for family in 0..2 {
+            for index in 0..BATCH * 4 {
+                match self.wildcards[family].recv_from(&mut scratch) {
+                    Ok((len, source)) => {
+                        more |= index == BATCH * 4 - 1;
+                        // Reject full buffers conservatively, including truncation.
+                        if len == scratch.len() {
+                            self.drop_packet();
+                            continue;
+                        }
+                        if let Some(mut packet) = Packet::new(&self.pool) {
+                            packet.buffer()[..len].copy_from_slice(&scratch[..len]);
+                            packet.len = len;
+                            self.dispatch_wire(packet, source);
+                        } else {
+                            self.drop_packet();
+                        }
+                    }
+                    Err(e) if e.kind() == io::ErrorKind::WouldBlock => break,
+                    // WSAEMSGSIZE consumes an oversized datagram. ICMP errors
+                    // must not terminate the shared listener for every peer.
+                    Err(e)
+                        if e.raw_os_error() == Some(10040)
+                            || matches!(
+                                e.kind(),
+                                io::ErrorKind::ConnectionReset
+                                    | io::ErrorKind::ConnectionRefused
+                                    | io::ErrorKind::Interrupted
+                            ) =>
+                    {
+                        self.drop_packet();
+                        more |= index == BATCH * 4 - 1;
+                    }
+                    Err(e) => return Err(e),
+                }
+            }
+        }
+        Ok(more)
+    }
+
+    #[cfg(windows)]
+    fn flush_windows(&mut self) -> io::Result<()> {
+        if let Some(endpoint) = self.endpoint {
+            let socket = &self.wildcards[usize::from(endpoint.is_ipv6())];
+            for _ in 0..BATCH * 4 {
+                let Some(packet) = self.network.front() else {
+                    break;
+                };
+                match socket.send_to(packet.data(), endpoint) {
+                    Ok(n) if n == packet.len => {}
+                    Err(e)
+                        if matches!(
+                            e.kind(),
+                            io::ErrorKind::WouldBlock | io::ErrorKind::Interrupted
+                        ) =>
+                    {
+                        break;
+                    }
+                    _ => self.drop_packet(),
+                }
+                self.network.pop_front();
+            }
+        }
+        for _ in 0..BATCH * 4 {
+            let Some(packet) = self.injection.front() else {
+                break;
+            };
+            match self.tun.send(packet.data()) {
+                Ok(()) => {
+                    self.injection.pop_front();
+                }
+                Err(e)
+                    if matches!(
+                        e.kind(),
+                        io::ErrorKind::WouldBlock | io::ErrorKind::Interrupted
+                    ) =>
+                {
+                    break;
+                }
+                Err(e) => return Err(e),
+            }
+        }
+        Ok(())
+    }
+
     fn drop_packet(&self) {
         self.shared.drops.fetch_add(1, Ordering::Relaxed);
     }
@@ -308,6 +515,7 @@ impl Worker {
             self.drop_packet();
         }
     }
+    #[cfg(target_os = "macos")]
     fn new_endpoint(&mut self, endpoint: SocketAddr) -> io::Result<()> {
         if self.endpoint == Some(endpoint) && self.socket.is_some() {
             return Ok(());
@@ -322,6 +530,11 @@ impl Worker {
         self.socket = Some(socket);
         self.endpoint = Some(endpoint);
         self.udp_writable = false;
+        Ok(())
+    }
+    #[cfg(windows)]
+    fn new_endpoint(&mut self, endpoint: SocketAddr) -> io::Result<()> {
+        self.endpoint = Some(endpoint);
         Ok(())
     }
     fn wire(&mut self, input: Packet, source: SocketAddr) {
@@ -481,6 +694,7 @@ impl Worker {
         }
         processed == BATCH * 4
     }
+    #[cfg(target_os = "macos")]
     fn interests(&mut self) -> io::Result<()> {
         if let Some(socket) = &self.socket {
             let writable = !self.network.is_empty();
@@ -517,6 +731,7 @@ impl Worker {
         Ok(())
     }
     fn run(&mut self) -> Result<()> {
+        #[cfg(target_os = "macos")]
         if self.id == 0 {
             register(
                 &self.poll,
@@ -531,14 +746,18 @@ impl Worker {
                 Interest::READABLE,
             )?;
         }
+        #[cfg(target_os = "macos")]
         self.interests()?;
+        #[cfg(target_os = "macos")]
         let mut tun_rx = Receiver::new(self.pool.clone());
+        #[cfg(target_os = "macos")]
         let mut udp_rx = Receiver::new(self.pool.clone());
         let mut events = Events::with_capacity(16);
         let mut snapshot_at = Instant::now();
         while !self.stop.load(Ordering::Acquire) {
             let mut more = false;
             // Bounded draining keeps timers and other directions live under continuous traffic.
+            #[cfg(target_os = "macos")]
             if self.id == 0 {
                 for _ in 0..4 {
                     let fd = self.tun.fd.as_raw_fd();
@@ -589,6 +808,7 @@ impl Worker {
                     }
                 }
             }
+            #[cfg(target_os = "macos")]
             if let Some(fd) = self.socket.as_ref().map(AsRawFd::as_raw_fd) {
                 for _ in 0..4 {
                     match udp_rx.receive(fd, false, |received| {
@@ -609,6 +829,10 @@ impl Worker {
                         }
                     }
                 }
+            }
+            #[cfg(windows)]
+            if self.id == 0 {
+                more |= self.receive_windows()?;
             }
             self.shared.notified.store(false, Ordering::Release);
             for _ in 0..BATCH * 4 {
@@ -640,6 +864,7 @@ impl Worker {
                 }
             }
 
+            #[cfg(target_os = "macos")]
             if let Some(socket) = &self.socket {
                 for _ in 0..4 {
                     match batch::flush(socket.as_raw_fd(), false, &mut self.network) {
@@ -653,6 +878,7 @@ impl Worker {
                     }
                 }
             }
+            #[cfg(target_os = "macos")]
             for _ in 0..4 {
                 match batch::flush(self.tun.fd.as_raw_fd(), true, &mut self.injection) {
                     Ok(0) => break,
@@ -664,6 +890,8 @@ impl Worker {
                     }
                 }
             }
+            #[cfg(windows)]
+            self.flush_windows()?;
             if now >= snapshot_at {
                 let (elapsed, tx, rx, _, _) = self.tunnel.stats_at(now);
                 let handshake = elapsed
@@ -678,6 +906,7 @@ impl Worker {
                 };
                 snapshot_at = now + Duration::from_millis(250);
             }
+            #[cfg(target_os = "macos")]
             self.interests()?;
             let deadline = self
                 .tunnel
@@ -689,6 +918,14 @@ impl Worker {
                 Duration::ZERO
             } else {
                 deadline.saturating_duration_since(Instant::now())
+            };
+            // Wintun has no writable event. Retry ring/UDP congestion with a
+            // bounded delay rather than spinning or waiting for a handshake timer.
+            #[cfg(windows)]
+            let timeout = if !self.injection.is_empty() || !self.network.is_empty() {
+                timeout.min(Duration::from_millis(2))
+            } else {
+                timeout
             };
             match self.poll.poll(&mut events, Some(timeout)) {
                 Ok(()) => {}

@@ -14,6 +14,10 @@
   - `rust/gui-client`: Rust service/client separation; no UI copied into this project.
 - BoringTun `src/device/tun_darwin.rs`: BSD utun creation and interface naming.
 - WireGuard tools / UAPI: https://git.zx2c4.com/wireguard-tools/
+- Wintun 0.14 API: https://git.zx2c4.com/wintun/about/?h=0.14.1
+  (dynamically loaded; signed DLL/driver supplied separately).
+- Windows named-pipe protocol/owner check:
+  https://git.zx2c4.com/wireguard-tools/tree/src/ipc-uapi-windows.h
 - Apple XNU ABI: https://github.com/apple-oss-distributions/xnu/blob/main/bsd/sys/socket_private.h
 
 Interestun's I/O implementation is newly written against these APIs. Firezone's

@@ -45,6 +45,11 @@ the permission-restricted UAPI, as required by `wg showconf`.
 
 ## Current limitations
 
+The execution table and Darwin I/O details above describe macOS. Windows uses
+the same peer crypto/routing logic, one additional Wintun reader, shared exclusive
+UDP listeners, and named-pipe control. See [Windows backend](windows.md) for the
+threading, backpressure, control ownership, and validation differences.
+
 - `wg set`, `setconf`, and `syncconf` validate a complete proposed configuration,
   then stop/join/rebuild all workers. This briefly interrupts traffic and resets
   sessions/counters. Resource-setup failures attempt to restart the old config;
@@ -57,7 +62,7 @@ the permission-restricted UAPI, as required by `wg showconf`.
   connected-socket ownership design. Standard peers with unknown endpoints and
   authenticated endpoint roaming are supported.
 - No PMTU discovery, route/DNS management, privilege separation, daemonization,
-  launchd packaging, Network Extension integration, GUI, or WinTUN backend yet.
+  launchd/Windows service packaging, Network Extension integration, or GUI yet.
 - utun and UDP batching uses private Darwin symbols, with symbol-absence fallback.
   The real utun path passed IPv4/IPv6 UDP echo and burst testing with two peers
   and both ciphers on Darwin 27.0.0. Other supported macOS releases, Network

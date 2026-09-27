@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.88"
 license = "BSD-3-Clause"
-description = "A peer-threaded macOS userspace tunnel"
+description = "A peer-threaded macOS and Windows userspace tunnel"
 
 [dependencies]
 anyhow = "1"
@@ -19,6 +19,10 @@ mio = { version = "1", features = ["os-poll", "os-ext", "net"] }
 socket2 = { version = "0.6", features = ["all"] }
 crossbeam-queue = "0.3"
 rand = "0.10"
+
+[target.'cfg(windows)'.dependencies]
+libloading = "0.8"
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_NetworkManagement_IpHelper", "Win32_NetworkManagement_Ndis", "Win32_Networking_WinSock", "Win32_Security", "Win32_Security_Authorization", "Win32_Storage_FileSystem", "Win32_System_Console", "Win32_System_IO", "Win32_System_Pipes", "Win32_System_Threading"] }
 
 [profile.release]
 lto = "thin"

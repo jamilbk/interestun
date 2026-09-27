@@ -1,18 +1,23 @@
 # interestun
 
-A barebones Rust userspace tunnel for macOS, based on Firezone's BoringTun fork.
+A barebones Rust userspace tunnel for macOS and Windows, based on Firezone's BoringTun fork.
 One main housekeeping/control thread, one I/O thread per configured peer, and one
-shared BSD utun. This is an experimental implementation, not a production VPN.
+shared adapter (BSD utun or Wintun). Windows adds one Wintun reader thread.
+This is an experimental implementation, not a production VPN.
 
 The default transport cipher is **AES-256-GCM**. It uses a distinct authenticated
 handshake transcript and requires interestun at both ends. Select
 `--cipher chacha20-poly1305` for standard WireGuard interoperability. The normal
-`wg` command works with either mode through the WireGuard userspace IPC protocol;
+`wg` command works with either mode through the WireGuard userspace IPC protocol
+(on Windows its pipe owner must be LocalSystem);
 CLI compatibility does not imply protocol compatibility for AES.
 
 ## Build and run
 
-Requires macOS, Rust 1.88+, and the standard `wireguard-tools` package for `wg`.
+The following instructions are for macOS. For Windows/MSVC builds, DLL setup,
+named-pipe control, and testing, see [Windows backend](docs/windows.md).
+
+Requires Rust 1.88+ and the standard `wireguard-tools` package for `wg`.
 The dependency is pinned to a commit on `jamilbk/boringtun`.
 
 ```sh
@@ -52,6 +57,9 @@ A pre-existing socket is never deleted automatically. `--uapi-dir` is useful for
 testing; stock `wg` uses its compile-time `/var/run/wireguard` directory.
 
 ## Data path
+
+The details below describe macOS; see the [Windows data path](docs/windows.md#data-path-and-validation)
+for Wintun, shared UDP listeners, and IOCP differences.
 
 - Mio uses kqueue on macOS. Each peer worker owns its BoringTun state, deadlines,
   and connected UDP socket. Connected sockets share the interface's listen port
@@ -120,5 +128,6 @@ CARGO_TARGET_DIR=target cargo test --test utun_privileged --no-run
 sudo ./target/debug/deps/utun_privileged-<hash> --ignored --nocapture
 ```
 
-Windows/WinTUN is not implemented yet. The cryptographic/configuration code is
-portable; the current event loop, utun adapter, and UAPI server target macOS.
+Windows tests also exercise real UDP and named pipes with a simulated adapter.
+The privileged Wintun smoke test and its requirements are documented in
+[Windows backend](docs/windows.md).
