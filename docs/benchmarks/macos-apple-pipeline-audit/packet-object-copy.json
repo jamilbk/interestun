@@ -1,0 +1,5 @@
+{
+  "caller": "NEPacketTunnelFlow readPacketObjects block at 0x19666C864",
+  "objc_stub_unslid": "0x198003db0",
+  "selector": "initWithBytes:length:"
+}

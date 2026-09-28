@@ -1,0 +1,3 @@
+Name       Mtu   Network       Address            Ipkts Ierrs     Ibytes    Opkts Oerrs     Obytes  Coll
+utun4      1420  <Link#26>                       189652     0    9886558 13076078     0 18620173144     0
+utun4      1420  10.20.0.2/32  10.20.0.2         189652     -    9886558 13076078     - 18620173144     -

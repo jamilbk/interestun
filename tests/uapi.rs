@@ -34,10 +34,7 @@ fn ipc_get_set_invalid_request_and_optional_real_wg() {
     fs::set_permissions(&directory, fs::Permissions::from_mode(0o700)).unwrap();
     let socket = UdpSocket::bind("127.0.0.1:0").unwrap();
     socket.set_nonblocking(true).unwrap();
-    let tun = Arc::new(Utun {
-        fd: socket.into(),
-        name: "utun-test".into(),
-    });
+    let tun = Arc::new(Utun::from_fd(socket.into(), "utun-test".into()));
     let dir = directory.clone();
     let daemon = thread::spawn(move || uapi::serve(tun, &dir, Cipher::Aes256Gcm));
     let path = directory.join("utun-test.sock");

@@ -1,13 +1,25 @@
+use super::batch::{Received, Receiver, Sender};
+use crate::packet::Packet;
 use std::{
-    ffi::CStr,
+    collections::VecDeque,
     io,
-    mem::size_of,
-    os::fd::{AsRawFd, FromRawFd, OwnedFd},
+    os::fd::{AsRawFd, FromRawFd, OwnedFd, RawFd},
 };
+#[cfg(not(feature = "apple-utun-ring"))]
+use std::{ffi::CStr, mem::size_of};
 
 pub struct Utun {
-    pub fd: OwnedFd,
+    device: Device,
     pub name: String,
+}
+enum Device {
+    Bsd(OwnedFd),
+    #[cfg(feature = "apple-packet-tunnel")]
+    NetworkExtension(OwnedFd),
+    #[cfg(feature = "apple-utun-ring")]
+    Ring(super::utun_ring::Adapter),
+    #[cfg(feature = "apple-packet-tunnel")]
+    PacketFlow(std::sync::Arc<super::packet_flow::Adapter>),
 }
 fn check(n: libc::c_int) -> io::Result<()> {
     if n < 0 {
@@ -18,18 +30,135 @@ fn check(n: libc::c_int) -> io::Result<()> {
 }
 impl Utun {
     pub fn open(name: &str, mtu: u32) -> io::Result<Self> {
-        let suffix = name
-            .strip_prefix("utun")
-            .ok_or_else(|| io::Error::other("expected utun or utunN"))?;
-        let unit = if suffix.is_empty() {
-            0
-        } else {
-            suffix
-                .parse::<u32>()
-                .ok()
-                .and_then(|v| v.checked_add(1))
-                .ok_or_else(|| io::Error::other("invalid utun index"))?
-        };
+        #[cfg(feature = "apple-utun-ring")]
+        {
+            let (adapter, name) = super::utun_ring::Adapter::open(name, mtu)?;
+            Ok(Self {
+                device: Device::Ring(adapter),
+                name,
+            })
+        }
+        #[cfg(not(feature = "apple-utun-ring"))]
+        Self::open_bsd(name, mtu)
+    }
+
+    /// Wrap an already-owned datagram descriptor (also used by fake-adapter tests).
+    pub fn from_fd(fd: OwnedFd, name: String) -> Self {
+        Self {
+            device: Device::Bsd(fd),
+            name,
+        }
+    }
+
+    #[cfg(feature = "apple-packet-tunnel")]
+    pub fn from_ne_fd(fd: OwnedFd, name: String) -> Self {
+        Self {
+            device: Device::NetworkExtension(fd),
+            name,
+        }
+    }
+
+    #[cfg(feature = "apple-packet-tunnel")]
+    pub fn from_packet_flow(
+        adapter: std::sync::Arc<super::packet_flow::Adapter>,
+        name: String,
+    ) -> Self {
+        Self {
+            device: Device::PacketFlow(adapter),
+            name,
+        }
+    }
+
+    /// NEPacketTunnelFlow uses callback notifications and has no public descriptor.
+    pub fn io_fd(&self) -> Option<RawFd> {
+        match &self.device {
+            Device::Bsd(fd) => Some(fd.as_raw_fd()),
+            #[cfg(feature = "apple-packet-tunnel")]
+            Device::NetworkExtension(fd) => Some(fd.as_raw_fd()),
+            #[cfg(feature = "apple-utun-ring")]
+            Device::Ring(adapter) => Some(adapter.fd()),
+            #[cfg(feature = "apple-packet-tunnel")]
+            Device::PacketFlow(_) => None,
+        }
+    }
+
+    pub fn register_readable(
+        &self,
+        poll: &super::readiness::Poll,
+        token: super::readiness::Token,
+    ) -> io::Result<()> {
+        #[cfg(feature = "apple-packet-tunnel")]
+        if let Device::PacketFlow(adapter) = &self.device {
+            return adapter.register(poll, token);
+        }
+        poll.register(
+            self.io_fd().expect("descriptor-backed adapter"),
+            token,
+            super::readiness::Interest::READABLE,
+        )
+    }
+
+    pub fn supports_socket_coalescing(&self) -> bool {
+        // Network Extension's Skywalk netif does not have the ordinary utun
+        // oversized-packet injection semantics. Preserve packet boundaries.
+        matches!(self.device, Device::Bsd(_))
+    }
+
+    pub fn is_ring(&self) -> bool {
+        match &self.device {
+            Device::Bsd(_) => false,
+            #[cfg(feature = "apple-packet-tunnel")]
+            Device::NetworkExtension(_) => false,
+            #[cfg(feature = "apple-utun-ring")]
+            Device::Ring(_) => true,
+            #[cfg(feature = "apple-packet-tunnel")]
+            Device::PacketFlow(_) => false,
+        }
+    }
+
+    pub fn backend_name(&self) -> &'static str {
+        match &self.device {
+            Device::Bsd(_) => "BSD control socket",
+            #[cfg(feature = "apple-packet-tunnel")]
+            Device::NetworkExtension(_) => "Network Extension utun descriptor",
+            #[cfg(feature = "apple-utun-ring")]
+            Device::Ring(_) => "Skywalk mapped ring",
+            #[cfg(feature = "apple-packet-tunnel")]
+            Device::PacketFlow(_) => "NEPacketTunnelFlow (framework-selected path)",
+        }
+    }
+
+    pub fn receive(
+        &self,
+        receiver: &mut Receiver,
+        consume: impl FnMut(Received),
+    ) -> io::Result<usize> {
+        match &self.device {
+            Device::Bsd(fd) => receiver.receive(fd.as_raw_fd(), true, consume),
+            #[cfg(feature = "apple-packet-tunnel")]
+            Device::NetworkExtension(fd) => receiver.receive(fd.as_raw_fd(), true, consume),
+            #[cfg(feature = "apple-utun-ring")]
+            Device::Ring(adapter) => adapter.receive(receiver.receive_buffers(), consume),
+            #[cfg(feature = "apple-packet-tunnel")]
+            Device::PacketFlow(adapter) => adapter.receive(consume),
+        }
+    }
+
+    pub fn flush(&self, writer: &mut Sender, queue: &mut VecDeque<Packet>) -> io::Result<usize> {
+        match &self.device {
+            Device::Bsd(fd) => writer.flush(fd.as_raw_fd(), true, queue),
+            #[cfg(feature = "apple-packet-tunnel")]
+            Device::NetworkExtension(fd) => writer.flush(fd.as_raw_fd(), true, queue),
+            #[cfg(feature = "apple-utun-ring")]
+            Device::Ring(adapter) => adapter.flush(queue),
+            #[cfg(feature = "apple-packet-tunnel")]
+            Device::PacketFlow(adapter) => adapter.flush(queue),
+        }
+    }
+
+    #[cfg(not(feature = "apple-utun-ring"))]
+    fn open_bsd(name: &str, mtu: u32) -> io::Result<Self> {
+        let unit = unit(name)?;
         // SAFETY: Each call uses an owned live descriptor and correctly sized Darwin ABI structures.
         unsafe {
             let raw = libc::socket(libc::PF_SYSTEM, libc::SOCK_DGRAM, libc::SYSPROTO_CONTROL);
@@ -122,31 +251,52 @@ impl Utun {
                 .map_err(|_| io::Error::other("utun name missing NUL"))?
                 .to_string_lossy()
                 .into_owned();
-            let interface = Self { fd, name };
-            interface.set_mtu(mtu)?;
+            let interface = Self::from_fd(fd, name);
+            set_mtu(&interface.name, mtu)?;
             Ok(interface)
         }
     }
-    fn set_mtu(&self, mtu: u32) -> io::Result<()> {
-        // Darwin ifreq is 32 bytes, with a 16-byte name and a 16-byte union.
-        #[repr(C)]
-        struct IfReq {
-            name: [u8; 16],
-            mtu: i32,
-            padding: [u8; 12],
-        }
-        let mut req = IfReq {
-            name: [0; 16],
-            mtu: mtu as i32,
-            padding: [0; 12],
-        };
-        req.name[..self.name.len()].copy_from_slice(self.name.as_bytes());
-        // SAFETY: ifreq matches SIOCSIFMTU's Darwin layout; fd is owned until return.
-        unsafe {
-            let raw = libc::socket(libc::AF_INET, libc::SOCK_DGRAM, 0);
-            check(raw)?;
-            let fd = OwnedFd::from_raw_fd(raw);
-            check(libc::ioctl(fd.as_raw_fd(), 0x80206934, &req))
-        }
+}
+
+pub(super) fn unit(name: &str) -> io::Result<u32> {
+    let suffix = name
+        .strip_prefix("utun")
+        .ok_or_else(|| io::Error::other("expected utun or utunN"))?;
+    if suffix.is_empty() {
+        return Ok(0);
+    }
+    suffix
+        .parse::<u32>()
+        .ok()
+        .and_then(|v| v.checked_add(1))
+        .ok_or_else(|| io::Error::other("invalid utun index"))
+}
+
+pub(super) fn set_mtu(name: &str, mtu: u32) -> io::Result<()> {
+    if name.len() >= libc::IFNAMSIZ || !(1280..=2000).contains(&mtu) {
+        return Err(io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "invalid utun name or MTU",
+        ));
+    }
+    // Darwin ifreq is 32 bytes, with a 16-byte name and a 16-byte union.
+    #[repr(C)]
+    struct IfReq {
+        name: [u8; 16],
+        mtu: i32,
+        padding: [u8; 12],
+    }
+    let mut req = IfReq {
+        name: [0; 16],
+        mtu: mtu as i32,
+        padding: [0; 12],
+    };
+    req.name[..name.len()].copy_from_slice(name.as_bytes());
+    // SAFETY: ifreq matches SIOCSIFMTU's Darwin layout; fd is owned until return.
+    unsafe {
+        let raw = libc::socket(libc::AF_INET, libc::SOCK_DGRAM, 0);
+        check(raw)?;
+        let fd = OwnedFd::from_raw_fd(raw);
+        check(libc::ioctl(fd.as_raw_fd(), 0x80206934, &req))
     }
 }

@@ -22,3 +22,12 @@ pub type Tunnel = dyn wintun::PacketIo;
 
 #[cfg(all(target_os = "macos", feature = "apple-coalesce"))]
 pub mod coalesce_macos;
+
+#[cfg(all(target_os = "macos", feature = "apple-utun-ring"))]
+pub mod utun_ring;
+
+#[cfg(all(target_os = "macos", feature = "apple-packet-tunnel"))]
+pub mod packet_flow;
+
+#[cfg(all(target_os = "macos", feature = "apple-packet-tunnel"))]
+pub mod ne_utun;

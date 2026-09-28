@@ -4,8 +4,9 @@ A barebones Rust userspace tunnel for macOS and Windows, based on Firezone's Bor
 One main housekeeping/control thread and one shared adapter (BSD utun or Wintun).
 Both platforms use one send thread and one receive thread per peer.
 Network.framework also schedules callback work on dispatch queues. Windows
-additionally uses a Wintun reader thread. Both platforms support receive-side
-TCP coalescing. macOS uses a native kqueue/atomic-signal worker loop, without mio
+additionally uses a Wintun reader thread. Wintun and ordinary BSD utun support
+receive-side TCP coalescing; the Network Extension adapter preserves packet
+boundaries. macOS uses a native kqueue/atomic-signal worker loop, without mio
 or Tokio.
 This is an experimental implementation, not a production VPN.
 
@@ -29,6 +30,20 @@ The experimental `apple-network-multiple` default uses private Apple receive
 batching SPI, validated on macOS 27.0 (26A428). For public Network.framework APIs
 only, build with `--no-default-features --features apple-network,apple-coalesce`.
 See the [framework audit](docs/network-framework-audit.md) for results and limits.
+
+The `apple-utun-ring` feature selects the experimental Skywalk mapped-ring adapter.
+Live attachment is disabled after a channel privilege denial left an interface
+behind. It has passed memory-backed batching tests; see the
+[ring backend implementation and validation](docs/utun-ring-backend.md).
+
+For a Network Extension-created adapter, build the minimal CLI containing app
+and system extension with `python3 scripts/build-apple.py`. Rust reads and writes
+the existing utun descriptor directly; Network.framework handles outer UDP.
+Add `--packet-flow` to build the public `NEPacketTunnelFlow` frontend instead.
+Signing, activation, configuration, and bridge tests are described in
+[Apple packet tunnel](docs/apple-packet-tunnel.md). The latest
+[packet pipeline audit](docs/apple-packet-pipeline-audit.md) documents copies,
+readiness, utun/socket options, and measured improvements against Windows.
 
 Active peers must have configured endpoints; automatic discovery/roaming is not yet supported
 in this backend. Rebuild with `--no-default-features` for the BSD comparison.

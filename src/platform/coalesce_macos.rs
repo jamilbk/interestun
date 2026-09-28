@@ -168,4 +168,42 @@ mod tests {
             assert_eq!(&buffer[4..n], expected);
         }
     }
+
+    #[cfg(feature = "apple-packet-tunnel")]
+    #[test]
+    fn network_extension_descriptor_preserves_tcp_boundaries_below_skywalk_slot_limit() {
+        let rx = UdpSocket::bind("127.0.0.1:0").unwrap();
+        rx.set_read_timeout(Some(Duration::from_secs(1))).unwrap();
+        let tx = UdpSocket::bind("127.0.0.1:0").unwrap();
+        tx.connect(rx.local_addr().unwrap()).unwrap();
+        let tun = crate::platform::Tunnel::from_ne_fd(tx.into(), "utun-test".into());
+        let pool = packet::pool(4);
+        let packets: Vec<_> = (0..4)
+            .map(|n| tcp(20, n * 1368, 1368, if n == 3 { 0x18 } else { 0x10 }))
+            .collect();
+        let mut queue = packets.iter().map(|p| make_packet(&pool, p)).collect();
+        let mut writer = Sender::new();
+        // Exercise the same backend selection as the receive worker. These
+        // adjacent local TCP segments would combine beyond the NE 4096-byte
+        // packet pool limit if this descriptor inherited ordinary-utun policy.
+        let mut coalescer = tun.supports_socket_coalescing().then(|| Coalescer {
+            locals: vec!["10.0.0.2".parse().unwrap()],
+            refresh_at: Instant::now() + Duration::from_secs(60),
+            ..Coalescer::default()
+        });
+        let sent = match &mut coalescer {
+            Some(c) => c.flush(&mut writer, tun.io_fd().unwrap(), &mut queue),
+            None => tun.flush(&mut writer, &mut queue),
+        }
+        .unwrap();
+        assert_eq!(sent, 4);
+        let mut buffer = [0; 8192];
+        for expected in packets {
+            let len = rx.recv(&mut buffer).unwrap();
+            assert_eq!(&buffer[..4], &(libc::AF_INET as u32).to_be_bytes());
+            assert_eq!(&buffer[4..len], expected);
+        }
+        assert!(queue.is_empty());
+        assert_eq!(pool.len(), 4);
+    }
 }

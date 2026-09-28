@@ -1,0 +1,21 @@
+utun4: flags=8051<UP,POINTOPOINT,RUNNING,MULTICAST> mtu 1420 index 26
+	eflags=4002080<TXSTART,NOAUTOIPV6LL,CHANNEL_DRV>
+	xflags=4010004<NOAUTONX,IS_VPN,INBAND_WAKE_PKT>
+	options=6460<TSO4,TSO6,CHANNEL_IO,PARTIAL_CSUM,ZEROINVERT_CSUM>
+	hwassist=703000<CSUM_PARTIAL,CSUM_ZERO_INVERT,MULTIPAGES,TSO_V4,TSO_V6>
+	inet 10.20.0.2 --> 10.20.0.2 netmask 0xffffffff
+	netif: D0E9E22D-C467-4C22-BDDE-DEACD184D2C6
+	flowswitch: FFB95550-0853-4D0C-82A2-09E292BC91C3
+	generation id: 40
+	agent domain:Skywalk type:NetIf flags:0x8443 desc:"Userspace Networking"
+	agent domain:Skywalk type:FlowSwitch flags:0x4483 desc:"Userspace Networking"
+	agent domain:NetworkExtension type:VPN flags:0x3 desc:"VPN: Interestun"
+	link quality: -1 (unknown)
+	state availability: 0 (true)
+	scheduler: FQ_CODEL
+	effective interface: en8
+	qosmarking enabled: no mode: none
+	low power mode: disabled
+	multi layer packet logging (mpklog): disabled
+	routermode4: disabled
+	routermode6: disabled

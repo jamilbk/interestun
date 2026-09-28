@@ -1,0 +1,212 @@
+[
+  {
+    "report": "panic-full-2026-09-28-042535.0002.panic",
+    "panic_time_utc": "2026-09-28T03:36:35+00:00",
+    "assertion": "panic(cpu 4 caller 0xfffffe00474162cc): assertion failed: kif->pfik_ifp == NULL || kif->pfik_ifp == ifp, file: xnu/bsd/net/pf_if.c, line: 253 @uipc_socket.c:8321",
+    "pid": 41189,
+    "process_uptime_seconds": 1.4280869960784912,
+    "kernel_uuid": "a68631f1-6b54-30ab-89d0-3cf684c5674d",
+    "kernel_frames": [
+      {
+        "file_address": "0xfffffe000735c228",
+        "atos": "0xfffffe000735c228 (in kernel.release.t6020) + 1124"
+      },
+      {
+        "file_address": "0xfffffe00074eae7c",
+        "atos": "0xfffffe00074eae7c (in kernel.release.t6020) + 392"
+      },
+      {
+        "file_address": "0xfffffe00074e8d9c",
+        "atos": "0xfffffe00074e8d9c (in kernel.release.t6020) + 520"
+      },
+      {
+        "file_address": "0xfffffe000730b1f4",
+        "atos": "0xfffffe000730b1f4 (in kernel.release.t6020) + 72"
+      },
+      {
+        "file_address": "0xfffffe000735c54c",
+        "atos": "0xfffffe000735c54c (in kernel.release.t6020) + 76"
+      },
+      {
+        "file_address": "0xfffffe0007c9026c",
+        "atos": "Assert (in kernel.release.t6020) + 0"
+      },
+      {
+        "file_address": "0xfffffe0007ca22cc",
+        "atos": "0xfffffe0007ca22cc (in kernel.release.t6020) + 0"
+      },
+      {
+        "file_address": "0xfffffe000771a444",
+        "atos": "0xfffffe000771a444 (in kernel.release.t6020) + 164"
+      },
+      {
+        "file_address": "0xfffffe0007724bcc",
+        "atos": "0xfffffe0007724bcc (in kernel.release.t6020) + 96"
+      },
+      {
+        "file_address": "0xfffffe0007638658",
+        "atos": "ifnet_attach (in kernel.release.t6020) + 4580"
+      },
+      {
+        "file_address": "0xfffffe0007a2e514",
+        "atos": "kern_nexus_controller_alloc_net_provider_instance (in kernel.release.t6020) + 404"
+      },
+      {
+        "file_address": "0xfffffe000769c9ac",
+        "atos": "0xfffffe000769c9ac (in kernel.release.t6020) + 1348"
+      },
+      {
+        "file_address": "0xfffffe00078fffdc",
+        "atos": "0xfffffe00078fffdc (in kernel.release.t6020) + 332"
+      },
+      {
+        "file_address": "0xfffffe0007997600",
+        "atos": "0xfffffe0007997600 (in kernel.release.t6020) + 932"
+      },
+      {
+        "file_address": "0xfffffe00079a87bc",
+        "atos": "0xfffffe00079a87bc (in kernel.release.t6020) + 420"
+      },
+      {
+        "file_address": "0xfffffe0007aa0a7c",
+        "atos": "0xfffffe0007aa0a7c (in kernel.release.t6020) + 712"
+      },
+      {
+        "file_address": "0xfffffe00074e8e94",
+        "atos": "0xfffffe00074e8e94 (in kernel.release.t6020) + 768"
+      },
+      {
+        "file_address": "0xfffffe000730b1f4",
+        "atos": "0xfffffe000730b1f4 (in kernel.release.t6020) + 72"
+      }
+    ],
+    "executable_uuid": "98a25964-ed52-389b-9964-724b54178ae6",
+    "executable_frames": [
+      {
+        "file_address": "0x10006a424",
+        "atos": "interestun::main::h9bef36c655f78c9b (in interestun-98a25964.quarantined) (main.rs:47)"
+      },
+      {
+        "file_address": "0x10006dc98",
+        "atos": "std::sys::backtrace::__rust_begin_short_backtrace::h8eb224f3581cb0fe (in interestun-98a25964.quarantined) (backtrace.rs:172)"
+      },
+      {
+        "file_address": "0x10006dc20",
+        "atos": "std::rt::lang_start::_$u7b$$u7b$closure$u7d$$u7d$::h394f0d4dabadda66 (in interestun-98a25964.quarantined) (rt.rs:206)"
+      },
+      {
+        "file_address": "0x100084758",
+        "atos": "std::rt::lang_start_internal::hdd036a54cd97d929 (in interestun-98a25964.quarantined) (rt.rs:171)"
+      },
+      {
+        "file_address": "0x100072fd4",
+        "atos": "main (in interestun-98a25964.quarantined) + 52"
+      }
+    ]
+  },
+  {
+    "report": "panic-full-2026-09-28-042813.0002.panic",
+    "panic_time_utc": "2026-09-28T11:27:33+00:00",
+    "assertion": "panic(cpu 4 caller 0xfffffe003b96a2cc): assertion failed: kif->pfik_ifp == NULL || kif->pfik_ifp == ifp, file: xnu/bsd/net/pf_if.c, line: 253 @uipc_socket.c:8321",
+    "pid": 3231,
+    "process_uptime_seconds": 0.8177270889282227,
+    "kernel_uuid": "a68631f1-6b54-30ab-89d0-3cf684c5674d",
+    "kernel_frames": [
+      {
+        "file_address": "0xfffffe000735c228",
+        "atos": "0xfffffe000735c228 (in kernel.release.t6020) + 1124"
+      },
+      {
+        "file_address": "0xfffffe00074eae7c",
+        "atos": "0xfffffe00074eae7c (in kernel.release.t6020) + 392"
+      },
+      {
+        "file_address": "0xfffffe00074e8d9c",
+        "atos": "0xfffffe00074e8d9c (in kernel.release.t6020) + 520"
+      },
+      {
+        "file_address": "0xfffffe000730b1f4",
+        "atos": "0xfffffe000730b1f4 (in kernel.release.t6020) + 72"
+      },
+      {
+        "file_address": "0xfffffe000735c54c",
+        "atos": "0xfffffe000735c54c (in kernel.release.t6020) + 76"
+      },
+      {
+        "file_address": "0xfffffe0007c9026c",
+        "atos": "Assert (in kernel.release.t6020) + 0"
+      },
+      {
+        "file_address": "0xfffffe0007ca22cc",
+        "atos": "0xfffffe0007ca22cc (in kernel.release.t6020) + 0"
+      },
+      {
+        "file_address": "0xfffffe000771a444",
+        "atos": "0xfffffe000771a444 (in kernel.release.t6020) + 164"
+      },
+      {
+        "file_address": "0xfffffe0007724bcc",
+        "atos": "0xfffffe0007724bcc (in kernel.release.t6020) + 96"
+      },
+      {
+        "file_address": "0xfffffe0007638658",
+        "atos": "ifnet_attach (in kernel.release.t6020) + 4580"
+      },
+      {
+        "file_address": "0xfffffe0007a2e514",
+        "atos": "kern_nexus_controller_alloc_net_provider_instance (in kernel.release.t6020) + 404"
+      },
+      {
+        "file_address": "0xfffffe000769c9ac",
+        "atos": "0xfffffe000769c9ac (in kernel.release.t6020) + 1348"
+      },
+      {
+        "file_address": "0xfffffe00078fffdc",
+        "atos": "0xfffffe00078fffdc (in kernel.release.t6020) + 332"
+      },
+      {
+        "file_address": "0xfffffe0007997600",
+        "atos": "0xfffffe0007997600 (in kernel.release.t6020) + 932"
+      },
+      {
+        "file_address": "0xfffffe00079a87bc",
+        "atos": "0xfffffe00079a87bc (in kernel.release.t6020) + 420"
+      },
+      {
+        "file_address": "0xfffffe0007aa0a7c",
+        "atos": "0xfffffe0007aa0a7c (in kernel.release.t6020) + 712"
+      },
+      {
+        "file_address": "0xfffffe00074e8e94",
+        "atos": "0xfffffe00074e8e94 (in kernel.release.t6020) + 768"
+      },
+      {
+        "file_address": "0xfffffe000730b1f4",
+        "atos": "0xfffffe000730b1f4 (in kernel.release.t6020) + 72"
+      }
+    ],
+    "executable_uuid": "98a25964-ed52-389b-9964-724b54178ae6",
+    "executable_frames": [
+      {
+        "file_address": "0x10006a424",
+        "atos": "interestun::main::h9bef36c655f78c9b (in interestun-98a25964.quarantined) (main.rs:47)"
+      },
+      {
+        "file_address": "0x10006dc98",
+        "atos": "std::sys::backtrace::__rust_begin_short_backtrace::h8eb224f3581cb0fe (in interestun-98a25964.quarantined) (backtrace.rs:172)"
+      },
+      {
+        "file_address": "0x10006dc20",
+        "atos": "std::rt::lang_start::_$u7b$$u7b$closure$u7d$$u7d$::h394f0d4dabadda66 (in interestun-98a25964.quarantined) (rt.rs:206)"
+      },
+      {
+        "file_address": "0x100084758",
+        "atos": "std::rt::lang_start_internal::hdd036a54cd97d929 (in interestun-98a25964.quarantined) (rt.rs:171)"
+      },
+      {
+        "file_address": "0x100072fd4",
+        "atos": "main (in interestun-98a25964.quarantined) + 52"
+      }
+    ]
+  }
+]

@@ -1,0 +1,153 @@
+{
+  "started_at": "2026-09-28T07:05:20.149716-07:00",
+  "command": [
+    "/opt/homebrew/bin/iperf3",
+    "-c",
+    "10.20.0.1",
+    "-t",
+    "10",
+    "-O",
+    "1",
+    "-J",
+    "--connect-timeout",
+    "3000",
+    "-R"
+  ],
+  "provider_pid": 4872,
+  "interface": "utun4",
+  "cipher": "Aes256Gcm",
+  "mode": "receive",
+  "duration": 10,
+  "gbps": 2.7052378376182156,
+  "reverse_gbps": 0.0,
+  "provider_cpu_cores": 1.0566118514236877,
+  "rss_peak_mib": 21.453125,
+  "retransmits": null,
+  "counter_delta": {
+    "peer_drops": 0,
+    "tx_queue_drops": 0
+  },
+  "largest_read_callback": null,
+  "tun_backend": "Network Extension utun descriptor",
+  "failed": false,
+  "exit_code": 0,
+  "error": null,
+  "cpu_sample_errors": [],
+  "cpu_samples": [
+    {
+      "monotonic": 2000.470982416,
+      "cpu_seconds": 0.03,
+      "rss_kib": 19328
+    },
+    {
+      "monotonic": 2000.976710916,
+      "cpu_seconds": 0.51,
+      "rss_kib": 21456
+    },
+    {
+      "monotonic": 2001.480533916,
+      "cpu_seconds": 1.0,
+      "rss_kib": 21744
+    },
+    {
+      "monotonic": 2001.992394625,
+      "cpu_seconds": 1.48,
+      "rss_kib": 21760
+    },
+    {
+      "monotonic": 2002.50477875,
+      "cpu_seconds": 2.01,
+      "rss_kib": 21872
+    },
+    {
+      "monotonic": 2003.009806875,
+      "cpu_seconds": 2.5,
+      "rss_kib": 21872
+    },
+    {
+      "monotonic": 2003.514661833,
+      "cpu_seconds": 3.01,
+      "rss_kib": 21872
+    },
+    {
+      "monotonic": 2004.02185,
+      "cpu_seconds": 3.53,
+      "rss_kib": 21872
+    },
+    {
+      "monotonic": 2004.535262458,
+      "cpu_seconds": 4.09,
+      "rss_kib": 21872
+    },
+    {
+      "monotonic": 2005.040415541,
+      "cpu_seconds": 4.62,
+      "rss_kib": 21872
+    },
+    {
+      "monotonic": 2005.548023958,
+      "cpu_seconds": 5.16,
+      "rss_kib": 21872
+    },
+    {
+      "monotonic": 2006.05315325,
+      "cpu_seconds": 5.69,
+      "rss_kib": 21872
+    },
+    {
+      "monotonic": 2006.565996708,
+      "cpu_seconds": 6.23,
+      "rss_kib": 21872
+    },
+    {
+      "monotonic": 2007.070618083,
+      "cpu_seconds": 6.77,
+      "rss_kib": 21872
+    },
+    {
+      "monotonic": 2007.575095875,
+      "cpu_seconds": 7.32,
+      "rss_kib": 21904
+    },
+    {
+      "monotonic": 2008.083401041,
+      "cpu_seconds": 7.87,
+      "rss_kib": 21920
+    },
+    {
+      "monotonic": 2008.591124125,
+      "cpu_seconds": 8.4,
+      "rss_kib": 21920
+    },
+    {
+      "monotonic": 2009.099599375,
+      "cpu_seconds": 8.95,
+      "rss_kib": 21920
+    },
+    {
+      "monotonic": 2009.608512375,
+      "cpu_seconds": 9.5,
+      "rss_kib": 21920
+    },
+    {
+      "monotonic": 2010.114006291,
+      "cpu_seconds": 10.05,
+      "rss_kib": 21952
+    },
+    {
+      "monotonic": 2010.618427625,
+      "cpu_seconds": 10.6,
+      "rss_kib": 21952
+    },
+    {
+      "monotonic": 2011.123540166,
+      "cpu_seconds": 11.16,
+      "rss_kib": 21952
+    },
+    {
+      "monotonic": 2011.496770666,
+      "cpu_seconds": 11.57,
+      "rss_kib": 21968
+    }
+  ]
+}

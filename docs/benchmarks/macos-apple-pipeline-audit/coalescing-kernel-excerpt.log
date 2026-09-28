@@ -1,0 +1,12 @@
+2026-09-28 07:02:09.774 E  kernel[0:dd55] utun_netif_sync_rx utun4: legacy packet length 13732 > 4096
+2026-09-28 07:02:09.780 E  kernel[0:dd55] utun_netif_sync_rx utun4: legacy packet length 4156 > 4096
+2026-09-28 07:02:09.782 E  kernel[0:dd55] utun_netif_sync_rx utun4: legacy packet length 4156 > 4096
+2026-09-28 07:02:09.784 E  kernel[0:dd55] utun_netif_sync_rx utun4: legacy packet length 13732 > 4096
+2026-09-28 07:02:10.099 E  kernel[0:dd55] utun_netif_sync_rx utun4: legacy packet length 4156 > 4096
+2026-09-28 07:02:10.405 E  kernel[0:dd55] utun_netif_sync_rx utun4: legacy packet length 4156 > 4096
+2026-09-28 07:02:10.724 E  kernel[0:dd55] utun_netif_sync_rx utun4: legacy packet length 4156 > 4096
+2026-09-28 07:02:11.028 E  kernel[0:dd55] utun_netif_sync_rx utun4: legacy packet length 5524 > 4096
+2026-09-28 07:02:11.043 E  kernel[0:dd55] utun_netif_sync_rx utun4: legacy packet length 4156 > 4096
+2026-09-28 07:02:11.348 E  kernel[0:dd55] utun_netif_sync_rx utun4: legacy packet length 8260 > 4096
+2026-09-28 07:02:11.350 E  kernel[0:dd55] utun_netif_sync_rx utun4: legacy packet length 4156 > 4096
+2026-09-28 07:02:11.665 E  kernel[0:dd55] utun_netif_sync_rx utun4: legacy packet length 4156 > 4096

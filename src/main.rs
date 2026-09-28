@@ -18,6 +18,10 @@ struct Args {
     #[cfg(target_os = "macos")]
     #[arg(long, default_value = "/var/run/wireguard")]
     uapi_dir: std::path::PathBuf,
+    /// Disabled: the experimental utun/Skywalk probe triggered kernel panics.
+    #[cfg(all(target_os = "macos", feature = "apple-utun-ring"))]
+    #[arg(long)]
+    probe_utun_rings: bool,
     /// Trusted Wintun DLL. Defaults to wintun.dll beside this executable.
     #[cfg(windows)]
     #[arg(long)]
@@ -38,6 +42,10 @@ fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     #[cfg(target_os = "macos")]
     {
+        #[cfg(feature = "apple-utun-ring")]
+        if args.probe_utun_rings {
+            return interestun::platform::utun_ring::probe().map_err(Into::into);
+        }
         interestun::uapi::install_signals()?;
         let tun = std::sync::Arc::new(interestun::platform::utun::Utun::open(
             &args.interface,

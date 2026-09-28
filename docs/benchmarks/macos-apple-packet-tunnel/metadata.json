@@ -1,0 +1,30 @@
+{
+  "date": "2026-09-28",
+  "macos": "ProductName:\t\tmacOS\nProductVersion:\t\t27.0\nBuildVersion:\t\t26A428\n",
+  "boot": "kern.boottime: { sec = 1790602326, usec = 46295 } Mon Sep 28 06:32:06 2026",
+  "hardware": "Apple M2 Pro (Mac14,10)",
+  "base_commit": "2f261b54cf0d4d4510e00c46b41986bea7ee5ae3",
+  "uncommitted_ne_implementation": true,
+  "app_version": "1790601131",
+  "rust_features": [
+    "default",
+    "apple-packet-tunnel"
+  ],
+  "extension_sha256": "d02f4efd7223588e0465ad62d752b336e4746d858a6a12dbdfb4ae8b24c395d8",
+  "mac_lan": "192.168.1.211",
+  "windows_lan": "192.168.1.226",
+  "mac_tunnel": "10.20.0.2/32",
+  "windows_tunnel": "10.20.0.1/32",
+  "mtu": 1420,
+  "cipher": "Aes256Gcm",
+  "outer_udp_port": 51820,
+  "interface": "utun4",
+  "lan_interface": "en8",
+  "provider_pid": 1817,
+  "tun_backend": "NEPacketTunnelFlow",
+  "udp_backend": "Network.framework",
+  "windows_revision_and_daemon_cpu": "not independently measured",
+  "cpu_measurement": "Provider process CPU seconds / wall seconds over samples from second 2 to test duration; one core = 100%. Excludes iperf and CPU charged to other processes.",
+  "initial_connectivity": "LAN ping and iperf reachable, both peers sent 148-byte UDP handshake attempts but no handshake until Windows peer update.",
+  "icmp": "Five tunnel pings had no reply after handshake; subsequent TCP tunnel tests passed. ICMP cause not diagnosed."
+}

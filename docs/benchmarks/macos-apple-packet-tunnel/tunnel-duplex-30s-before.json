@@ -1,0 +1,27 @@
+{
+  "cipher": "Aes256Gcm",
+  "failed": false,
+  "input_batches": 517603,
+  "input_drops": 0,
+  "input_packets": 13339819,
+  "interface": "utun4",
+  "largest_read_callback": 64,
+  "listen_port": 51820,
+  "output_batches": 353364,
+  "output_failures": 0,
+  "output_packets": 7881304,
+  "peers": [
+    {
+      "drops": 129,
+      "endpoint": "192.168.1.226:51820",
+      "latest_handshake_unix_seconds": 1790603154,
+      "public_key_hex": "6137bdd76d285529bfcf0eacf57cfcc5c283feaf0ed71d7e633bd3b273e2260b",
+      "rx_bytes": 10931779505,
+      "tx_bytes": 18579885660
+    }
+  ],
+  "read_callbacks": 517603,
+  "skywalk": "unverified",
+  "tun_backend": "NEPacketTunnelFlow",
+  "udp_backend": "Network.framework"
+}

@@ -208,10 +208,11 @@ pub fn serve_with_backend(
     config.listen_port = runtime.as_ref().unwrap().port;
     let mut clients: Vec<Client> = Vec::new();
     eprintln!(
-        "{} ready; UAPI {}; cipher {:?}; UDP backend {:?}; batch syscalls {}",
+        "{} ready; UAPI {}; cipher {:?}; TUN backend {}; UDP backend {:?}; batch syscalls {}",
         tun.name,
         path.display(),
         cipher,
+        tun.backend_name(),
         backend,
         crate::platform::batch::available()
     );

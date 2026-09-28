@@ -1,3 +1,5 @@
+#[cfg(all(target_os = "macos", feature = "apple-packet-tunnel"))]
+pub mod apple;
 pub mod config;
 pub mod packet;
 #[cfg(any(target_os = "macos", windows))]

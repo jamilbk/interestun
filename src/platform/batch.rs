@@ -204,7 +204,7 @@ impl Receiver {
             scratch: Box::default(),
         }
     }
-    #[cfg(feature = "apple-network")]
+    #[cfg(any(feature = "apple-network", feature = "apple-utun-ring"))]
     pub(super) fn receive_buffers(&mut self) -> &mut Vec<Packet> {
         while self.slots.len() < BATCH {
             let Some(packet) = Packet::new(&self.pool) else {

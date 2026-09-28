@@ -1,0 +1,239 @@
+//! Experimental Skywalk utun channel support. The private ABI is documented in
+//! Apple's XNU os_channel.h; no channel layout or ring cursors are dereferenced.
+use std::{
+    ffi::{CStr, c_void},
+    io,
+    mem::size_of,
+    os::fd::{AsRawFd, FromRawFd, OwnedFd},
+    ptr::NonNull,
+    sync::OnceLock,
+};
+
+type Handle = *mut c_void;
+#[repr(C, align(8))]
+#[derive(Default)]
+struct SlotProperties {
+    flags: u16,
+    len: u16,
+    index: u32,
+    external: u64,
+    buffer: u64,
+    metadata: u64,
+    padding: [u32; 8],
+}
+const _: () = assert!(size_of::<SlotProperties>() == 64);
+
+macro_rules! channel_api {
+    ($($field:ident: $symbol:literal => $ty:ty),+ $(,)?) => {
+        struct Api { $($field: $ty),+ }
+        impl Api {
+            fn load() -> io::Result<&'static Self> {
+                static API: OnceLock<Result<Api, &'static str>> = OnceLock::new();
+                API.get_or_init(|| {
+                    $(
+                        // SAFETY: symbol name is NUL-terminated; the function
+                        // signature matches the documented private C ABI.
+                        let $field = unsafe {
+                            let pointer = libc::dlsym(libc::RTLD_DEFAULT, concat!($symbol, "\0").as_ptr().cast());
+                            if pointer.is_null() { return Err($symbol); }
+                            std::mem::transmute::<*mut c_void, $ty>(pointer)
+                        };
+                    )+
+                    Ok(Api { $($field),+ })
+                }).as_ref().map_err(|name| io::Error::new(io::ErrorKind::Unsupported, format!("Skywalk symbol unavailable: {name}")))
+            }
+        }
+    }
+}
+channel_api! {
+    attr_create: "os_channel_attr_create" => unsafe extern "C" fn() -> Handle,
+    attr_destroy: "os_channel_attr_destroy" => unsafe extern "C" fn(Handle),
+    attr_set: "os_channel_attr_set" => unsafe extern "C" fn(Handle, i32, u64) -> i32,
+    attr_get: "os_channel_attr_get" => unsafe extern "C" fn(Handle, i32, *mut u64) -> i32,
+    read_attr: "os_channel_read_attr" => unsafe extern "C" fn(Handle, Handle) -> i32,
+    create: "os_channel_create_extended" => unsafe extern "C" fn(*const u8, u32, i32, u32, Handle) -> Handle,
+    destroy: "os_channel_destroy" => unsafe extern "C" fn(Handle),
+    fd: "os_channel_get_fd" => unsafe extern "C" fn(Handle) -> i32,
+    ring_id: "os_channel_ring_id" => unsafe extern "C" fn(Handle, i32) -> u32,
+    tx_ring: "os_channel_tx_ring" => unsafe extern "C" fn(Handle, u32) -> Handle,
+    rx_ring: "os_channel_rx_ring" => unsafe extern "C" fn(Handle, u32) -> Handle,
+    available: "os_channel_available_slot_count" => unsafe extern "C" fn(Handle) -> u32,
+    next: "os_channel_get_next_slot" => unsafe extern "C" fn(Handle, Handle, *mut SlotProperties) -> Handle,
+    set_properties: "os_channel_set_slot_properties" => unsafe extern "C" fn(Handle, Handle, *const SlotProperties),
+    advance: "os_channel_advance_slot" => unsafe extern "C" fn(Handle, Handle) -> i32,
+    sync: "os_channel_sync" => unsafe extern "C" fn(Handle, i32) -> i32,
+    defunct: "os_channel_is_defunct" => unsafe extern "C" fn(Handle) -> i32,
+}
+fn syscall(n: i32) -> io::Result<()> {
+    if n < 0 { Err(io::Error::last_os_error()) } else { Ok(()) }
+}
+fn status(n: i32) -> io::Result<()> {
+    if n == 0 { Ok(()) } else if n == -1 { Err(io::Error::last_os_error()) } else { Err(io::Error::from_raw_os_error(n)) }
+}
+struct Attribute { handle: NonNull<c_void>, api: &'static Api }
+impl Attribute {
+    fn new(api: &'static Api) -> io::Result<Self> {
+        // SAFETY: no arguments; creates an owned attribute object.
+        let handle = NonNull::new(unsafe { (api.attr_create)() }).ok_or_else(io::Error::last_os_error)?;
+        Ok(Self { handle, api })
+    }
+    fn set(&self, kind: i32, value: u64) -> io::Result<()> {
+        // SAFETY: live attribute, API validates kind/value.
+        status(unsafe { (self.api.attr_set)(self.handle.as_ptr(), kind, value) })
+    }
+    fn get(&self, kind: i32) -> io::Result<u64> {
+        let mut value = 0;
+        // SAFETY: live attribute and writable u64 output.
+        status(unsafe { (self.api.attr_get)(self.handle.as_ptr(), kind, &mut value) })?;
+        Ok(value)
+    }
+}
+impl Drop for Attribute {
+    fn drop(&mut self) {
+        // SAFETY: sole owner, no references escape.
+        unsafe { (self.api.attr_destroy)(self.handle.as_ptr()) };
+    }
+}
+pub struct Channel {
+    handle: NonNull<c_void>,
+    api: &'static Api,
+}
+impl Channel {
+    fn open(uuid: &[u8; 16], user_pool: bool) -> io::Result<Self> {
+        let api = Api::load()?;
+        let attributes = Attribute::new(api)?;
+        attributes.set(24, u64::from(user_pool))?;
+        attributes.set(26, 1)?; // Defunct mappings become observable instead of killing the process.
+        // SAFETY: UUID and attributes outlive the call. Client port zero, both
+        // directions, any ring. The returned object owns its guarded fd/mapping.
+        let handle = unsafe { (api.create)(uuid.as_ptr(), 0, 0, u32::MAX, attributes.handle.as_ptr()) };
+        let handle = NonNull::new(handle).ok_or_else(io::Error::last_os_error)?;
+        Ok(Self { handle, api })
+    }
+    fn describe(&self) -> io::Result<String> {
+        let attributes = Attribute::new(self.api)?;
+        // SAFETY: both handles remain owned for the call.
+        status(unsafe { (self.api.read_attr)(self.handle.as_ptr(), attributes.handle.as_ptr()) })?;
+        let mut fields = Vec::new();
+        for (name, kind) in [("tx_rings",0),("rx_rings",1),("tx_slots",2),("rx_slots",3),("slot_bytes",4),("metadata_type",21),("checksum_offload",23),("user_pool",24),("max_fragments",29),("buffers",30)] {
+            fields.push(format!("{name}={}",attributes.get(kind)?));
+        }
+        Ok(fields.join(" "))
+    }
+}
+impl Drop for Channel {
+    fn drop(&mut self) {
+        // SAFETY: owned channel; drops before its utun control socket.
+        unsafe { (self.api.destroy)(self.handle.as_ptr()) };
+    }
+}
+fn set(fd: i32, option: i32, bytes: &[u8]) -> io::Result<()> {
+    // SAFETY: the buffer and length agree, descriptor is live.
+    syscall(unsafe { libc::setsockopt(fd, libc::SYSPROTO_CONTROL, option, bytes.as_ptr().cast(), bytes.len() as _) })
+}
+fn get(fd: i32, option: i32, bytes: &mut [u8]) -> io::Result<usize> {
+    let mut len = bytes.len() as libc::socklen_t;
+    // SAFETY: output capacity is passed accurately, descriptor is live.
+    syscall(unsafe { libc::getsockopt(fd, libc::SYSPROTO_CONTROL, option, bytes.as_mut_ptr().cast(), &mut len) })?;
+    if len as usize > bytes.len() { return Err(io::Error::other("utun option length exceeds capacity")); }
+    Ok(len as usize)
+}
+fn bound_socket() -> io::Result<(OwnedFd, libc::sockaddr_ctl)> {
+    // SAFETY: Darwin structures and ioctl layout match libc; OwnedFd handles
+    // every error path. Bind creates per-socket state before preconnect options.
+    unsafe {
+        let raw = libc::socket(libc::PF_SYSTEM, libc::SOCK_DGRAM, libc::SYSPROTO_CONTROL);
+        syscall(raw)?;
+        let fd = OwnedFd::from_raw_fd(raw);
+        syscall(libc::fcntl(raw, libc::F_SETFD, libc::FD_CLOEXEC))?;
+        let mut info: libc::ctl_info = std::mem::zeroed();
+        for (dst, src) in info.ctl_name.iter_mut().zip(b"com.apple.net.utun_control") { *dst = *src as i8; }
+        syscall(libc::ioctl(raw, 0xc0644e03, &mut info))?;
+        let address = libc::sockaddr_ctl { sc_len: size_of::<libc::sockaddr_ctl>() as u8, sc_family: libc::AF_SYSTEM as u8, ss_sysaddr: libc::AF_SYS_CONTROL as u16, sc_id: info.ctl_id, sc_unit: 0, sc_reserved: [0;5] };
+        syscall(libc::bind(raw, (&address as *const libc::sockaddr_ctl).cast(), size_of::<libc::sockaddr_ctl>() as _))?;
+        Ok((fd, address))
+    }
+}
+fn connect(fd: i32, address: &libc::sockaddr_ctl) -> io::Result<()> {
+    // SAFETY: initialized Darwin sockaddr_ctl and its exact length.
+    syscall(unsafe { libc::connect(fd, (address as *const libc::sockaddr_ctl).cast(), size_of::<libc::sockaddr_ctl>() as _) })
+}
+
+/// A diagnostics-only option sweep. Every case owns a fresh, unnamed utun;
+/// no addresses/routes are installed and no existing interface is modified.
+pub fn probe() -> io::Result<()> {
+    type ProbeCase = (&'static str, Vec<(i32, i32)>, Vec<(i32, i32)>, bool);
+    let mut cases: Vec<ProbeCase> = vec![
+        ("control", vec![], vec![], false),
+        ("netif-only", vec![(20,1),(27,0)], vec![], false),
+        ("channel", vec![(20,1),(17,1),(27,0)], vec![], false),
+        ("flowswitch", vec![(20,1),(17,1),(27,1)], vec![(19,1)], false),
+        ("four-channels", vec![(20,1),(17,4),(27,0)], vec![], false),
+        ("user-pool", vec![(20,1),(17,1),(27,0),(30,1)], vec![], true),
+        ("pool-with-flowswitch", vec![(20,1),(17,1),(27,1),(30,1)], vec![(19,1)], true),
+        ("flow-steering", vec![(20,1),(17,1),(27,0)], vec![(31,1)], false),
+        ("four-flow-steering", vec![(20,1),(17,4),(27,0)], vec![(31,1)], false),
+        ("low-power-wake", vec![(20,1),(17,1),(27,0)], vec![(32,1)], false),
+        ("bind-pid", vec![(20,1),(17,1),(27,0),(29,std::process::id() as i32)], vec![], false),
+        ("external-stats", vec![], vec![(3,1)], false),
+        ("no-output", vec![], vec![(1,1)], false),
+        ("no-input", vec![], vec![(1,2)], false),
+        ("process-uuid-header", vec![(20,1),(17,1),(27,0)], vec![(1,4)], false),
+        ("pending-1024", vec![], vec![(16,1024)], false),
+    ];
+    for (name, size) in [("rings-8",8),("rings-128",128),("rings-256",256),("rings-512",512),("rings-1024",1024)] {
+        cases.push((name,vec![(20,1),(17,1),(27,0),(22,size),(25,size),(26,size)],vec![],false));
+    }
+    for (name, size) in [("slots-2048",2048),("slots-4096",4096),("slots-16384",16384),("slots-32768",32768)] {
+        cases.push((name,vec![(20,1),(17,1),(27,0),(21,size)],vec![],false));
+    }
+    for (name, size) in [("fsw-64",64),("fsw-256",256),("fsw-1024",1024)] {
+        cases.push((name,vec![(20,1),(17,1),(27,1),(23,size),(24,size)],vec![(19,1)],false));
+    }
+    Api::load()?;
+    for (name, before, after, user_pool) in cases {
+        let mut stage = String::from("bind");
+        let result = (|| -> io::Result<()> {
+            let (fd,address) = bound_socket()?;
+            let raw = fd.as_raw_fd();
+            for (option, value) in &before {
+                stage = format!("pre option={option} value={value}");
+                set(raw,*option,&value.to_ne_bytes())?;
+            }
+            stage = "connect".into();
+            connect(raw,&address)?;
+            for (option, value) in &after {
+                stage = format!("post option={option} value={value}");
+                set(raw,*option,&value.to_ne_bytes())?;
+            }
+            let mut ifname = [0u8;libc::IFNAMSIZ];
+            get(raw,2,&mut ifname)?;
+            let ifname = CStr::from_bytes_until_nul(&ifname).map_err(io::Error::other)?.to_string_lossy();
+            let mut values=Vec::new();
+            for (option, _) in before.iter().chain(after.iter()) {
+                let mut bytes=[0;4];
+                match get(raw,*option,&mut bytes) { Ok(4) => values.push(format!("{option}={}",i32::from_ne_bytes(bytes))),Ok(n)=>values.push(format!("{option}:len={n}")),Err(e)=>values.push(format!("{option}:errno={}",e.raw_os_error().unwrap_or(0))) }
+            }
+            let count = before.iter().find(|(option,_)| *option==17).map_or(0,|(_,v)|*v as usize);
+            if count > 0 {
+                let mut uuids = [0u8;64];
+                stage="channel-uuid".into();
+                let len=get(raw,18,&mut uuids[..count*16])?;
+                if len!=count*16 { return Err(io::Error::other("unexpected channel UUID count")); }
+                let mut channels=Vec::new();
+                for uuid in uuids[..len].chunks_exact(16) {
+                    stage="channel-open".into();
+                    let channel=Channel::open(uuid.try_into().unwrap(),user_pool)?;
+                    stage="channel-attributes".into();
+                    println!("{name} {ifname} channel={} {}",channels.len(),channel.describe()?);
+                    channels.push(channel);
+                }
+                drop(channels);
+            }
+            println!("PASS {name} {}",values.join(" "));
+            Ok(())
+        })();
+        if let Err(e)=result { println!("FAIL {name} stage={stage} errno={:?} {e}",e.raw_os_error()); }
+    }
+    Ok(())
+}

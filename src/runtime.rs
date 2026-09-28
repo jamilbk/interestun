@@ -116,6 +116,7 @@ pub struct SharedPeer {
     needs_handshake: AtomicBool,
     pub stats: Mutex<Snapshot>,
     pub drops: AtomicU64,
+    pub tx_queue_drops: AtomicU64,
 }
 impl SharedPeer {
     fn drop_packet(&self) {
@@ -232,6 +233,7 @@ impl Runtime {
                         ..Snapshot::default()
                     }),
                     drops: AtomicU64::new(0),
+                    tx_queue_drops: AtomicU64::new(0),
                 });
                 peers.insert(*key, shared.clone());
                 prepared.push((peer.clone(), rx_poll, tx_poll, shared, socket));
@@ -383,11 +385,20 @@ impl SendWorker {
         if self.plain.len() < QUEUE {
             self.plain.push_back(p);
         } else {
+            self.shared.tx_queue_drops.fetch_add(1, Ordering::Relaxed);
             self.shared.drop_packet();
         }
     }
+    fn can_read_tun(&self) -> bool {
+        // With one peer every packet goes into this queue. Reserve room for a
+        // complete read before draining utun, and retain readiness while paused.
+        // A shared dispatcher still drains for other peers when its own peer
+        // is congested; those per-peer queues retain their existing drop policy.
+        self.routing.peers.len() > 1 || self.plain.len() <= QUEUE - BATCH
+    }
     fn run(&mut self) -> Result<()> {
         let mut receiver = Receiver::new(self.pool.clone());
+        let tun = self.tun.clone();
         let mut writer = batch::Sender::new();
         let mut events = Events::with_capacity(8);
         let mut readable = self.id == 0;
@@ -395,7 +406,7 @@ impl SendWorker {
         let mut registered = false;
         let mut handshake_after = Instant::now();
         if self.id == 0 {
-            register(&self.poll, self.tun.fd.as_raw_fd(), TUN, Interest::READABLE)?;
+            self.tun.register_readable(&self.poll, TUN)?;
         }
         while !self.stop.load(Ordering::Acquire) {
             self.shared.tx.notified.store(false, Ordering::Release);
@@ -434,8 +445,8 @@ impl SendWorker {
             {
                 self.sender = None;
             }
-            if readable {
-                match receiver.receive(self.tun.fd.as_raw_fd(), true, |r| {
+            if readable && self.can_read_tun() {
+                match tun.receive(&mut receiver, |r| {
                     if let Some(id) = packet::addresses(r.packet.data())
                         .and_then(|(_, dst)| self.routing.lookup(dst))
                     {
@@ -535,7 +546,7 @@ impl SendWorker {
             let more = self.shared.control_pending.load(Ordering::Acquire)
                 || (!blocked && self.socket.is_some() && !self.network.is_empty())
                 || (can_encrypt && (!self.plain.is_empty() || !self.shared.tx.queue.is_empty()))
-                || readable;
+                || (readable && self.can_read_tun());
             // A bounded retry handles temporary global pool exhaustion without
             // sleeping forever on an edge that was already consumed.
             #[cfg(feature = "io-profile")]
@@ -849,7 +860,11 @@ impl ReceiveWorker {
         let mut receiver = Receiver::new(self.pool.clone());
         let mut writer = batch::Sender::new();
         #[cfg(feature = "apple-coalesce")]
-        let mut coalescer = crate::platform::coalesce_macos::Coalescer::default();
+        // Preserve original packets for adapters using rings or packet objects.
+        let mut coalescer = self
+            .tun
+            .supports_socket_coalescing()
+            .then(crate::platform::coalesce_macos::Coalescer::default);
         let mut events = Events::with_capacity(8);
         let mut snapshot_at = Instant::now();
         let mut blocked = false;
@@ -933,10 +948,18 @@ impl ReceiveWorker {
                     .as_ref()
                     .map(|gate| gate.lock().unwrap());
                 #[cfg(feature = "apple-coalesce")]
-                let result =
-                    coalescer.flush(&mut writer, self.tun.fd.as_raw_fd(), &mut self.injection);
+                let result = match &mut coalescer {
+                    Some(coalescer) => coalescer.flush(
+                        &mut writer,
+                        self.tun
+                            .io_fd()
+                            .expect("socket coalescer requires a descriptor"),
+                        &mut self.injection,
+                    ),
+                    None => self.tun.flush(&mut writer, &mut self.injection),
+                };
                 #[cfg(not(feature = "apple-coalesce"))]
-                let result = writer.flush(self.tun.fd.as_raw_fd(), true, &mut self.injection);
+                let result = self.tun.flush(&mut writer, &mut self.injection);
                 match result {
                     Ok(_) => {}
                     Err(e) if e.kind() == io::ErrorKind::WouldBlock => blocked = true,
@@ -945,11 +968,18 @@ impl ReceiveWorker {
                 }
             }
             if blocked && !registered {
-                register(&self.poll, self.tun.fd.as_raw_fd(), TUN, Interest::WRITABLE)?;
+                let fd = self.tun.io_fd().context(
+                    "callback adapter returned WouldBlock without a writable notification",
+                )?;
+                register(&self.poll, fd, TUN, Interest::WRITABLE)?;
                 registered = true;
             } else if !blocked && registered {
-                self.poll
-                    .deregister(self.tun.fd.as_raw_fd(), Interest::WRITABLE)?;
+                self.poll.deregister(
+                    self.tun
+                        .io_fd()
+                        .context("missing registered adapter descriptor")?,
+                    Interest::WRITABLE,
+                )?;
                 registered = false;
             }
             #[cfg(feature = "io-metrics")]

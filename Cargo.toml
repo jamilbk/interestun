@@ -6,11 +6,18 @@ rust-version = "1.88"
 license = "BSD-3-Clause"
 description = "A peer-threaded macOS and Windows userspace tunnel"
 
+[lib]
+crate-type = ["rlib", "staticlib"]
+
 [features]
 default = ["apple-network-multiple", "apple-coalesce"]
 io-metrics = []
 io-profile = ["io-metrics"]
 apple-network = []
+# Public NEPacketTunnelFlow bridge, hosted by the macOS system extension.
+apple-packet-tunnel = ["apple-network", "dep:serde_json"]
+# Selects the mapped utun backend. Live attachment is gated in utun_ring.rs.
+apple-utun-ring = []
 # Experimental private Apple SPI. See docs/network-framework-audit.md.
 apple-network-multiple = ["apple-network"]
 apple-coalesce = []
@@ -31,6 +38,7 @@ libc = "0.2"
 socket2 = { version = "0.6", features = ["all"] }
 crossbeam-queue = "0.3"
 rand = "0.10"
+serde_json = { version = "1", optional = true }
 
 [target.'cfg(windows)'.dependencies]
 mio = { version = "1", features = ["os-poll", "os-ext", "net"] }

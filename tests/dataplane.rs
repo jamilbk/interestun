@@ -29,10 +29,7 @@ fn fake_tun() -> (Arc<Utun>, UdpSocket) {
         .set_read_timeout(Some(Duration::from_secs(5)))
         .unwrap();
     #[cfg(target_os = "macos")]
-    let tun = Arc::new(Utun {
-        fd: app.into(),
-        name: "utun-test".into(),
-    });
+    let tun = Arc::new(Utun::from_fd(app.into(), "utun-test".into()));
     #[cfg(windows)]
     let tun = Arc::new(FakeWintun(app));
     (tun, kernel)
