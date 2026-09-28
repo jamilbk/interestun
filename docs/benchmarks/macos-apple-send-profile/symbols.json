@@ -1,0 +1,7 @@
+{
+  "binary_uuid": "51EE563A-1969-3579-8760-B6BA4CF6D952",
+  "binary": "/Applications/Interestun.app/Contents/Library/SystemExtensions/dev.jamilbk.interestun.packet-tunnel.systemextension/Contents/MacOS/InterestunPacketTunnel",
+  "matching_dsyms": [
+    "/Users/jamil/tmp/interestun/target/apple/.build-_7bx1sux/products/dev.jamilbk.interestun.packet-tunnel.systemextension.dSYM"
+  ]
+}

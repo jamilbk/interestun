@@ -1,0 +1,20 @@
+{
+  "checked_at": "2026-09-28T07:20:50.606417-07:00",
+  "bundle": "/Applications/Interestun.app",
+  "version": "1790604265",
+  "team_id": "47R2M6779T",
+  "sha256": {
+    "Contents/MacOS/interestunctl": "fe565b9f4fa08e6db6e34ddcf323eb9ca73af7e8659d79be061e5e052b29ec2a",
+    "Contents/Library/SystemExtensions/dev.jamilbk.interestun.packet-tunnel.systemextension/Contents/MacOS/InterestunPacketTunnel": "3a6caea0bd78e658ae03984daca635d6004e50db53c700aae1f40d925171ac0c"
+  },
+  "status": "System extension: dev.jamilbk.interestun.packet-tunnel version=1790601131 enabled=false\nSystem extension: dev.jamilbk.interestun.packet-tunnel version=1790603726 enabled=false\nSystem extension: dev.jamilbk.interestun.packet-tunnel version=1790604265 enabled=true\nSystem extension: dev.jamilbk.interestun.packet-tunnel version=1790604015 enabled=false\nVPN: connected",
+  "extension_activated": true,
+  "tunnel_started": true,
+  "provider_pid": 4872,
+  "installed_extension_binary": "/Library/SystemExtensions/2EA4EEB8-866E-4B82-93ED-8B6FE6AFCD88/dev.jamilbk.interestun.packet-tunnel.systemextension/Contents/MacOS/InterestunPacketTunnel",
+  "interface": "utun4",
+  "tun_frontend": "Network Extension utun descriptor",
+  "udp_backend": "Network.framework",
+  "skywalk": "NE netif enabled; existing control-socket frontend; no mapped utun channel",
+  "boot_time": "kern.boottime: { sec = 1790602326, usec = 46295 } Mon Sep 28 06:32:06 2026"
+}

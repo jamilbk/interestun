@@ -1,0 +1,28 @@
+{
+  "checked_at": "2026-09-28T10:05:15.424765-07:00",
+  "source_commit": "9568c9ff458330a1eae9d7bc735e37ed6e094fcf",
+  "provider_pid": 4872,
+  "recording_template": "Time Profiler",
+  "recording_seconds": 25,
+  "sample_period_microseconds": 1000,
+  "window_start_seconds": 2,
+  "window_end_seconds": 22,
+  "windows": [
+    {
+      "capture": "user-stacks",
+      "trace_start": "2026-09-28T09:51:46.925000-07:00",
+      "trace_offset_from_test_start_seconds": 2.815122,
+      "selected_samples": 34034
+    },
+    {
+      "capture": "kernel",
+      "trace_start": "2026-09-28T09:55:00.675000-07:00",
+      "trace_offset_from_test_start_seconds": 3.242482,
+      "selected_samples": 33355
+    }
+  ],
+  "kernel_uuid": "A68631F1-6B54-30AB-89D0-3CF684C5674D",
+  "kernel_private_symbols_incomplete": true,
+  "native_trace_directory": "target/apple-path/send-profile-20260928",
+  "rebuild_or_restart_performed": false
+}

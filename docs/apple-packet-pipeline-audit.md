@@ -268,6 +268,11 @@ buffers at an unsafe completion point. Receive goodput and duplex asymmetry
 remain unexplained ceilings on this pair; lower extension CPU alone does not
 attribute them to Windows, crypto, or a particular kernel component.
 
+The subsequent [send CPU profile](apple-send-profile.md) captures Instruments
+user/kernel call stacks from the same running build. It attributes most CPU
+to framework send processing and callbacks, with encryption around 6% of
+sampled CPU; its current throughput and attribution limits are recorded there.
+
 [Experiment artifacts](benchmarks/macos-apple-pipeline-audit/) contain raw
 throughput/counter/CPU records and build hashes. Local source excerpts,
 resolved framework selector, and kernel regression logs are under
