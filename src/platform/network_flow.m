@@ -1,27 +1,35 @@
-// Experimental connected UDP backend. All mutable state is serialized on queue.
-// Rust owns separate RX/TX notification readers; this object owns duplicated
-// nonblocking writers until the last asynchronous callback releases the object.
+// Callback delivery remains serial; packet handoff uses a short ring lock.
+// Rust never waits for the callback queue in the send/receive hot paths.
 #import <Foundation/Foundation.h>
 #import <Network/Network.h>
 #include <errno.h>
+#include <os/lock.h>
+#include <stdatomic.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
-#define RX_SLOTS 256
+#define RX_SLOTS 1024
+#define RX_WINDOW 128
 #define TX_SLOTS 1024
 #define PACKET_CAPACITY 2048
 
 @interface INFlow : NSObject {
 @public
-    uint8_t packets[RX_SLOTS][PACKET_CAPACITY];
+    os_unfair_lock ringLock;
+    dispatch_data_t packets[RX_SLOTS];
     size_t lengths[RX_SLOTS];
-    size_t head, count, pending;
-    int error, rxWriter, txWriter;
-    bool closing, ready, receiving;
+    size_t head, count, reserved;
+    bool refillScheduled, notifyScheduled; // ringLock protects these and the ring.
+    _Atomic(size_t) pending;
+    _Atomic(int) error;
+    _Atomic(bool) closing, ready;
+    int rxWriter, txWriter;
 }
 @property nw_connection_t connection;
 @property dispatch_queue_t queue;
-- (void)receive;
+- (void)refill;
+- (void)scheduleRefill;
+- (void)scheduleNotify;
 @end
 
 static void notify(int fd) {
@@ -44,39 +52,77 @@ static int posix_error(nw_error_t error) {
         ? nw_error_get_error_code(error) : EIO;
 }
 
+static void fail(INFlow *flow, int error) {
+    atomic_store_explicit(&flow->error, error, memory_order_release);
+    notify(flow->rxWriter);
+    notify(flow->txWriter);
+}
+
 @implementation INFlow
 - (void)dealloc {
     if (rxWriter >= 0) close(rxWriter);
     if (txWriter >= 0) close(txWriter);
 }
-- (void)receive {
-    if (closing || error || !ready || receiving || count == RX_SLOTS) return;
-    receiving = true;
-    nw_connection_receive_message(self.connection, ^(dispatch_data_t data, nw_content_context_t context, bool complete, nw_error_t e) {
-        (void)context;
-        self->receiving = false;
-        if (self->closing) return;
-        if (e) {
-            self->error = posix_error(e);
-            notify(self->rxWriter);
-            notify(self->txWriter);
-            return;
-        }
-        size_t length = data ? dispatch_data_get_size(data) : 0;
-        if (complete && length > 0 && length <= PACKET_CAPACITY) {
-            size_t slot = (self->head + self->count) % RX_SLOTS;
-            dispatch_data_apply(data, ^bool(dispatch_data_t region, size_t offset, const void *buffer, size_t size) {
-                (void)region;
-                memcpy(self->packets[slot] + offset, buffer, size);
-                return true;
+- (void)scheduleNotify {
+    os_unfair_lock_lock(&ringLock);
+    bool schedule = !notifyScheduled && count != 0;
+    if (schedule) notifyScheduled = true;
+    os_unfair_lock_unlock(&ringLock);
+    if (!schedule) return;
+    // Run after callbacks already queued for this batch. No timer or minimum
+    // packet threshold: a lone handshake/datagram is notified too.
+    dispatch_async(self.queue, ^{
+        os_unfair_lock_lock(&self->ringLock);
+        self->notifyScheduled = false;
+        bool queued = self->count != 0;
+        os_unfair_lock_unlock(&self->ringLock);
+        if (queued && !atomic_load_explicit(&self->closing, memory_order_acquire)) notify(self->rxWriter);
+    });
+}
+- (void)scheduleRefill {
+    os_unfair_lock_lock(&ringLock);
+    bool schedule = !refillScheduled && reserved <= RX_WINDOW / 2 && count + reserved < RX_SLOTS;
+    if (schedule) refillScheduled = true;
+    os_unfair_lock_unlock(&ringLock);
+    if (!schedule) return;
+    dispatch_async(self.queue, ^{
+        os_unfair_lock_lock(&self->ringLock);
+        self->refillScheduled = false;
+        os_unfair_lock_unlock(&self->ringLock);
+        [self refill];
+    });
+}
+- (void)refill {
+    if (atomic_load_explicit(&closing, memory_order_acquire) ||
+        atomic_load_explicit(&error, memory_order_acquire) ||
+        !atomic_load_explicit(&ready, memory_order_acquire)) return;
+    os_unfair_lock_lock(&ringLock);
+    size_t n = MIN(RX_WINDOW - reserved, RX_SLOTS - count - reserved);
+    reserved += n; // Reserve ring capacity for every outstanding callback.
+    os_unfair_lock_unlock(&ringLock);
+    if (!n) return;
+    nw_connection_batch(self.connection, ^{
+        for (size_t i = 0; i < n; i++) {
+            nw_connection_receive_message(self.connection, ^(dispatch_data_t data, nw_content_context_t context, bool complete, nw_error_t e) {
+                (void)context;
+                if (atomic_load_explicit(&self->closing, memory_order_acquire)) return;
+                size_t length = data ? dispatch_data_get_size(data) : 0;
+                bool valid = !e && complete && length > 0 && length <= PACKET_CAPACITY;
+                os_unfair_lock_lock(&self->ringLock);
+                self->reserved--;
+                bool wasEmpty = self->count == 0;
+                if (valid) {
+                    size_t slot = (self->head + self->count) % RX_SLOTS;
+                    self->packets[slot] = data; // ARC retains immutable framework storage.
+                    self->lengths[slot] = length;
+                    self->count++;
+                }
+                os_unfair_lock_unlock(&self->ringLock);
+                if (e) { fail(self, posix_error(e)); return; }
+                if (valid && wasEmpty) [self scheduleNotify];
+                [self scheduleRefill];
             });
-            self->lengths[slot] = length;
-            self->count++;
-            if (self->count == 1) notify(self->rxWriter);
         }
-        // Invalid/oversized/empty datagrams are discarded. Stop posting reads
-        // when our bounded ring is full; the Rust consumer resumes them.
-        [self receive];
     });
 }
 @end
@@ -85,6 +131,11 @@ void *in_flow_open(const char *host, const char *port, const char *localHost,
                    const char *localPort, int rxWriter, int txWriter) {
     @autoreleasepool {
         INFlow *flow = [INFlow new];
+        flow->ringLock = (os_unfair_lock)OS_UNFAIR_LOCK_INIT;
+        atomic_init(&flow->pending, 0);
+        atomic_init(&flow->error, 0);
+        atomic_init(&flow->closing, false);
+        atomic_init(&flow->ready, false);
         flow->rxWriter = -1;
         flow->txWriter = -1;
         flow->rxWriter = dup(rxWriter);
@@ -100,15 +151,14 @@ void *in_flow_open(const char *host, const char *port, const char *localHost,
         __weak INFlow *weakFlow = flow;
         nw_connection_set_state_changed_handler(flow.connection, ^(nw_connection_state_t state, nw_error_t e) {
             INFlow *f = weakFlow;
-            if (!f || f->closing) return;
+            if (!f || atomic_load_explicit(&f->closing, memory_order_acquire)) return;
             if (state == nw_connection_state_ready) {
-                f->ready = true;
+                atomic_store_explicit(&f->ready, true, memory_order_release);
                 char *description = nw_connection_copy_description(f.connection);
                 if (description) { fprintf(stderr, "Network.framework peer: %s\n", description); free(description); }
-                [f receive];
+                [f refill];
             } else if (state == nw_connection_state_failed || state == nw_connection_state_waiting) {
-                // Fail visibly instead of silently comparing a stuck flow.
-                f->error = e ? posix_error(e) : ENETDOWN;
+                fail(f, e ? posix_error(e) : ENETDOWN);
             }
             notify(f->rxWriter);
             notify(f->txWriter);
@@ -118,65 +168,78 @@ void *in_flow_open(const char *host, const char *port, const char *localHost,
     }
 }
 
-// Return a consumed prefix, or negative POSIX errno. Each dispatch_data owns a
-// synchronous copy before returning to Rust. Completions wake the TX worker.
+// nw_connection_batch invokes its block synchronously. Only owned dispatch_data
+// copies and retained flow references escape to completion callbacks.
 int in_flow_send(void *handle, const uint8_t *const *buffers, const size_t *lengths, size_t count) {
     @autoreleasepool {
         INFlow *flow = (__bridge INFlow *)handle;
-        __block int result = 0;
-        dispatch_sync(flow.queue, ^{
-            if (flow->error) { result = -flow->error; return; }
-            if (!flow->ready || flow->pending == TX_SLOTS) { result = -EAGAIN; return; }
-            size_t accepted = MIN(count, TX_SLOTS - flow->pending);
-            flow->pending += accepted;
-            nw_connection_batch(flow.connection, ^{
-                for (size_t i = 0; i < accepted; i++) {
-                    dispatch_data_t data = dispatch_data_create(buffers[i], lengths[i], NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
-                    nw_connection_send(flow.connection, data, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, true, ^(nw_error_t e) {
-                        bool wasFull = flow->pending == TX_SLOTS;
-                        flow->pending--;
-                        if (flow->closing) return;
-                        if (e) {
-                            flow->error = posix_error(e);
-                            notify(flow->rxWriter);
-                            notify(flow->txWriter);
-                        } else if (wasFull) notify(flow->txWriter);
-                    });
-                }
-            });
-            result = (int)accepted;
+        int error = atomic_load_explicit(&flow->error, memory_order_acquire);
+        if (error) return -error;
+        if (!atomic_load_explicit(&flow->ready, memory_order_acquire)) return -EAGAIN;
+        size_t pending = atomic_load_explicit(&flow->pending, memory_order_relaxed);
+        size_t accepted;
+        do {
+            if (pending == TX_SLOTS) return -EAGAIN;
+            accepted = MIN(count, TX_SLOTS - pending);
+        } while (!atomic_compare_exchange_weak_explicit(&flow->pending, &pending, pending + accepted,
+                                                        memory_order_acq_rel, memory_order_relaxed));
+        nw_connection_batch(flow.connection, ^{
+            for (size_t i = 0; i < accepted; i++) {
+                dispatch_data_t data = dispatch_data_create(buffers[i], lengths[i], NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+                nw_connection_send(flow.connection, data, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, true, ^(nw_error_t e) {
+                    size_t previous = atomic_fetch_sub_explicit(&flow->pending, 1, memory_order_acq_rel);
+                    if (atomic_load_explicit(&flow->closing, memory_order_acquire)) return;
+                    if (e) fail(flow, posix_error(e));
+                    else if (previous == TX_SLOTS) notify(flow->txWriter);
+                });
+            }
         });
-        return result;
+        return (int)accepted;
     }
 }
 
 int in_flow_receive(void *handle, uint8_t *const *buffers, size_t *lengths, size_t capacity) {
     @autoreleasepool {
         INFlow *flow = (__bridge INFlow *)handle;
-        __block int result = 0;
-        dispatch_sync(flow.queue, ^{
-            size_t available = MIN(capacity, flow->count);
-            for (size_t i = 0; i < available; i++) {
-                size_t slot = flow->head;
-                lengths[i] = flow->lengths[slot];
-                memcpy(buffers[i], flow->packets[slot], lengths[i]);
-                flow->head = (slot + 1) % RX_SLOTS;
-                flow->count--;
-            }
-            [flow receive];
-            result = available ? (int)available : -(flow->error ? flow->error : EAGAIN);
-        });
-        return result;
+        dispatch_data_t batch[RX_WINDOW];
+        os_unfair_lock_lock(&flow->ringLock);
+        size_t available = MIN(MIN(capacity, RX_WINDOW), flow->count);
+        for (size_t i = 0; i < available; i++) {
+            size_t slot = flow->head;
+            batch[i] = flow->packets[slot];
+            flow->packets[slot] = nil;
+            lengths[i] = flow->lengths[slot];
+            flow->head = (slot + 1) % RX_SLOTS;
+        }
+        flow->count -= available;
+        os_unfair_lock_unlock(&flow->ringLock);
+        if (available) [flow scheduleRefill];
+        // No staging-payload copy and no dispatch_sync: transfer retained data
+        // references under the lock, then copy directly into Rust's cached slots.
+        for (size_t i = 0; i < available; i++) {
+            dispatch_data_apply(batch[i], ^bool(dispatch_data_t region, size_t offset, const void *buffer, size_t size) {
+                (void)region;
+                memcpy(buffers[i] + offset, buffer, size);
+                return true;
+            });
+        }
+        int error = atomic_load_explicit(&flow->error, memory_order_acquire);
+        return available ? (int)available : -(error ? error : EAGAIN);
     }
 }
 
 void in_flow_close(void *handle) {
     @autoreleasepool {
         INFlow *flow = (__bridge_transfer INFlow *)handle;
+        atomic_store_explicit(&flow->closing, true, memory_order_release);
+        // Lifecycle-only barrier; no worker hot path synchronizes to this queue.
         dispatch_sync(flow.queue, ^{
-            flow->closing = true;
             nw_connection_set_state_changed_handler(flow.connection, nil);
             nw_connection_cancel(flow.connection);
+            os_unfair_lock_lock(&flow->ringLock);
+            for (size_t i = 0; i < RX_SLOTS; i++) flow->packets[i] = nil;
+            flow->count = 0;
+            os_unfair_lock_unlock(&flow->ringLock);
         });
     }
 }

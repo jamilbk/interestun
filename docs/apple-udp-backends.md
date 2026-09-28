@@ -45,19 +45,33 @@ The Apple implementation uses `nw_connection_batch`, asynchronous send
 completions, and message receives. BoringTun retains the existing exclusive
 TX key/counter and RX handshake/replay ownership.
 
-Each Apple flow has a serial dispatch queue, at most 1024 sends awaiting
-content-processed callbacks, and a preallocated 256-packet receive ring. Full
-receive rings stop posting reads until Rust drains them. Separate nonblocking
-Unix socketpairs notify the TX/RX workers; these are local wakeup descriptors,
-not BSD UDP transports. Wakeups are coalesced at empty-to-nonempty RX and
-full-to-writable TX transitions. Partial accepted sends retain their tails.
+Each Apple flow has a serial dispatch callback queue, at most 1024 sends awaiting
+content-processed callbacks, and a 1024-slot ring retaining immutable framework
+messages. Up to 128 outstanding message receives reserve capacity in that ring.
+Receive posting is batched with `nw_connection_batch`; a full ring stops posting
+until Rust drains it. A short lock protects the ring; atomics protect send credits
+and cross-thread state. Send and receive calls never synchronously wait for the
+callback queue. Cancellation alone uses a lifecycle barrier.
 
-The bridge copies bytes across the asynchronous boundary and never retains
-Rust buffer pointers. Cancellation marks the flow closed before Rust releases
-its descriptors; callbacks retain their own state and notification writers.
-This first implementation adds dispatch scheduling and staging copies. It is
-not zero-copy or a performance ceiling. Connection waiting/failure and async
-I/O errors fail visibly; they do not select another backend.
+Separate nonblocking Unix socketpairs notify the TX/RX workers. Mio's kqueue
+polls these local notification descriptors and utun; it does not poll the
+framework's underlying network socket. Tokio could use `AsyncFd` for the same
+notification bridge. Network.framework independently drives its own I/O and
+callback delivery, so using mio does not eliminate dispatch scheduling.
+
+RX notification is coalesced after already-queued callbacks, on an
+empty-to-nonempty transition; TX notification occurs on full-to-writable credit
+transitions. No timer or packet-count threshold delays a lone received message.
+Workers keep draining until `WouldBlock`, including after partial batches.
+
+Rust drains up to 128 retained messages under the ring lock, then copies directly
+into cached packet-pool buffers outside the lock. Unused buffers stay cached.
+This removes the old payload staging copy and per-call checkout/return churn;
+it is not zero-copy. TX still makes owned dispatch-data copies before returning
+to Rust, and partial accepted sends retain their tails. No Rust buffer pointer
+escapes a synchronous bridge call. Callbacks retain their state and notification
+writers through cancellation. Connection waiting/failure and asynchronous I/O
+errors fail visibly; they do not select another backend.
 
 ## Path selection and measurements
 

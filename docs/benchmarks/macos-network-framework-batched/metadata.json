@@ -1,0 +1,18 @@
+{
+  "baseline_commit": "440a2da",
+  "change": "Batched Network.framework bridge in this commit",
+  "date_local": "2026-09-27",
+  "outer_endpoint": "192.168.1.226:51820",
+  "inner_peer": "10.20.0.1",
+  "cipher": "AES-256-GCM",
+  "mtu": 1420,
+  "interface": "en8",
+  "build": "CARGO_TARGET_DIR=target cargo build --release --locked --features io-profile",
+  "cpu": "Daemon CPU-time deltas from one-second ps snapshots, seconds 2-30 of each command; 100% = one core.",
+  "duplex_reproduction": "Use --bidir with the same 30-second iperf command and snapshot method in measure.py; read both sum_received and sum_received_bidir_reverse.",
+  "limitations": [
+    "Sequential samples, not randomized A/B",
+    "Windows binary revision and daemon CPU not independently verified",
+    "Framework internal UDP path not proven by API choice"
+  ]
+}

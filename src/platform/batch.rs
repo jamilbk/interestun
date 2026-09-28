@@ -204,6 +204,16 @@ impl Receiver {
             scratch: Box::default(),
         }
     }
+    #[cfg(feature = "apple-network")]
+    pub(super) fn receive_buffers(&mut self) -> &mut Vec<Packet> {
+        while self.slots.len() < BATCH {
+            let Some(packet) = Packet::new(&self.pool) else {
+                break;
+            };
+            self.slots.push(packet);
+        }
+        &mut self.slots
+    }
     pub fn receive(
         &mut self,
         fd: RawFd,

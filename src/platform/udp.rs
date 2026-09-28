@@ -114,7 +114,7 @@ impl PeerSocket {
         match self {
             Self::Bsd(s) => receiver.receive(s.as_raw_fd(), false, consume),
             #[cfg(feature = "apple-network")]
-            Self::Network(s) => s.receive(pool, consume),
+            Self::Network(s) => s.receive(receiver, consume),
         }
     }
 }

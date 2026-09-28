@@ -1,6 +1,6 @@
-//! Safe ownership wrapper around the serial-queue Network.framework bridge.
-use super::batch::Received;
-use crate::packet::{BATCH, Packet, Pool};
+//! Ownership wrapper around the bounded Network.framework bridge.
+use super::batch::{Received, Receiver};
+use crate::packet::{BATCH, Packet};
 use std::{
     collections::VecDeque,
     ffi::{CString, c_void},
@@ -47,9 +47,9 @@ pub struct Socket {
     tx: UnixStream,
     endpoint: SocketAddr,
 }
-// SAFETY: Every bridge operation serializes mutable flow state on its dispatch
-// queue. Async callbacks own their buffers and never access Rust pointers.
-// Arc ownership prevents close racing any Rust send/receive call.
+// SAFETY: C protects its ring with a lock and cross-thread state with atomics.
+// Async callbacks retain immutable framework buffers, never Rust pointers.
+// Arc ownership prevents close racing a Rust call; RX scratch belongs to its worker.
 unsafe impl Send for Socket {}
 unsafe impl Sync for Socket {}
 
@@ -149,19 +149,23 @@ impl Socket {
         queue.drain(..sent);
         Ok(sent)
     }
-    pub fn receive(&self, pool: &Pool, mut consume: impl FnMut(Received)) -> io::Result<usize> {
+    pub fn receive(
+        &self,
+        receiver: &mut Receiver,
+        mut consume: impl FnMut(Received),
+    ) -> io::Result<usize> {
         let _notifications = drain(&self.rx)?;
         #[cfg(feature = "io-profile")]
         let setup = Span::new(Stage::ReceiveSetup);
-        let mut packets: [Option<Packet>; BATCH] = std::array::from_fn(|_| Packet::new(pool));
-        let n = packets.iter().take_while(|p| p.is_some()).count();
+        let packets = receiver.receive_buffers();
+        let n = packets.len();
         if n == 0 {
             return Err(io::ErrorKind::OutOfMemory.into());
         }
         let mut pointers = [std::ptr::null_mut(); BATCH];
         let mut lengths = [0; BATCH];
         for i in 0..n {
-            pointers[i] = packets[i].as_mut().unwrap().buffer().as_mut_ptr();
+            pointers[i] = packets[i].buffer().as_mut_ptr();
         }
         #[cfg(feature = "io-profile")]
         drop(setup);
@@ -183,17 +187,13 @@ impl Socket {
         metrics::record(false, _notifications, &result);
         let received = result?;
         assert!(received <= n);
-        for i in 0..received {
-            let mut packet = packets[i].take().unwrap();
+        for (i, mut packet) in packets.drain(..received).enumerate() {
             packet.len = lengths[i];
             consume(Received {
                 packet,
                 source: Some(self.endpoint),
             });
         }
-        #[cfg(feature = "io-profile")]
-        let _release = Span::new(Stage::NetworkRelease);
-        drop(packets);
         Ok(received)
     }
 }

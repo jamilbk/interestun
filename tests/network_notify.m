@@ -31,7 +31,50 @@ static void ready(int kq, bool eof) {
     assert(event.filter == EVFILT_READ);
     assert(((event.flags & EV_EOF) != 0) == eof);
 }
+// Verify retained data ownership, FIFO order across ring wrap, partial drains,
+// the 128-message drain bound, and error propagation after the ring is empty.
+static void ring_test(void) {
+    @autoreleasepool {
+        INFlow *flow = [INFlow new];
+        flow->ringLock = (os_unfair_lock)OS_UNFAIR_LOCK_INIT;
+        flow->rxWriter = flow->txWriter = -1;
+        atomic_init(&flow->ready, false);
+        atomic_init(&flow->closing, false);
+        atomic_init(&flow->error, 0);
+        atomic_init(&flow->pending, 0);
+        flow.queue = dispatch_queue_create("test.network.ring", DISPATCH_QUEUE_SERIAL);
+        flow->head = RX_SLOTS - 7;
+        flow->count = RX_SLOTS;
+        for (uint64_t i = 0; i < RX_SLOTS; i++) {
+            size_t slot = (flow->head + i) % RX_SLOTS;
+            flow->packets[slot] = dispatch_data_create(&i, sizeof(i), NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+            flow->lengths[slot] = sizeof(i);
+        }
+        uint8_t storage[RX_WINDOW][PACKET_CAPACITY];
+        uint8_t *buffers[RX_WINDOW];
+        size_t lengths[RX_WINDOW];
+        for (size_t i = 0; i < RX_WINDOW; i++) buffers[i] = storage[i];
+        void *handle = (__bridge_retained void *)flow;
+        for (uint64_t start = 0; start < RX_SLOTS;) {
+            size_t limit = start == 0 ? 3 : RX_WINDOW;
+            int n = in_flow_receive(handle, buffers, lengths, limit);
+            assert(n == (int)MIN(limit, RX_SLOTS - start));
+            for (int i = 0; i < n; i++) {
+                uint64_t value;
+                assert(lengths[i] == sizeof(value));
+                memcpy(&value, storage[i], sizeof(value));
+                assert(value == start + i);
+            }
+            start += n;
+        }
+        assert(in_flow_receive(handle, buffers, lengths, RX_WINDOW) == -EAGAIN);
+        atomic_store(&flow->error, EIO);
+        assert(in_flow_receive(handle, buffers, lengths, RX_WINDOW) == -EIO);
+        in_flow_close(handle);
+    }
+}
 int main(void) {
+    ring_test();
     int pair[2];
     assert(socketpair(AF_UNIX, SOCK_STREAM, 0, pair) == 0);
     assert(fcntl(pair[0], F_SETFL, O_NONBLOCK) == 0);
@@ -66,6 +109,6 @@ int main(void) {
     close(pair[0]);
     close(pair[1]);
     close(kq);
-    puts("PASS notification EINTR retry, full-channel coalescing, and error EOF");
+    puts("PASS ring ownership/wrap/partial drains; notification EINTR/full-channel/EOF");
     return 0;
 }

@@ -1,8 +1,10 @@
 # Network.framework tunnel measurements against Windows
 
-On September 27, 2026, the Network.framework-only macOS daemon sustained about
+Before the receive bridge optimization on September 27, 2026, the
+Network.framework-only macOS daemon sustained about
 **4.1 Gbit/s TCP payload throughput to Windows**. The reverse direction remained
-near **0.47 Gbit/s**. These tests send ordinary iperf traffic through the tunnel:
+near **0.47 Gbit/s**. The optimized bridge subsequently reached **2.64 Gbit/s**
+in that direction; see the 30-second comparison below. These tests send ordinary iperf traffic through the tunnel:
 TCP or UDP is the inner protocol; the encrypted outer transport is always UDP.
 
 The Mac was an M2 Pro on macOS 27.0 (26A428), using en8 at 10 GbE. Its tunnel
@@ -41,8 +43,8 @@ Restarting did not remove the directional difference, and four reverse streams
 did not improve throughput. The Windows tunnel send path and Mac tunnel receive path are both candidates.
 These observations isolate the direction, not which endpoint causes the limit.
 The Mac CPU reading is not sufficient to distinguish them. In particular, the Mac bridge
-currently serializes receive callbacks and send work on one dispatch queue,
-passes received packets through a staging ring, and checks out up to 128 packet
+at that revision serialized receive callbacks and send work on one dispatch queue,
+passed received packets through a staging ring, and checked out up to 128 packet
 buffers on every receive call even when few packets are available.
 
 The earlier 0.681 Gbit/s forward TCP sample in
@@ -118,6 +120,54 @@ The instrumented TCP results were 0.495 Gbit/s reverse and 4.001 Gbit/s forward.
 [Diagnostic logs and iperf summaries](benchmarks/macos-network-framework-wakeups/iperf.json)
 are saved alongside the per-mode worker logs. Regular builds contain none of
 the opt-in counter or sampled-clock instrumentation.
+
+## Batched bridge: 30-second comparison
+
+The revised bridge removes hot-path `dispatch_sync`, retains framework messages
+in a bounded 1024-slot ring, posts up to 128 reserved receives in batches, and
+copies directly into cached Rust packet buffers. Coalesced dispatch notification
+lets already-queued callbacks accumulate without a timer. See
+[ownership and readiness](apple-udp-backends.md#ownership-and-readiness).
+
+Same Mac, Windows endpoint, AES-256-GCM, MTU 1420, and `io-profile` build feature.
+Each iperf TCP run measured 30 seconds after one second of warmup. These are
+sequential before/after samples, not an interleaved statistical study.
+
+| Direction | Before Gbit/s | After Gbit/s | Before daemon CPU | After daemon CPU |
+| --- | ---: | ---: | ---: | ---: |
+| Mac → Windows | 3.996 | 3.800 | 189.0% | 168.3% |
+| Windows → Mac | 0.463 | 2.638 | 219.9% | 203.8% |
+
+CPU is process CPU-time delta over approximately 27 seconds of steady traffic,
+using one-second snapshots within seconds 2–30 of the command; 100% means one
+CPU core. It includes framework work within the Mac daemon and excludes iperf
+and Windows CPU. Sampled peak daemon RSS after the change was 16.1 MiB forward
+and 19.1 MiB reverse.
+
+Reverse throughput improved **5.7×**, with slightly lower process CPU. Forward
+throughput was about 5% lower, with about 11% less CPU; this run does not show a
+forward throughput improvement. Steady reverse profile windows now averaged
+**17.3 packets per utun write**, compared with 1.34 previously. The framework
+bridge had been a substantial receive bottleneck. These results do not locate
+the remaining limit or prove a framework-internal offload path.
+
+A subsequent 30-second simultaneous-direction test delivered 2.572 Gbit/s
+Mac → Windows and 1.050 Gbit/s Windows → Mac at 186.5% daemon CPU. Earlier
+8-second duplex tests had medians of 0.266 and 0.429 Gbit/s respectively; the
+different durations and sequential runs limit that comparison.
+
+`MAX_PENDING_PACKETS=1024` is the utun queue used for kernel-to-userspace reads
+(our tunnel transmit path). It does not size the decrypted userspace-to-kernel
+write queue. The new 1024-slot framework receive ring is a separate bound.
+
+Native tests cover retained-message ownership, FIFO wraparound, partial drains,
+empty/error propagation, interrupted notification writes, full notification
+channels, and EOF wakeups. They also pass under AddressSanitizer. Rust tests and
+Clippy pass with all features; no-default-feature tests retain BSD coverage.
+No local two-utun performance test was used for these measurements.
+
+[Raw iperf results, CPU snapshots, and daemon profile](benchmarks/macos-network-framework-batched/)
+preserve the before/after measurements.
 
 ## Reproduce
 
