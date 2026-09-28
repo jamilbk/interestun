@@ -223,12 +223,12 @@ fn read16(p: &[u8], offset: usize) -> u16 {
 fn word_sum(bytes: &[u8]) -> u32 {
     // Contiguous 16-bit words let LLVM vectorize the checksum reduction. A
     // per-byte alternating high/low loop prevents that on the Windows target.
-    let mut words = bytes.chunks_exact(2);
+    let (words, remainder) = bytes.as_chunks::<2>();
     let sum: u32 = words
-        .by_ref()
+        .iter()
         .map(|w| u16::from_be_bytes([w[0], w[1]]) as u32)
         .sum();
-    sum + words.remainder().first().map_or(0, |&b| (b as u32) << 8)
+    sum + remainder.first().map_or(0, |&b| (b as u32) << 8)
 }
 fn fold(mut sum: u32) -> u16 {
     while sum >> 16 != 0 {

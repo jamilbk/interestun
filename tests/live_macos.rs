@@ -145,8 +145,7 @@ impl Drop for Fixture {
             // sudo normally forks the daemon. Stop the exact child first, then reap sudo.
             if child.try_wait().ok().flatten().is_none() {
                 let pid = child.id().to_string();
-                let descendants =
-                    command("/bin/ps", &["-o", "pid=", "-P", &pid]).unwrap_or_default();
+                let descendants = command("/usr/bin/pgrep", &["-P", &pid]).unwrap_or_default();
                 if descendants.trim().is_empty() {
                     let _ = root("/bin/kill", &["-TERM", &pid]);
                 } else {
