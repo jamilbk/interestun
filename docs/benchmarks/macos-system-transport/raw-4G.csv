@@ -1,0 +1,2 @@
+backend,mode,inner_bytes,udp_bytes,batch,credits,packets,seconds,accepted_payload_gbps,user_cpu_seconds,system_cpu_seconds
+NetworkProduction,Raw,1420,1452,128,1024,10330624,30.003554,3.999544,29.208173,14.031735

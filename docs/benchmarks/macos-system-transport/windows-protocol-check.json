@@ -1,0 +1,74 @@
+{
+  "accepted_payload_gbps": 0.009904589703559934,
+  "backend": "production Network.framework",
+  "batch": 128,
+  "cpu_cores": 0.004436537388200352,
+  "credits": 1024,
+  "loss_percent": 18.861607142857142,
+  "missing_packets": 169,
+  "offered_bitrate": 10000000,
+  "readiness_waits": 0,
+  "received_gbps_receiver_interval": 0.007912925170068027,
+  "received_gbps_sender_interval": 0.008036424904562581,
+  "received_packets": 727,
+  "receiver": {
+    "cpu_util_system": 0,
+    "cpu_util_total": 0,
+    "cpu_util_user": 0,
+    "sender_has_retransmits": -1,
+    "server_output_text": "Accepted connection from 192.168.1.211, port 53918\n[  5] local 192.168.1.226 port 5201 connected to 192.168.1.211 port 54412\n[ ID] Interval           Transfer     Bitrate         Jitter    Lost/Total Datagrams\n[  5]   0.00-1.01   sec  1.01 MBytes  8.39 Mbits/sec  0.004 ms  158/885 (18%)  \n- - - - - - - - - - - - - - - - - - - - - - - - -\n[ ID] Interval           Transfer     Bitrate         Jitter    Lost/Total Datagrams\n[  5]   0.00-1.07   sec  1.01 MBytes  7.91 Mbits/sec  0.004 ms  158/885 (18%)  receiver\n",
+    "streams": [
+      {
+        "bytes": 1055604,
+        "end_time": 1.06722,
+        "errors": 158,
+        "id": 1,
+        "jitter": 3.54764420772293e-6,
+        "omitted_errors": 0,
+        "omitted_packets": 0,
+        "packets": 885,
+        "retransmits": -1,
+        "start_time": 0
+      }
+    ]
+  },
+  "seconds": 1.0508195,
+  "submit_seconds": 1.050812583,
+  "submitted_packets": 896,
+  "system_cpu_seconds": 0.0022509999999999995,
+  "target": "192.168.1.226:5201",
+  "tx": {
+    "accepted_including_setup": 897,
+    "batches": [
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      7
+    ],
+    "blocked": 0,
+    "blocked_ns": 0,
+    "occupancy": [
+      8,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "partial": 0,
+    "wakes": 0
+  },
+  "udp_bytes": 1452,
+  "user_cpu_seconds": 0.002411
+}

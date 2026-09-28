@@ -1,5 +1,9 @@
 # macOS Network Extension send CPU profile
 
+Follow-up: [System Trace and the production UDP transport control](apple-system-transport.md)
+add actual syscall/scheduling counts and a raw Network.framework test against
+the Windows iperf3 receiver, including a rejected credit-refill experiment.
+
 Captured 2026-09-28 with Instruments 27.0 Time Profiler, attached to the existing
 Interestun system extension during TCP iperf3 sends through the AES-256-GCM UDP
 tunnel to Windows. The adapter and process were not restarted or rebuilt.

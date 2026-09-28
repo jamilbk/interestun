@@ -18,6 +18,7 @@ static int test_error_code(nw_error_t error) { assert(error); return ENOBUFS; }
 #define nw_connection_batch test_batch
 #define nw_error_get_error_domain test_error_domain
 #define nw_error_get_error_code test_error_code
+#define IN_NETWORK_BENCH
 #include "../src/platform/network_flow.m"
 #undef nw_connection_send
 #undef nw_connection_batch
@@ -70,6 +71,7 @@ static void ring_test(void) {
         size_t lengths[RX_BATCH];
         for (size_t i = 0; i < RX_BATCH; i++) buffers[i] = storage[i];
         void *handle = (__bridge_retained void *)flow;
+        assert(in_flow_tx_pending(handle) == -EAGAIN);
         for (uint64_t start = 0; start < RX_SLOTS;) {
             size_t limit = start == 0 ? 3 : RX_BATCH;
             int n = in_flow_receive(handle, buffers, lengths, limit);
@@ -123,6 +125,7 @@ static void send_test(void) {
         assert(in_flow_send(handle, buffers, lengths, 100) == 24);
         assert(in_flow_send(handle, buffers, lengths, 1) == -EAGAIN);
         assert(atomic_load(&flow->pending) == TX_SLOTS);
+        assert(in_flow_tx_pending(handle) == TX_SLOTS);
         memset(input, 255, sizeof(input));
         for (size_t i = 0; i < submitted; i++) {
             dispatch_data_apply(sentData[i], ^bool(dispatch_data_t region, size_t offset, const void *data, size_t size) {
@@ -142,6 +145,7 @@ static void send_test(void) {
         }
         sentData[TX_SLOTS - 1] = nil;
         assert(atomic_load(&flow->pending) == 0 && counts.tx >= 1);
+        assert(in_flow_tx_pending(handle) == 0);
         INTxStats stats;
         in_flow_tx_stats(handle, &stats);
         assert(stats.accepted == TX_SLOTS && stats.blocked == 1 && stats.partial == 1);
@@ -151,6 +155,7 @@ static void send_test(void) {
         sentCallbacks[1](error);
         sentCallbacks[1] = nil;
         assert(atomic_load(&flow->error) == ENOBUFS);
+        assert(in_flow_tx_pending(handle) == -ENOBUFS);
         assert(in_flow_send(handle, buffers, lengths, 1) == -ENOBUFS);
         unsigned wakes = counts.tx;
         flow = nil;

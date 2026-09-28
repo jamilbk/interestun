@@ -1,0 +1,78 @@
+Network.framework receive: experimental private receive_multiple (max 256)
+Network.framework peer: [C1 connected 192.168.1.226:5201 udp, local: 0.0.0.0:0, attribution: developer, path satisfied (Path is satisfied), viable, interface: en8, ipv4, ipv6, dns]
+production Network.framework bridge ready; batch=128 credits=1024
+tx=TxStats { accepted: 897, partial: 0, blocked: 0, blocked_ns: 0, wakes: 0, batches: [0, 1, 0, 0, 0, 0, 0, 0, 7], occupancy: [8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] }; readiness_waits=0; submit_seconds=1.049306; drain_seconds=0.000014
+{
+  "accepted_payload_gbps": 0.009918788467050297,
+  "backend": "production Network.framework",
+  "batch": 128,
+  "cpu_cores": 0.004419072342653936,
+  "credits": 1024,
+  "loss_percent": 0.0,
+  "missing_packets": 0,
+  "offered_bitrate": 10000000,
+  "readiness_waits": 0,
+  "received_gbps_receiver_interval": 0.00988407038549821,
+  "received_gbps_sender_interval": 0.009918788467050297,
+  "received_packets": 896,
+  "receiver": {
+    "cpu_util_system": 0,
+    "cpu_util_total": 0,
+    "cpu_util_user": 0,
+    "sender_has_retransmits": -1,
+    "server_output_text": "-----------------------------------------------------------\nServer listening on 5201 (test #15)\n-----------------------------------------------------------\nAccepted connection from 192.168.1.211, port 53968\n[  5] local 192.168.1.226 port 5201 connected to 192.168.1.211 port 57460\n[ ID] Interval           Transfer     Bitrate         Jitter    Lost/Total Datagrams\n[  5]   0.00-1.01   sec  1.24 MBytes  10.3 Mbits/sec  0.003 ms  0/896 (0%)  \n- - - - - - - - - - - - - - - - - - - - - - - - -\n[ ID] Interval           Transfer     Bitrate         Jitter    Lost/Total Datagrams\n[  5]   0.00-1.05   sec  1.24 MBytes  9.88 Mbits/sec  0.003 ms  0/896 (0%)  receiver\n",
+    "streams": [
+      {
+        "bytes": 1300992,
+        "end_time": 1.053001,
+        "errors": 0,
+        "id": 1,
+        "jitter": 3.0537748330582707e-6,
+        "omitted_errors": 0,
+        "omitted_packets": 0,
+        "packets": 896,
+        "retransmits": -1,
+        "start_time": 0
+      }
+    ]
+  },
+  "seconds": 1.04931525,
+  "submit_seconds": 1.049305625,
+  "submitted_packets": 896,
+  "system_cpu_seconds": 0.001880999999999999,
+  "target": "192.168.1.226:5201",
+  "tx": {
+    "accepted_including_setup": 897,
+    "batches": [
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      7
+    ],
+    "blocked": 0,
+    "blocked_ns": 0,
+    "occupancy": [
+      8,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "partial": 0,
+    "wakes": 0
+  },
+  "udp_bytes": 1452,
+  "user_cpu_seconds": 0.0027559999999999998
+}

@@ -1,0 +1,11 @@
+--- target/apple-path/system-transport-20260928/network-flow-before-refill.m	2026-09-28 12:22:33
++++ src/platform/network_flow.m	2026-09-28 12:22:33
+@@ -290,7 +290,7 @@
+             size_t previous = atomic_fetch_sub_explicit(&flow->pending, 1, memory_order_acq_rel);
+             if (atomic_load_explicit(&flow->closing, memory_order_acquire)) return;
+             if (e) fail(flow, posix_error(e));
+-            else if (previous == TX_SLOTS) {
++            else if (previous == TX_SLOTS - RX_BATCH + 1) {
+                 atomic_fetch_add_explicit(&flow->txWakes, 1, memory_order_relaxed);
+                 notify(flow, true);
+             }

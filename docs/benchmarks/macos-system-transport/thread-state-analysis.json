@@ -1,0 +1,269 @@
+{
+  "window_seconds": [
+    2,
+    22
+  ],
+  "schemas": [
+    {
+      "name": "thread-state",
+      "columns": [
+        "start",
+        "thread",
+        "state",
+        "duration",
+        "process",
+        "core",
+        "cputime",
+        "waittime",
+        "priority",
+        "note",
+        "summary",
+        "made-runnable-by-thread",
+        "preempted-by-thread",
+        "yielded-to-thread",
+        "rebalanced-from-cpu",
+        "thermal-throttled"
+      ]
+    }
+  ],
+  "rows": 2612492,
+  "diagnostics": {},
+  "syscalls": {},
+  "threads_syscalls": {},
+  "top_call_stacks": {},
+  "thread_state_seconds": {
+    "InterestunPacket (0x4f969) (InterestunPacket, pid: 15142)": {
+      "Blocked": 20.0
+    },
+    "InterestunPacket (0x5f806) (InterestunPacket, pid: 15142)": {
+      "Blocked": 1.843636551,
+      "Runnable": 0.339832981,
+      "Running": 7.454019312,
+      "Interrupted": 0.077049309,
+      "Preempted": 0.360939097,
+      "Idle": 9.92452275
+    },
+    "InterestunPacket (0x68b94) (InterestunPacket, pid: 15142)": {
+      "Idle": 17.831416737,
+      "Runnable": 0.090844073,
+      "Running": 1.947857139,
+      "Interrupted": 0.022033632,
+      "Preempted": 0.104558339,
+      "Blocked": 0.00329008
+    },
+    "peer-0-rx (0x4f974) (InterestunPacket, pid: 15142)": {
+      "Blocked": 19.303639102,
+      "Runnable": 0.138884495,
+      "Running": 0.430156971,
+      "Interrupted": 0.012215109,
+      "Preempted": 0.115104323
+    },
+    "peer-0-tx (0x4f973) (InterestunPacket, pid: 15142)": {
+      "Blocked": 9.773573883,
+      "Runnable": 0.079082955,
+      "Running": 9.37767725,
+      "Interrupted": 0.119684801,
+      "Preempted": 0.649981111
+    },
+    "InterestunPacket (0x5ecbb) (InterestunPacket, pid: 15142)": {
+      "Running": 6.810821142,
+      "Idle": 12.377945355,
+      "Runnable": 0.320277047,
+      "Interrupted": 0.074260754,
+      "Preempted": 0.405445565,
+      "Blocked": 0.011250137
+    },
+    "InterestunPacket (0x5f72f) (InterestunPacket, pid: 15142)": {
+      "Running": 6.886272886,
+      "Interrupted": 0.071279979,
+      "Preempted": 0.353197732,
+      "Idle": 12.345698783,
+      "Runnable": 0.33152118,
+      "Blocked": 0.01202944
+    }
+  },
+  "running_core_seconds": {
+    "InterestunPacket (0x5ecbb) (InterestunPacket, pid: 15142)": {
+      "CPU 4 (S Core)": 1.405918196,
+      "CPU 10 (S Core)": 0.672089622,
+      "CPU 7 (S Core)": 0.566218564,
+      "CPU 3 (E Core)": 0.031014738,
+      "CPU 8 (S Core)": 0.707213451,
+      "CPU 11 (S Core)": 0.560608313,
+      "CPU 9 (S Core)": 0.831486613,
+      "CPU 5 (S Core)": 1.141783196,
+      "CPU 2 (E Core)": 0.03369371,
+      "CPU 6 (S Core)": 0.797995652,
+      "CPU 0 (E Core)": 0.0322524,
+      "CPU 1 (E Core)": 0.030546687
+    },
+    "InterestunPacket (0x5f72f) (InterestunPacket, pid: 15142)": {
+      "CPU 5 (S Core)": 1.101578954,
+      "CPU 8 (S Core)": 0.748775667,
+      "CPU 6 (S Core)": 0.846504178,
+      "CPU 7 (S Core)": 0.608105618,
+      "CPU 9 (S Core)": 0.859890525,
+      "CPU 11 (S Core)": 0.547215218,
+      "CPU 4 (S Core)": 1.379981076,
+      "CPU 10 (S Core)": 0.664387352,
+      "CPU 3 (E Core)": 0.030252246,
+      "CPU 1 (E Core)": 0.032753373,
+      "CPU 2 (E Core)": 0.033015023,
+      "CPU 0 (E Core)": 0.033813656
+    },
+    "peer-0-rx (0x4f974) (InterestunPacket, pid: 15142)": {
+      "CPU 10 (S Core)": 0.048405988,
+      "CPU 4 (S Core)": 0.071471123,
+      "CPU 7 (S Core)": 0.03054263,
+      "CPU 9 (S Core)": 0.053280764,
+      "CPU 5 (S Core)": 0.052972348,
+      "CPU 11 (S Core)": 0.045995721,
+      "CPU 8 (S Core)": 0.051516892,
+      "CPU 6 (S Core)": 0.03894238,
+      "CPU 0 (E Core)": 0.008547317,
+      "CPU 2 (E Core)": 0.010428009,
+      "CPU 3 (E Core)": 0.00924059,
+      "CPU 1 (E Core)": 0.008813209
+    },
+    "peer-0-tx (0x4f973) (InterestunPacket, pid: 15142)": {
+      "CPU 7 (S Core)": 0.956460276,
+      "CPU 9 (S Core)": 0.780166007,
+      "CPU 4 (S Core)": 2.217348404,
+      "CPU 10 (S Core)": 0.743462761,
+      "CPU 5 (S Core)": 1.790604768,
+      "CPU 11 (S Core)": 0.640414043,
+      "CPU 8 (S Core)": 0.677008112,
+      "CPU 6 (S Core)": 1.309742413,
+      "CPU 3 (E Core)": 0.071304788,
+      "CPU 0 (E Core)": 0.061538171,
+      "CPU 1 (E Core)": 0.066416904,
+      "CPU 2 (E Core)": 0.063210603
+    },
+    "InterestunPacket (0x68b94) (InterestunPacket, pid: 15142)": {
+      "CPU 10 (S Core)": 0.195050562,
+      "CPU 5 (S Core)": 0.272720706,
+      "CPU 8 (S Core)": 0.205790204,
+      "CPU 4 (S Core)": 0.430348197,
+      "CPU 9 (S Core)": 0.235593458,
+      "CPU 11 (S Core)": 0.162084898,
+      "CPU 6 (S Core)": 0.239303132,
+      "CPU 7 (S Core)": 0.174973065,
+      "CPU 3 (E Core)": 0.008285565,
+      "CPU 2 (E Core)": 0.006785828,
+      "CPU 1 (E Core)": 0.00802793,
+      "CPU 0 (E Core)": 0.008893594
+    },
+    "InterestunPacket (0x5f806) (InterestunPacket, pid: 15142)": {
+      "CPU 4 (S Core)": 1.517138856,
+      "CPU 5 (S Core)": 1.258977181,
+      "CPU 8 (S Core)": 0.757138142,
+      "CPU 11 (S Core)": 0.610732753,
+      "CPU 7 (S Core)": 0.669861106,
+      "CPU 9 (S Core)": 0.893240605,
+      "CPU 6 (S Core)": 0.871615099,
+      "CPU 10 (S Core)": 0.751012499,
+      "CPU 1 (E Core)": 0.029271971,
+      "CPU 2 (E Core)": 0.033229408,
+      "CPU 0 (E Core)": 0.030741209,
+      "CPU 3 (E Core)": 0.031060483
+    }
+  },
+  "runnable_source_seconds": {
+    "peer-0-rx (0x4f974) (InterestunPacket, pid: 15142)": {
+      "InterestunPacket (0x5f72f) (InterestunPacket, pid: 15142)": 0.035924627,
+      "InterestunPacket (0x5ecbb) (InterestunPacket, pid: 15142)": 0.045838884,
+      "skywalk_doorbell_utun4_tx (0x4f96c) (kernel, pid: 0)": 0.001696087,
+      "Google Chrome Helper (0x687bf) (Google Chrome Helper, pid: 2660)": 7.834e-06,
+      "peer-0-tx (0x4f973) (InterestunPacket, pid: 15142)": 0.001290704,
+      "InterestunPacket (0x68b94) (InterestunPacket, pid: 15142)": 0.011447717,
+      "ThreadPoolAudioWorker (0x68643) (Google Chrome Helper (Renderer), pid: 24592)": 1.4958e-05,
+      "ifnet_start_en8 (0xea5) (kernel, pid: 0)": 9.084e-06,
+      "iperf3 (0x68b18) (iperf3, pid: 24639)": 0.000184916,
+      "dlil_input_utun4 (0x4f96b) (kernel, pid: 0)": 7.667e-06,
+      "idle #4 (0x27c) (kernel, pid: 0)": 2.2666e-05,
+      "idle #5 (0x27d) (kernel, pid: 0)": 4.2458e-05,
+      "ThreadPoolPresentationWorker (0x68642) (Google Chrome Helper (Renderer), pid: 24592)": 1.2e-05,
+      "InterestunPacket (0x5f806) (InterestunPacket, pid: 15142)": 0.042080518,
+      "Google Chrome Helper (0x686f8) (Google Chrome Helper, pid: 2660)": 2.3292e-05,
+      "coreaudiod (0x68dec) (coreaudiod, pid: 647)": 1.709e-06,
+      "idle #7 (0x27f) (kernel, pid: 0)": 3.4209e-05,
+      "com.apple.dt.instruments.dtsecur (0x68cd7) (com.apple.dt.instruments.dtsecur, pid: 24671)": 2.958e-06,
+      "Main Thread (0x63f8) (Google Chrome, pid: 2649)": 0.000100292,
+      "SystemUIServer (0x6846e) (SystemUIServer, pid: 777)": 3.125e-06,
+      "kernel (0x6289d) (kernel, pid: 0)": 4e-06,
+      "sqlx-sqlite-worker-59 (0x620ae) (codex, pid: 1424)": 1.166e-06,
+      "idle #9 (0x281) (kernel, pid: 0)": 4.126e-06,
+      "idle #11 (0x283) (kernel, pid: 0)": 2.3874e-05,
+      "idle #10 (0x282) (kernel, pid: 0)": 2.2209e-05,
+      "Main Thread (0x69156) (ps, pid: 24714)": 6.708e-06,
+      "Main Thread (0x11f8) (WindowServer, pid: 420)": 1.375e-06,
+      "Compositor (0x65b9) (Google Chrome Helper (Renderer), pid: 2678)": 5.417e-06,
+      "ThreadPoolSingleThreadSharedForeground (0x6869e) (Google Chrome Helper (Renderer), pid: 24592)": 3.167e-06,
+      "idle #6 (0x27e) (kernel, pid: 0)": 1.4291e-05,
+      "CodecWorker (0x68967) (Google Chrome Helper (Renderer), pid: 24592)": 7.125e-06,
+      "skywalk_utun4_rx_0 (0x4f96e) (kernel, pid: 0)": 5.208e-06,
+      "idle #8 (0x280) (kernel, pid: 0)": 3.125e-06,
+      "skywalk_netif_poller_en8 (0xeb0) (kernel, pid: 0)": 3.083e-06,
+      "idle #3 (0x27b) (kernel, pid: 0)": 7.583e-06,
+      "AppleANS3CGv2Controller (0x58e) (kernel, pid: 0)": 5.041e-06,
+      "Chrome_ChildIOThread (0x65a2) (Google Chrome Helper (Renderer), pid: 2679)": 3.458e-06,
+      "spotlightknowledged.updater (0x688c8) (spotlightknowledged.updater, pid: 889)": 6e-06,
+      "apfs_purgatory_cleaner (0x62c70) (kernel, pid: 0)": 3.958e-06,
+      "Music (0x683cf) (Music, pid: 7730)": 3.417e-06,
+      "spotlightknowledged.updater (0x676bb) (spotlightknowledged.updater, pid: 889)": 4.459e-06
+    },
+    "InterestunPacket (0x5ecbb) (InterestunPacket, pid: 15142)": {
+      "InterestunPacket (0x5f72f) (InterestunPacket, pid: 15142)": 0.108990974,
+      "peer-0-rx (0x4f974) (InterestunPacket, pid: 15142)": 0.011418124,
+      "skywalk_netif_poller_en8 (0xeb0) (kernel, pid: 0)": 0.013846259,
+      "peer-0-tx (0x4f973) (InterestunPacket, pid: 15142)": 0.018469692,
+      "InterestunPacket (0x68b94) (InterestunPacket, pid: 15142)": 0.037306259,
+      "thread call high #9 (0x26965) (kernel, pid: 0)": 6.4498e-05,
+      "InterestunPacket (0x5f806) (InterestunPacket, pid: 15142)": 0.1301717,
+      "thread call high #5 (0x34277) (kernel, pid: 0)": 3.666e-06,
+      "VM_pageout_scan (0x65) (kernel, pid: 0)": 2.042e-06,
+      "ifnet_start_en8 (0xea5) (kernel, pid: 0)": 3.833e-06
+    },
+    "InterestunPacket (0x5f72f) (InterestunPacket, pid: 15142)": {
+      "InterestunPacket (0x5ecbb) (InterestunPacket, pid: 15142)": 0.116230317,
+      "skywalk_netif_poller_en8 (0xeb0) (kernel, pid: 0)": 0.011503927,
+      "peer-0-tx (0x4f973) (InterestunPacket, pid: 15142)": 0.030768164,
+      "peer-0-rx (0x4f974) (InterestunPacket, pid: 15142)": 0.011679543,
+      "InterestunPacket (0x68b94) (InterestunPacket, pid: 15142)": 0.020023744,
+      "thread call high #9 (0x26965) (kernel, pid: 0)": 6.8793e-05,
+      "InterestunPacket (0x5f806) (InterestunPacket, pid: 15142)": 0.141242109,
+      "ifnet_start_en8 (0xea5) (kernel, pid: 0)": 4.583e-06
+    },
+    "peer-0-tx (0x4f973) (InterestunPacket, pid: 15142)": {
+      "skywalk_doorbell_utun4_tx (0x4f96c) (kernel, pid: 0)": 0.07893137,
+      "InterestunPacket (0x5f72f) (InterestunPacket, pid: 15142)": 3.3168e-05,
+      "InterestunPacket (0x5f806) (InterestunPacket, pid: 15142)": 3.8167e-05,
+      "peer-0-rx (0x4f974) (InterestunPacket, pid: 15142)": 1.8375e-05,
+      "InterestunPacket (0x5ecbb) (InterestunPacket, pid: 15142)": 5.6667e-05,
+      "InterestunPacket (0x68b94) (InterestunPacket, pid: 15142)": 2.125e-06,
+      "idle #5 (0x27d) (kernel, pid: 0)": 3.083e-06
+    },
+    "InterestunPacket (0x68b94) (InterestunPacket, pid: 15142)": {
+      "InterestunPacket (0x5f72f) (InterestunPacket, pid: 15142)": 0.017782621,
+      "InterestunPacket (0x5ecbb) (InterestunPacket, pid: 15142)": 0.040783621,
+      "peer-0-tx (0x4f973) (InterestunPacket, pid: 15142)": 0.005088531,
+      "skywalk_netif_poller_en8 (0xeb0) (kernel, pid: 0)": 0.001659131,
+      "peer-0-rx (0x4f974) (InterestunPacket, pid: 15142)": 0.003172907,
+      "thread call high #9 (0x26965) (kernel, pid: 0)": 3.0041e-05,
+      "thread call high #5 (0x34277) (kernel, pid: 0)": 5.375e-06,
+      "InterestunPacket (0x5f806) (InterestunPacket, pid: 15142)": 0.022320596,
+      "ifnet_start_en8 (0xea5) (kernel, pid: 0)": 1.25e-06
+    },
+    "InterestunPacket (0x5f806) (InterestunPacket, pid: 15142)": {
+      "InterestunPacket (0x5ecbb) (InterestunPacket, pid: 15142)": 0.128391224,
+      "InterestunPacket (0x68b94) (InterestunPacket, pid: 15142)": 0.022411664,
+      "InterestunPacket (0x5f72f) (InterestunPacket, pid: 15142)": 0.1523465,
+      "peer-0-tx (0x4f973) (InterestunPacket, pid: 15142)": 0.018167422,
+      "peer-0-rx (0x4f974) (InterestunPacket, pid: 15142)": 0.011414975,
+      "skywalk_netif_poller_en8 (0xeb0) (kernel, pid: 0)": 0.007025241,
+      "thread call high #9 (0x26965) (kernel, pid: 0)": 6.9914e-05,
+      "ifnet_start_en8 (0xea5) (kernel, pid: 0)": 4.458e-06,
+      "VM_pageout_scan (0x65) (kernel, pid: 0)": 1.583e-06
+    }
+  }
+}

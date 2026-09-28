@@ -1,0 +1,17 @@
+{
+  "binary": "/Users/jamil/.cache/cargo/target/release/examples/network_bench",
+  "sha256": "851d27afcb7ea73d5642948944cbbf0149b0d19f69ef4a0dea975c14c6450a3e",
+  "command": [
+    "/Users/jamil/.cache/cargo/target/release/examples/network_bench",
+    "send",
+    "--target",
+    "192.168.1.226:5201",
+    "--iperf",
+    "--seconds",
+    "30",
+    "--json",
+    "target/apple-path/system-transport-20260928/raw-final.json"
+  ],
+  "started": "2026-09-28T12:25:41.879461-07:00",
+  "exit_code": 0
+}

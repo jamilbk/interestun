@@ -1,0 +1,29 @@
+{
+  "sender_command": [
+    "/Users/jamil/.cache/cargo/target/release/examples/network_bench",
+    "send",
+    "--target",
+    "192.168.1.226:5201",
+    "--iperf",
+    "--seconds",
+    "20",
+    "--json",
+    "target/apple-path/system-transport-20260928/raw-profiled.json"
+  ],
+  "trace_command": [
+    "xcrun",
+    "xctrace",
+    "record",
+    "--template",
+    "Time Profiler",
+    "--attach",
+    "27267",
+    "--time-limit",
+    "15s",
+    "--output",
+    "target/apple-path/system-transport-20260928/raw-profiled.trace",
+    "--no-prompt"
+  ],
+  "pid": 27267,
+  "started": "2026-09-28T12:27:15.967730-07:00"
+}

@@ -21,7 +21,7 @@ apple-utun-ring = []
 # Experimental private Apple SPI. See docs/network-framework-audit.md.
 apple-network-multiple = ["apple-network"]
 apple-coalesce = []
-network-bench = ["apple-network"]
+network-bench = ["apple-network", "dep:serde_json"]
 
 [build-dependencies]
 cc = "1"

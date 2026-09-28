@@ -316,6 +316,23 @@ void in_flow_tx_stats(void *handle, INTxStats *out) {
     for (size_t i = 0; i < 12; i++) out->occupancy[i] = atomic_load_explicit(&flow->txOccupancy[i], memory_order_relaxed);
 }
 
+#ifdef IN_NETWORK_BENCH
+// Benchmark setup/drain only. A callback decrements pending before publishing
+// its error, so fence the serial callback queue before reporting idle success.
+// This does not assert on-wire delivery and adds no work to the send hot path.
+int in_flow_tx_pending(void *handle) {
+    INFlow *flow = (__bridge INFlow *)handle;
+    size_t pending = atomic_load_explicit(&flow->pending, memory_order_acquire);
+    if (!pending) dispatch_sync(flow.queue, ^{});
+    int error = atomic_load_explicit(&flow->error, memory_order_acquire);
+    if (error) return -error;
+    if (!atomic_load_explicit(&flow->ready, memory_order_acquire)) return -EAGAIN;
+    // Return the first snapshot: if a callback decremented pending after that
+    // load, the next poll must still take the idle fence before returning zero.
+    return (int)pending;
+}
+#endif
+
 int in_flow_receive(void *handle, uint8_t *const *buffers, size_t *lengths, size_t capacity) {
     @autoreleasepool {
         INFlow *flow = (__bridge INFlow *)handle;

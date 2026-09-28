@@ -1,0 +1,74 @@
+{
+  "accepted_payload_gbps": 0.009951791087626527,
+  "backend": "production Network.framework",
+  "batch": 128,
+  "cpu_cores": 0.013339574480807498,
+  "credits": 1024,
+  "loss_percent": 0.0,
+  "missing_packets": 0,
+  "offered_bitrate": 10000000,
+  "readiness_waits": 0,
+  "received_gbps_receiver_interval": 0.00994815229713119,
+  "received_gbps_sender_interval": 0.009951791087626527,
+  "received_packets": 896,
+  "receiver": {
+    "cpu_util_system": 0.32019819790542586,
+    "cpu_util_total": 0.35996012337666683,
+    "cpu_util_user": 0.040048670126081626,
+    "sender_has_retransmits": -1,
+    "server_output_text": "Accepted connection from 127.0.0.1, port 53905\n[  5] local 127.0.0.1 port 53904 connected to 127.0.0.1 port 50462\n[ ID] Interval           Transfer     Bitrate         Jitter    Lost/Total Datagrams\n[  5]   0.00-1.01   sec  1.24 MBytes  10.4 Mbits/sec  0.006 ms  0/896 (0%)  \n- - - - - - - - - - - - - - - - - - - - - - - - -\n[ ID] Interval           Transfer     Bitrate         Jitter    Lost/Total Datagrams\n[  5]   0.00-1.05   sec  1.24 MBytes  9.95 Mbits/sec  0.006 ms  0/896 (0%)  receiver\n",
+    "streams": [
+      {
+        "bytes": 1300992,
+        "end_time": 1.046218,
+        "errors": 0,
+        "id": 1,
+        "jitter": 5.840022461459377e-6,
+        "omitted_errors": 0,
+        "omitted_packets": 0,
+        "packets": 896,
+        "retransmits": -1,
+        "start_time": 0
+      }
+    ]
+  },
+  "seconds": 1.045835459,
+  "submit_seconds": 1.04582175,
+  "submitted_packets": 896,
+  "system_cpu_seconds": 0.008785000000000001,
+  "target": "127.0.0.1:53904",
+  "tx": {
+    "accepted_including_setup": 897,
+    "batches": [
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      7
+    ],
+    "blocked": 0,
+    "blocked_ns": 0,
+    "occupancy": [
+      8,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "partial": 0,
+    "wakes": 0
+  },
+  "udp_bytes": 1452,
+  "user_cpu_seconds": 0.0051660000000000005
+}

@@ -1,5 +1,4 @@
 fn main() {
-    println!("cargo:rerun-if-changed=examples/network_bench/network.m");
     println!("cargo:rerun-if-changed=src/platform/network_flow.m");
     if std::env::var_os("CARGO_FEATURE_APPLE_NETWORK").is_some()
         && std::env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("macos")
@@ -10,7 +9,7 @@ fn main() {
             build.define("IN_NETWORK_MULTIPLE", None);
         }
         if std::env::var_os("CARGO_FEATURE_NETWORK_BENCH").is_some() {
-            build.file("examples/network_bench/network.m");
+            build.define("IN_NETWORK_BENCH", None);
         }
         build
             .flag("-fobjc-arc")

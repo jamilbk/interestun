@@ -1,0 +1,76 @@
+{
+  "accepted_payload_gbps": 4.03523940407913,
+  "backend": "production Network.framework",
+  "batch": 128,
+  "cpu_cores": 1.4689401731302774,
+  "credits": 1024,
+  "loss_percent": 0.0,
+  "missing_packets": 0,
+  "offered_bitrate": 0,
+  "readiness_waits": 241182,
+  "received_gbps_receiver_interval": 4.014499169247918,
+  "received_gbps_sender_interval": 4.03523940407913,
+  "received_packets": 6948608,
+  "receiver": {
+    "cpu_util_system": 60.3852810715744,
+    "cpu_util_total": 83.77643310844236,
+    "cpu_util_user": 23.391152036868,
+    "sender_has_retransmits": -1,
+    "server_output_text": "-----------------------------------------------------------\nServer listening on 5201 (test #23)\n-----------------------------------------------------------\nAccepted connection from 192.168.1.211, port 54238\n[  5] local 192.168.1.226 port 5201 connected to 192.168.1.211 port 52627\n[ ID] Interval           Transfer     Bitrate         Jitter    Lost/Total Datagrams\n[  5]   0.00-1.00   sec   481 MBytes  4.02 Gbits/sec  0.003 ms  0/347643 (0%)  \n[  5]   1.00-2.00   sec   477 MBytes  4.02 Gbits/sec  0.006 ms  0/344668 (0%)  \n[  5]   2.00-3.01   sec   490 MBytes  4.07 Gbits/sec  0.006 ms  0/353714 (0%)  \n[  5]   3.01-4.00   sec   470 MBytes  3.97 Gbits/sec  0.004 ms  0/339615 (0%)  \n[  5]   4.00-5.01   sec   490 MBytes  4.07 Gbits/sec  0.002 ms  0/354132 (0%)  \n[  5]   5.01-6.01   sec   472 MBytes  3.99 Gbits/sec  0.002 ms  0/340715 (0%)  \n[  5]   6.01-7.01   sec   476 MBytes  3.96 Gbits/sec  0.002 ms  0/343909 (0%)  \n[  5]   7.01-8.01   sec   476 MBytes  4.02 Gbits/sec  0.002 ms  0/343449 (0%)  \n[  5]   8.01-9.00   sec   479 MBytes  4.05 Gbits/sec  0.002 ms  0/346125 (0%)  \n[  5]   9.00-10.01  sec   487 MBytes  4.04 Gbits/sec  0.005 ms  0/352032 (0%)  \n[  5]  10.01-11.01  sec   481 MBytes  4.05 Gbits/sec  0.006 ms  0/347668 (0%)  \n[  5]  11.01-12.00  sec   478 MBytes  4.05 Gbits/sec  0.002 ms  0/345508 (0%)  \n[  5]  12.00-13.01  sec   497 MBytes  4.12 Gbits/sec  0.005 ms  0/358702 (0%)  \n[  5]  13.01-14.01  sec   488 MBytes  4.11 Gbits/sec  0.002 ms  0/352390 (0%)  \n[  5]  14.01-15.00  sec   486 MBytes  4.10 Gbits/sec  0.003 ms  0/351174 (0%)  \n[  5]  15.00-16.02  sec   492 MBytes  4.08 Gbits/sec  0.003 ms  0/355435 (0%)  \n[  5]  16.02-17.01  sec   484 MBytes  4.09 Gbits/sec  0.002 ms  0/349872 (0%)  \n[  5]  17.01-18.01  sec   481 MBytes  4.05 Gbits/sec  0.002 ms  0/347656 (0%)  \n[  5]  18.01-19.00  sec   477 MBytes  4.02 Gbits/sec  0.006 ms  0/344739 (0%)  \n[  5]  19.00-20.01  sec   456 MBytes  3.79 Gbits/sec  0.002 ms  0/329462 (0%)  \n- - - - - - - - - - - - - - - - - - - - - - - - -\n[ ID] Interval           Transfer     Bitrate         Jitter    Lost/Total Datagrams\n[  5]   0.00-20.11  sec  9.40 GBytes  4.01 Gbits/sec  0.002 ms  0/6948608 (0%)  receiver\n",
+    "streams": [
+      {
+        "bytes": 10089378816,
+        "end_time": 20.105878,
+        "errors": 0,
+        "id": 1,
+        "jitter": 2.32665935917179e-6,
+        "omitted_errors": 0,
+        "omitted_packets": 0,
+        "packets": 6948608,
+        "retransmits": -1,
+        "start_time": 0
+      }
+    ]
+  },
+  "receiver_buffer_requested": 4194304,
+  "seconds": 20.00253825,
+  "submit_seconds": 20.000254125,
+  "submitted_packets": 6948608,
+  "system_cpu_seconds": 9.258402,
+  "tail_settle_ms": 100,
+  "target": "192.168.1.226:5201",
+  "tx": {
+    "accepted_including_setup": 6948609,
+    "batches": [
+      0,
+      180103,
+      164870,
+      173175,
+      158801,
+      101151,
+      29528,
+      3947,
+      298
+    ],
+    "blocked": 241182,
+    "blocked_ns": 15575080417,
+    "occupancy": [
+      2,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      1,
+      2,
+      811868,
+      0
+    ],
+    "partial": 757586,
+    "wakes": 764361
+  },
+  "udp_bytes": 1452,
+  "user_cpu_seconds": 20.12413
+}

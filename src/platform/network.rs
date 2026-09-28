@@ -55,6 +55,8 @@ unsafe extern "C" {
     ) -> i32;
     fn in_flow_close(handle: *mut c_void);
     fn in_flow_tx_stats(handle: *mut c_void, out: *mut TxStats);
+    #[cfg(feature = "network-bench")]
+    fn in_flow_tx_pending(handle: *mut c_void) -> i32;
 }
 
 pub struct Socket {
@@ -100,6 +102,13 @@ fn count(n: i32) -> io::Result<usize> {
     }
 }
 impl Socket {
+    /// Benchmark setup/drain snapshot. Idle fences callbacks and checks errors;
+    /// it says nothing about delivery to the remote receiver. One TX caller only.
+    #[cfg(feature = "network-bench")]
+    pub fn pending_sends(&self) -> io::Result<usize> {
+        // SAFETY: live handle; C only observes atomics and fences its queue.
+        count(unsafe { in_flow_tx_pending(self.handle.as_ptr()) })
+    }
     pub fn tx_stats(&self) -> TxStats {
         let mut stats = TxStats::default();
         // SAFETY: live handle, matching C layout, atomic snapshot only.

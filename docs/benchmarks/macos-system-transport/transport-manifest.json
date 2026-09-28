@@ -1,0 +1,79 @@
+{
+  "binary": "/Users/jamil/.cache/cargo/target/release/examples/network_bench",
+  "sha256": "ad06509a5181b32129b003371b52018c6dc74dcc8043d5b12aa634303ea526ad",
+  "git_base": "4fbc14890620560484488f9e65c89329a4e7a8e5",
+  "runs": [
+    {
+      "label": "raw-3G",
+      "command": [
+        "/Users/jamil/.cache/cargo/target/release/examples/network_bench",
+        "send",
+        "--target",
+        "192.168.1.226:5201",
+        "--iperf",
+        "--seconds",
+        "30",
+        "--bitrate",
+        "3000000000",
+        "--json",
+        "target/apple-path/system-transport-20260928/raw-3G.json"
+      ],
+      "started": "2026-09-28T12:19:30.953916-07:00",
+      "exit_code": 0
+    },
+    {
+      "label": "raw-4G",
+      "command": [
+        "/Users/jamil/.cache/cargo/target/release/examples/network_bench",
+        "send",
+        "--target",
+        "192.168.1.226:5201",
+        "--iperf",
+        "--seconds",
+        "30",
+        "--bitrate",
+        "4000000000",
+        "--json",
+        "target/apple-path/system-transport-20260928/raw-4G.json"
+      ],
+      "started": "2026-09-28T12:20:01.113295-07:00",
+      "exit_code": 0
+    },
+    {
+      "label": "raw-5G",
+      "command": [
+        "/Users/jamil/.cache/cargo/target/release/examples/network_bench",
+        "send",
+        "--target",
+        "192.168.1.226:5201",
+        "--iperf",
+        "--seconds",
+        "30",
+        "--bitrate",
+        "5000000000",
+        "--json",
+        "target/apple-path/system-transport-20260928/raw-5G.json"
+      ],
+      "started": "2026-09-28T12:20:31.260056-07:00",
+      "exit_code": 0
+    },
+    {
+      "label": "raw-unlimited-2",
+      "command": [
+        "/Users/jamil/.cache/cargo/target/release/examples/network_bench",
+        "send",
+        "--target",
+        "192.168.1.226:5201",
+        "--iperf",
+        "--seconds",
+        "30",
+        "--bitrate",
+        "0",
+        "--json",
+        "target/apple-path/system-transport-20260928/raw-unlimited-2.json"
+      ],
+      "started": "2026-09-28T12:21:01.409440-07:00",
+      "exit_code": 0
+    }
+  ]
+}

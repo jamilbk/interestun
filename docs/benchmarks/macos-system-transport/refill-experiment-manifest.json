@@ -1,0 +1,5 @@
+{
+  "binary_sha256": "3b42b89fcf1db92e8bfc662e3f9dc15a12e09bb5b152d997b1ca48ded6075f8c",
+  "change": "wake at 128 free credits instead of 1",
+  "result": "rejected: 3.680 Gbps, mean batch 45.26, lower throughput"
+}

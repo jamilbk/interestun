@@ -6,21 +6,18 @@ use boringtun::{
 use clap::ValueEnum;
 use interestun::{
     packet::{self, BATCH, CAPACITY, Packet},
-    platform::batch,
+    platform::{
+        network::Socket,
+        readiness::{Poll, Token, Waker},
+    },
 };
 use std::{
     collections::VecDeque,
-    ffi::{CString, c_void},
-    net::{SocketAddr, UdpSocket},
-    os::fd::AsRawFd,
+    net::SocketAddr,
+    path::PathBuf,
     time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
 
-#[derive(Clone, Copy, Debug, ValueEnum)]
-enum Backend {
-    Bsd,
-    Network,
-}
 #[derive(Clone, Copy, Debug, ValueEnum)]
 enum Mode {
     Raw,
@@ -32,99 +29,27 @@ enum Mode {
 pub struct Args {
     #[arg(long)]
     target: SocketAddr,
-    #[arg(long, value_enum, default_value = "network")]
-    backend: Backend,
-    #[arg(long, value_enum, default_value = "aes")]
+    /// Use an existing iperf3 UDP receiver (target port usually 5201).
+    #[arg(long)]
+    iperf: bool,
+    /// Save sender diagnostics and the unmodified iperf3 receiver report.
+    #[arg(long, requires = "iperf")]
+    json: Option<PathBuf>,
+    #[arg(long, value_enum, default_value = "raw")]
     mode: Mode,
     /// Inner IP bytes; both raw and encrypted modes send size + 32 UDP bytes.
     #[arg(long, default_value_t = 1420)]
     size: usize,
     #[arg(long, default_value_t = 128)]
     batch: usize,
-    /// Maximum Network.framework batches in flight; copied data stays bounded.
-    #[arg(long, default_value_t = 8)]
-    window: usize,
+    /// Optional payload bits/second; zero offers as fast as the bridge accepts.
+    #[arg(long, default_value_t = 0)]
+    bitrate: u64,
     #[arg(long, default_value_t = 5)]
     seconds: u64,
     /// Fixed packet count instead of a duration, for correctness checks.
     #[arg(long, default_value_t = 0)]
     packets: u64,
-}
-
-unsafe extern "C" {
-    fn in_nw_open(host: *const i8, port: *const i8, error: *mut i32) -> *mut c_void;
-    fn in_nw_submit(
-        handle: *mut c_void,
-        buffers: *const *const u8,
-        lengths: *const usize,
-        count: usize,
-    ) -> *mut c_void;
-    fn in_nw_wait(handle: *mut c_void) -> i32;
-    fn in_nw_close(handle: *mut c_void);
-}
-
-struct Network {
-    handle: *mut c_void,
-    pending: VecDeque<(*mut c_void, usize)>,
-}
-impl Network {
-    fn new(target: SocketAddr) -> Result<Self> {
-        ensure!(
-            target.is_ipv4(),
-            "initial Network.framework stub requires an IPv4 target"
-        );
-        let host = CString::new(target.ip().to_string())?;
-        let port = CString::new(target.port().to_string())?;
-        let mut error = 0;
-        // SAFETY: NUL-terminated strings and error pointer live through this call.
-        let handle = unsafe { in_nw_open(host.as_ptr(), port.as_ptr(), &mut error) };
-        ensure!(
-            !handle.is_null(),
-            "Network.framework connection failed: {error}"
-        );
-        Ok(Self {
-            handle,
-            pending: VecDeque::new(),
-        })
-    }
-    fn submit(&mut self, packets: &VecDeque<Packet>) {
-        let mut pointers = [std::ptr::null(); BATCH];
-        let mut lengths = [0; BATCH];
-        for (i, packet) in packets.iter().enumerate() {
-            pointers[i] = packet.data().as_ptr();
-            lengths[i] = packet.len;
-        }
-        // SAFETY: The bridge synchronously copies these buffers, never retains
-        // their pointers, and returns an owned batch handle consumed by wait.
-        let handle = unsafe {
-            in_nw_submit(
-                self.handle,
-                pointers.as_ptr(),
-                lengths.as_ptr(),
-                packets.len(),
-            )
-        };
-        self.pending.push_back((handle, packets.len()));
-    }
-    fn wait(&mut self) -> Result<u64> {
-        let (handle, count) = self.pending.pop_front().unwrap();
-        // SAFETY: Each retained batch handle is consumed exactly once.
-        let error = unsafe { in_nw_wait(handle) };
-        ensure!(
-            error == 0,
-            "Network.framework send completion failed: {error}"
-        );
-        Ok(count as u64)
-    }
-}
-impl Drop for Network {
-    fn drop(&mut self) {
-        // Cancel first; pending callbacks own their data and batch state.
-        unsafe { in_nw_close(self.handle) };
-        while !self.pending.is_empty() {
-            let _ = self.wait();
-        }
-    }
 }
 
 struct Crypto {
@@ -215,6 +140,14 @@ fn cpu() -> (f64, f64) {
 
 pub fn run(args: Args) -> Result<()> {
     ensure!(
+        !args.iperf || matches!(args.mode, Mode::Raw),
+        "iperf mode requires --mode raw"
+    );
+    ensure!(
+        !args.iperf || args.packets == 0,
+        "iperf mode uses --seconds, not --packets"
+    );
+    ensure!(
         (20..=CAPACITY - 32).contains(&args.size),
         "size must be 20..={}",
         CAPACITY - 32
@@ -223,7 +156,6 @@ pub fn run(args: Args) -> Result<()> {
         (1..=BATCH).contains(&args.batch),
         "batch must be 1..={BATCH}"
     );
-    ensure!((1..=64).contains(&args.window), "window must be 1..=64");
     ensure!(
         args.seconds > 0 && args.seconds <= 120,
         "seconds must be 1..=120"
@@ -253,27 +185,53 @@ pub fn run(args: Args) -> Result<()> {
             other => bail!("local crypto validation failed: {other:?}"),
         }
     }
-    let mut network = match args.backend {
-        Backend::Network => Some(Network::new(args.target)?),
-        _ => None,
-    };
-    let socket = if network.is_none() {
-        let s = UdpSocket::bind(if args.target.is_ipv4() {
-            "0.0.0.0:0"
-        } else {
-            "[::]:0"
-        })?;
-        s.connect(args.target)?;
-        s.set_nonblocking(true)?;
-        socket2::SockRef::from(&s).set_send_buffer_size(4 * 1024 * 1024)?;
-        eprintln!("BSD connected; sendmsg_x={}", batch::available());
-        Some(s)
+    // The tunnel's actual bridge, pool, partial-send handling and callback
+    // readiness. One connection, fixed 1024 packet credits; no benchmark shim.
+    let mut control = if args.iperf {
+        Some(super::iperf::Control::connect(
+            args.target,
+            args.seconds,
+            args.size + 32,
+            args.bitrate,
+        )?)
     } else {
         None
     };
-    let mut sender = batch::Sender::new();
+    let mut poll = Poll::new()?;
+    let mut events = Vec::with_capacity(2);
+    let network = Socket::connect(
+        0,
+        args.target,
+        Waker::new(&poll, Token(0))?,
+        Waker::new(&poll, Token(1))?,
+    )?;
+    let deadline = Instant::now() + Duration::from_secs(10);
+    loop {
+        match network.pending_sends() {
+            Ok(0) => break,
+            Ok(_) => bail!("unexpected send during setup"),
+            Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {}
+            Err(e) => return Err(e.into()),
+        }
+        ensure!(
+            Instant::now() < deadline,
+            "Network.framework connection timed out"
+        );
+        poll.poll(
+            &mut events,
+            Some(deadline.saturating_duration_since(Instant::now())),
+        )?;
+    }
+    eprintln!(
+        "production Network.framework bridge ready; batch={} credits=1024",
+        args.batch
+    );
+    if let Some(control) = &mut control {
+        control.start(&network, &mut poll, &mut events)?;
+    }
+    let setup_accepted = network.tx_stats().accepted;
     let mut submitted = 0u64;
-    let mut completed = 0u64;
+    let mut waits = 0u64;
     let start_cpu = cpu();
     let start = Instant::now();
     while if args.packets > 0 {
@@ -286,73 +244,154 @@ pub fn run(args: Args) -> Result<()> {
         } else {
             args.batch
         };
+        let timestamp = if args.iperf {
+            Some(SystemTime::now().duration_since(UNIX_EPOCH)?)
+        } else {
+            None
+        };
         for i in 0..n {
             let mut packet = Packet::new(&pool).unwrap();
             if let Some(c) = &mut crypto {
                 c.encrypt(&ip, &mut packet)?;
             } else {
+                // Pool contents start zero and raw payloads remain immutable.
+                // Only the sequence/header changes; no per-packet memset.
                 packet.len = args.size + 32;
-                packet.buffer()[..args.size + 32].fill(0);
-                packet.buffer()[..4].copy_from_slice(b"INB1");
-                packet.buffer()[8..16].copy_from_slice(&(submitted + i as u64).to_le_bytes());
+                if let Some(timestamp) = timestamp {
+                    packet.buffer()[..4]
+                        .copy_from_slice(&(timestamp.as_secs() as u32).to_be_bytes());
+                    packet.buffer()[4..8].copy_from_slice(&timestamp.subsec_micros().to_be_bytes());
+                    packet.buffer()[8..16]
+                        .copy_from_slice(&(submitted + i as u64 + 1).to_be_bytes());
+                } else {
+                    packet.buffer()[..4].copy_from_slice(b"INB1");
+                    packet.buffer()[8..16].copy_from_slice(&(submitted + i as u64).to_le_bytes());
+                }
             }
             packets.push_back(packet);
         }
-        if let Some(network) = &mut network {
-            network.submit(&packets);
-            packets.clear();
-            if network.pending.len() >= args.window {
-                completed += network.wait()?;
-            }
-        } else {
-            let fd = socket.as_ref().unwrap().as_raw_fd();
-            let deadline = Instant::now() + Duration::from_secs(5);
-            while !packets.is_empty() {
-                match sender.flush(fd, false, &mut packets) {
-                    Ok(n) => completed += n as u64,
-                    Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
-                        let mut poll = libc::pollfd {
-                            fd,
-                            events: libc::POLLOUT,
-                            revents: 0,
-                        };
-                        // SAFETY: one valid pollfd, no other thread closes fd.
-                        let result = unsafe { libc::poll(&mut poll, 1, 100) };
-                        if result < 0 {
-                            return Err(std::io::Error::last_os_error().into());
-                        }
-                    }
-                    Err(e) => return Err(e.into()),
+        let deadline = Instant::now() + Duration::from_secs(5);
+        while !packets.is_empty() {
+            match network.flush(&mut packets) {
+                Ok(n) => submitted += n as u64,
+                Err(e) if e.kind() == std::io::ErrorKind::WouldBlock => {
+                    waits += 1;
+                    ensure!(Instant::now() < deadline, "Network.framework send stalled");
+                    // Same callback-driven full-window wakeup as the tunnel.
+                    // The deadline detects failure, never periodically retries.
+                    poll.poll(
+                        &mut events,
+                        Some(deadline.saturating_duration_since(Instant::now())),
+                    )?;
                 }
-                ensure!(Instant::now() < deadline, "BSD send stalled");
+                Err(e) => return Err(e.into()),
             }
         }
-        submitted += n as u64;
-    }
-    if let Some(network) = &mut network {
-        while !network.pending.is_empty() {
-            completed += network.wait()?;
+        if args.bitrate != 0 {
+            // Explicit offered-rate control, once per application batch. This
+            // branch is absent from the unlimited throughput measurement.
+            let due = start
+                + Duration::from_secs_f64(
+                    submitted as f64 * (args.size + 32) as f64 * 8.0 / args.bitrate as f64,
+                );
+            let remaining = due.saturating_duration_since(Instant::now());
+            if !remaining.is_zero() {
+                std::thread::sleep(remaining);
+            }
         }
+    }
+    let submit_seconds = start.elapsed().as_secs_f64();
+    let drain = Instant::now();
+    while network.pending_sends()? != 0 {
+        ensure!(
+            drain.elapsed() < Duration::from_secs(5),
+            "send completions did not drain"
+        );
+        // The production bridge wakes at full -> nonfull, not on idle. Poll
+        // only AFTER submission ends; include this drain in the reported rate.
+        poll.poll(&mut events, Some(Duration::from_millis(1)))?;
     }
     let seconds = start.elapsed().as_secs_f64();
     let end_cpu = cpu();
-    ensure!(completed == submitted, "incomplete sends");
-    println!(
-        "backend,mode,inner_bytes,udp_bytes,batch,window,packets,seconds,udp_payload_gbps,user_cpu_seconds,system_cpu_seconds"
+    let stats = network.tx_stats();
+    ensure!(
+        stats.accepted - setup_accepted == submitted,
+        "bridge acceptance count mismatch"
+    );
+    eprintln!(
+        "tx={stats:?}; readiness_waits={waits}; submit_seconds={submit_seconds:.6}; drain_seconds={:.6}",
+        drain.elapsed().as_secs_f64()
     );
     println!(
-        "{:?},{:?},{},{},{},{},{},{:.6},{:.6},{:.6},{:.6}",
-        args.backend,
+        "backend,mode,inner_bytes,udp_bytes,batch,credits,packets,seconds,accepted_payload_gbps,user_cpu_seconds,system_cpu_seconds"
+    );
+    println!(
+        "NetworkProduction,{:?},{},{},{},1024,{},{:.6},{:.6},{:.6},{:.6}",
         args.mode,
         args.size,
         args.size + 32,
         args.batch,
-        args.window,
-        completed,
+        submitted,
         seconds,
-        completed as f64 * (args.size + 32) as f64 * 8.0 / seconds / 1e9,
+        submitted as f64 * (args.size + 32) as f64 * 8.0 / seconds / 1e9,
         end_cpu.0 - start_cpu.0,
         end_cpu.1 - start_cpu.1
     );
+    if let Some(control) = control {
+        // TCP test-end can overtake the last UDP datagrams. Allow a fixed tail
+        // settlement outside the active send/CPU interval, and retain the
+        // receiver's own (longer) interval as a separate denominator.
+        std::thread::sleep(Duration::from_millis(100));
+        let receiver = control.finish(
+            submitted,
+            args.size + 32,
+            seconds,
+            end_cpu.0 - start_cpu.0,
+            end_cpu.1 - start_cpu.1,
+        )?;
+        let streams = receiver["streams"]
+            .as_array()
+            .context("missing receiver streams")?;
+        ensure!(
+            streams.len() == 1 && streams[0]["id"] == 1,
+            "expected one receiver stream"
+        );
+        let received_bytes = streams[0]["bytes"]
+            .as_u64()
+            .context("missing receiver bytes")?;
+        let received_packets = received_bytes / (args.size + 32) as u64;
+        ensure!(
+            received_bytes.is_multiple_of((args.size + 32) as u64) && received_packets <= submitted,
+            "inconsistent receiver byte count"
+        );
+        let receiver_seconds = streams[0]["end_time"]
+            .as_f64()
+            .zip(streams[0]["start_time"].as_f64())
+            .map(|(end, start)| end - start);
+        let report = serde_json::json!({
+            "backend": "production Network.framework", "target": args.target.to_string(),
+            "udp_bytes": args.size + 32, "batch": args.batch, "credits": 1024,
+            "offered_bitrate": args.bitrate, "submitted_packets": submitted,
+            "receiver_buffer_requested": 4 * 1024 * 1024, "tail_settle_ms": 100,
+            "seconds": seconds, "submit_seconds": submit_seconds,
+            "accepted_payload_gbps": submitted as f64 * (args.size + 32) as f64 * 8.0 / seconds / 1e9,
+            "received_packets": received_packets, "missing_packets": submitted - received_packets,
+            "loss_percent": (submitted - received_packets) as f64 * 100.0 / submitted as f64,
+            "received_gbps_sender_interval": received_bytes as f64 * 8.0 / seconds / 1e9,
+            "received_gbps_receiver_interval": receiver_seconds.filter(|s| *s > 0.0).map(|s| received_bytes as f64 * 8.0 / s / 1e9),
+            "user_cpu_seconds": end_cpu.0 - start_cpu.0, "system_cpu_seconds": end_cpu.1 - start_cpu.1,
+            "cpu_cores": (end_cpu.0 + end_cpu.1 - start_cpu.0 - start_cpu.1) / seconds,
+            "readiness_waits": waits,
+            "tx": {"accepted_including_setup": stats.accepted, "blocked": stats.blocked,
+                "blocked_ns": stats.blocked_ns, "partial": stats.partial, "wakes": stats.wakes,
+                "batches": stats.batches, "occupancy": stats.occupancy},
+            "receiver": receiver,
+        });
+        let json = serde_json::to_string_pretty(&report)?;
+        if let Some(path) = args.json {
+            std::fs::write(path, format!("{json}\n"))?;
+        }
+        eprintln!("{json}");
+    }
     Ok(())
 }

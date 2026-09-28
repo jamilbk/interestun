@@ -1,0 +1,1076 @@
+{
+  "input": "target/apple-path/system-transport-20260928/raw-profiled-samples.xml",
+  "window_start_seconds": 2.0,
+  "window_end_seconds": 12.0,
+  "samples": 14484,
+  "sampled_cpu_seconds": 14.484,
+  "estimated_cores": 1.4484,
+  "states": [
+    {
+      "name": "Running",
+      "sampled_cpu_seconds": 14.484,
+      "percent_of_sampled_cpu": 100.0,
+      "estimated_cores": 1.4484
+    }
+  ],
+  "threads": [
+    {
+      "name": "network_bench (0x6ff3d) (network_bench, pid: 27267)",
+      "sampled_cpu_seconds": 9.561,
+      "percent_of_sampled_cpu": 66.01077050538525,
+      "estimated_cores": 0.9561
+    },
+    {
+      "name": "Main Thread (0x6ff24) (network_bench, pid: 27267)",
+      "sampled_cpu_seconds": 2.449,
+      "percent_of_sampled_cpu": 16.908312620822976,
+      "estimated_cores": 0.24489999999999998
+    },
+    {
+      "name": "network_bench (0x6ff35) (network_bench, pid: 27267)",
+      "sampled_cpu_seconds": 1.281,
+      "percent_of_sampled_cpu": 8.844241922120961,
+      "estimated_cores": 0.1281
+    },
+    {
+      "name": "network_bench (0x6ff40) (network_bench, pid: 27267)",
+      "sampled_cpu_seconds": 1.193,
+      "percent_of_sampled_cpu": 8.236674951670809,
+      "estimated_cores": 0.1193
+    }
+  ],
+  "categories_exclusive": [
+    {
+      "name": "Dispatch: Network.framework asynchronous send service",
+      "sampled_cpu_seconds": 9.094,
+      "percent_of_sampled_cpu": 62.7865230599282,
+      "estimated_cores": 0.9094
+    },
+    {
+      "name": "Other framework, dispatch and callback work",
+      "sampled_cpu_seconds": 5.39,
+      "percent_of_sampled_cpu": 37.2134769400718,
+      "estimated_cores": 0.5389999999999999
+    }
+  ],
+  "leaf_top_40": [
+    {
+      "name": "__channel_sync",
+      "sampled_cpu_seconds": 2.988,
+      "percent_of_sampled_cpu": 20.629660314830158,
+      "estimated_cores": 0.2988
+    },
+    {
+      "name": "objc_release",
+      "sampled_cpu_seconds": 1.671,
+      "percent_of_sampled_cpu": 11.536868268434134,
+      "estimated_cores": 0.1671
+    },
+    {
+      "name": "objc_retain",
+      "sampled_cpu_seconds": 1.479,
+      "percent_of_sampled_cpu": 10.211267605633802,
+      "estimated_cores": 0.1479
+    },
+    {
+      "name": "start_wqthread",
+      "sampled_cpu_seconds": 0.537,
+      "percent_of_sampled_cpu": 3.707539353769677,
+      "estimated_cores": 0.053700000000000005
+    },
+    {
+      "name": "kevent_id",
+      "sampled_cpu_seconds": 0.48,
+      "percent_of_sampled_cpu": 3.3140016570008286,
+      "estimated_cores": 0.048
+    },
+    {
+      "name": "objc_msgSend",
+      "sampled_cpu_seconds": 0.408,
+      "percent_of_sampled_cpu": 2.816901408450704,
+      "estimated_cores": 0.040799999999999996
+    },
+    {
+      "name": "_platform_memmove",
+      "sampled_cpu_seconds": 0.394,
+      "percent_of_sampled_cpu": 2.72024302678818,
+      "estimated_cores": 0.039400000000000004
+    },
+    {
+      "name": "nw_write_request_copy_next_incomplete_request",
+      "sampled_cpu_seconds": 0.373,
+      "percent_of_sampled_cpu": 2.575255454294394,
+      "estimated_cores": 0.0373
+    },
+    {
+      "name": "kevent",
+      "sampled_cpu_seconds": 0.338,
+      "percent_of_sampled_cpu": 2.3336095001380834,
+      "estimated_cores": 0.033800000000000004
+    },
+    {
+      "name": "_dispatch_block_async_invoke2",
+      "sampled_cpu_seconds": 0.317,
+      "percent_of_sampled_cpu": 2.1886219276442973,
+      "estimated_cores": 0.0317
+    },
+    {
+      "name": "0x1a7d68e99",
+      "sampled_cpu_seconds": 0.3,
+      "percent_of_sampled_cpu": 2.071251035625518,
+      "estimated_cores": 0.03
+    },
+    {
+      "name": "_xzm_free_tc",
+      "sampled_cpu_seconds": 0.272,
+      "percent_of_sampled_cpu": 1.8779342723004695,
+      "estimated_cores": 0.027200000000000002
+    },
+    {
+      "name": "_Block_copy",
+      "sampled_cpu_seconds": 0.232,
+      "percent_of_sampled_cpu": 1.6017674675504003,
+      "estimated_cores": 0.023200000000000002
+    },
+    {
+      "name": "0x1a7d68ea9",
+      "sampled_cpu_seconds": 0.184,
+      "percent_of_sampled_cpu": 1.2703673018503177,
+      "estimated_cores": 0.0184
+    },
+    {
+      "name": "_dispatch_continuation_init_slow",
+      "sampled_cpu_seconds": 0.172,
+      "percent_of_sampled_cpu": 1.1875172604252968,
+      "estimated_cores": 0.0172
+    },
+    {
+      "name": "_Block_release",
+      "sampled_cpu_seconds": 0.161,
+      "percent_of_sampled_cpu": 1.111571389119028,
+      "estimated_cores": 0.0161
+    },
+    {
+      "name": "__xzm_xzone_free_to_freelist_chunk",
+      "sampled_cpu_seconds": 0.16,
+      "percent_of_sampled_cpu": 1.1046672190002762,
+      "estimated_cores": 0.016
+    },
+    {
+      "name": "_xzm_malloc_tc",
+      "sampled_cpu_seconds": 0.155,
+      "percent_of_sampled_cpu": 1.0701463684065176,
+      "estimated_cores": 0.0155
+    },
+    {
+      "name": "bool objc::DenseMapBase<objc::DenseMap<DisguisedPtr<objc_object>, objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>, objc::DenseMapValueInfo<objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>>, objc::DenseMapInfo<DisguisedPtr<objc_object>>, objc::detail::DenseMapPair<DisguisedPtr<objc_object>, objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>>>, DisguisedPtr<objc_object>, objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>, objc::DenseMapValueInfo<objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>>, objc::DenseMapInfo<DisguisedPtr<objc_object>>, objc::detail::DenseMapPair<DisguisedPtr<objc_object>, objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>>>::LookupBucketFor<DisguisedPtr<objc_object>>(DisguisedPtr<objc_object> const&, objc::detail::DenseMapPair<DisguisedPtr<objc_object>, objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>> const*&) const",
+      "sampled_cpu_seconds": 0.147,
+      "percent_of_sampled_cpu": 1.0149130074565038,
+      "estimated_cores": 0.0147
+    },
+    {
+      "name": "0x19fdd45a9",
+      "sampled_cpu_seconds": 0.129,
+      "percent_of_sampled_cpu": 0.8906379453189727,
+      "estimated_cores": 0.0129
+    },
+    {
+      "name": "_free",
+      "sampled_cpu_seconds": 0.123,
+      "percent_of_sampled_cpu": 0.8492129246064622,
+      "estimated_cores": 0.0123
+    },
+    {
+      "name": "malloc_type_calloc",
+      "sampled_cpu_seconds": 0.115,
+      "percent_of_sampled_cpu": 0.7939795636564485,
+      "estimated_cores": 0.0115
+    },
+    {
+      "name": "-[__NSGlobalBlock__ release]",
+      "sampled_cpu_seconds": 0.11,
+      "percent_of_sampled_cpu": 0.7594587130626899,
+      "estimated_cores": 0.011
+    },
+    {
+      "name": "_object_remove_associations",
+      "sampled_cpu_seconds": 0.083,
+      "percent_of_sampled_cpu": 0.5730461198563933,
+      "estimated_cores": 0.0083
+    },
+    {
+      "name": "objc_storeStrong",
+      "sampled_cpu_seconds": 0.082,
+      "percent_of_sampled_cpu": 0.5661419497376415,
+      "estimated_cores": 0.0082
+    },
+    {
+      "name": "nw_flow_service_writes(NWConcrete_nw_endpoint_handler*, NWConcrete_nw_endpoint_flow*, nw_flow_protocol*)",
+      "sampled_cpu_seconds": 0.081,
+      "percent_of_sampled_cpu": 0.5592377796188898,
+      "estimated_cores": 0.0081
+    },
+    {
+      "name": "__in_flow_send_block_invoke",
+      "sampled_cpu_seconds": 0.072,
+      "percent_of_sampled_cpu": 0.4971002485501243,
+      "estimated_cores": 0.0072
+    },
+    {
+      "name": "-[__NSGlobalBlock__ retain]",
+      "sampled_cpu_seconds": 0.07,
+      "percent_of_sampled_cpu": 0.4832919083126208,
+      "estimated_cores": 0.007000000000000001
+    },
+    {
+      "name": "objc_object::sidetable_clearDeallocating()",
+      "sampled_cpu_seconds": 0.068,
+      "percent_of_sampled_cpu": 0.4694835680751174,
+      "estimated_cores": 0.0068000000000000005
+    },
+    {
+      "name": "objc::DenseMapBase<objc::DenseMap<DisguisedPtr<objc_object const>, unsigned long, (anonymous namespace)::RefcountMapValuePurgeable, objc::DenseMapInfo<DisguisedPtr<objc_object const>>, objc::detail::DenseMapPair<DisguisedPtr<objc_object const>, unsigned long>>, DisguisedPtr<objc_object const>, unsigned long, (anonymous namespace)::RefcountMapValuePurgeable, objc::DenseMapInfo<DisguisedPtr<objc_object const>>, objc::detail::DenseMapPair<DisguisedPtr<objc_object const>, unsigned long>>::find(DisguisedPtr<objc_object const> const&)",
+      "sampled_cpu_seconds": 0.065,
+      "percent_of_sampled_cpu": 0.44877105771886217,
+      "estimated_cores": 0.006500000000000001
+    },
+    {
+      "name": "__destroy_helper_block_8_32c35_ZTS29dispatch_block_private_data_s",
+      "sampled_cpu_seconds": 0.057,
+      "percent_of_sampled_cpu": 0.39353769676884837,
+      "estimated_cores": 0.0057
+    },
+    {
+      "name": "malloc_type_malloc",
+      "sampled_cpu_seconds": 0.053,
+      "percent_of_sampled_cpu": 0.3659210162938415,
+      "estimated_cores": 0.0053
+    },
+    {
+      "name": "_dispatch_Block_copy",
+      "sampled_cpu_seconds": 0.049,
+      "percent_of_sampled_cpu": 0.33830433581883457,
+      "estimated_cores": 0.0049
+    },
+    {
+      "name": "objc_retain_x28",
+      "sampled_cpu_seconds": 0.049,
+      "percent_of_sampled_cpu": 0.33830433581883457,
+      "estimated_cores": 0.0049
+    },
+    {
+      "name": "_dispatch_lane_serial_drain",
+      "sampled_cpu_seconds": 0.048,
+      "percent_of_sampled_cpu": 0.33140016570008285,
+      "estimated_cores": 0.0048000000000000004
+    },
+    {
+      "name": "objc_destructInstance_nonnull_realized(objc_object*)",
+      "sampled_cpu_seconds": 0.048,
+      "percent_of_sampled_cpu": 0.33140016570008285,
+      "estimated_cores": 0.0048000000000000004
+    },
+    {
+      "name": "bool objc::DenseMapBase<objc::DenseMap<DisguisedPtr<objc_object const>, unsigned long, (anonymous namespace)::RefcountMapValuePurgeable, objc::DenseMapInfo<DisguisedPtr<objc_object const>>, objc::detail::DenseMapPair<DisguisedPtr<objc_object const>, unsigned long>>, DisguisedPtr<objc_object const>, unsigned long, (anonymous namespace)::RefcountMapValuePurgeable, objc::DenseMapInfo<DisguisedPtr<objc_object const>>, objc::detail::DenseMapPair<DisguisedPtr<objc_object const>, unsigned long>>::LookupBucketFor<DisguisedPtr<objc_object const>>(DisguisedPtr<objc_object const> const&, objc::detail::DenseMapPair<DisguisedPtr<objc_object const>, unsigned long>*&)",
+      "sampled_cpu_seconds": 0.047,
+      "percent_of_sampled_cpu": 0.32449599558133113,
+      "estimated_cores": 0.0047
+    },
+    {
+      "name": "_os_object_retain",
+      "sampled_cpu_seconds": 0.046,
+      "percent_of_sampled_cpu": 0.3175918254625794,
+      "estimated_cores": 0.0046
+    },
+    {
+      "name": "_dispatch_lane_push",
+      "sampled_cpu_seconds": 0.045,
+      "percent_of_sampled_cpu": 0.3106876553438277,
+      "estimated_cores": 0.0045
+    },
+    {
+      "name": "nw_channel_get_output_frames(nw_protocol*, nw_protocol*, unsigned int, unsigned int, unsigned int, nw_frame_array_s*)",
+      "sampled_cpu_seconds": 0.045,
+      "percent_of_sampled_cpu": 0.3106876553438277,
+      "estimated_cores": 0.0045
+    }
+  ],
+  "inclusive_top_60_overlapping": [
+    {
+      "name": "start_wqthread",
+      "sampled_cpu_seconds": 12.034,
+      "percent_of_sampled_cpu": 83.08478320905827,
+      "estimated_cores": 1.2034
+    },
+    {
+      "name": "_pthread_wqthread",
+      "sampled_cpu_seconds": 11.497,
+      "percent_of_sampled_cpu": 79.3772438552886,
+      "estimated_cores": 1.1497
+    },
+    {
+      "name": "_dispatch_workloop_worker_thread",
+      "sampled_cpu_seconds": 11.496,
+      "percent_of_sampled_cpu": 79.37033968516984,
+      "estimated_cores": 1.1496
+    },
+    {
+      "name": "_dispatch_root_queue_drain_deferred_wlh",
+      "sampled_cpu_seconds": 11.481,
+      "percent_of_sampled_cpu": 79.26677713338857,
+      "estimated_cores": 1.1481
+    },
+    {
+      "name": "_dispatch_lane_invoke",
+      "sampled_cpu_seconds": 11.469,
+      "percent_of_sampled_cpu": 79.18392709196354,
+      "estimated_cores": 1.1469
+    },
+    {
+      "name": "_dispatch_lane_serial_drain",
+      "sampled_cpu_seconds": 11.448,
+      "percent_of_sampled_cpu": 79.03893951946976,
+      "estimated_cores": 1.1448
+    },
+    {
+      "name": "_dispatch_client_callout",
+      "sampled_cpu_seconds": 11.324,
+      "percent_of_sampled_cpu": 78.18282242474454,
+      "estimated_cores": 1.1324
+    },
+    {
+      "name": "_dispatch_workloop_invoke",
+      "sampled_cpu_seconds": 9.561,
+      "percent_of_sampled_cpu": 66.01077050538525,
+      "estimated_cores": 0.9561
+    },
+    {
+      "name": "_dispatch_call_block_and_release",
+      "sampled_cpu_seconds": 9.556,
+      "percent_of_sampled_cpu": 65.97624965479149,
+      "estimated_cores": 0.9555999999999999
+    },
+    {
+      "name": "__nw_connection_batch_block_invoke_2",
+      "sampled_cpu_seconds": 9.449,
+      "percent_of_sampled_cpu": 65.23750345208506,
+      "estimated_cores": 0.9449
+    },
+    {
+      "name": "nw_endpoint_handler_service_writes",
+      "sampled_cpu_seconds": 9.094,
+      "percent_of_sampled_cpu": 62.7865230599282,
+      "estimated_cores": 0.9094
+    },
+    {
+      "name": "nw_flow_service_writes(NWConcrete_nw_endpoint_handler*, NWConcrete_nw_endpoint_flow*, nw_flow_protocol*)",
+      "sampled_cpu_seconds": 9.002,
+      "percent_of_sampled_cpu": 62.151339409003036,
+      "estimated_cores": 0.9002000000000001
+    },
+    {
+      "name": "nw_protocol_udp_finalize_output_frames(nw_protocol*, nw_frame_array_s*)",
+      "sampled_cpu_seconds": 3.177,
+      "percent_of_sampled_cpu": 21.934548467274233,
+      "estimated_cores": 0.3177
+    },
+    {
+      "name": "nw_protocol_ipv4_finalize_output_frames(nw_protocol*, nw_frame_array_s*)",
+      "sampled_cpu_seconds": 3.124,
+      "percent_of_sampled_cpu": 21.568627450980394,
+      "estimated_cores": 0.3124
+    },
+    {
+      "name": "nw_channel_finalize_output_frames(nw_protocol*, nw_frame_array_s*)",
+      "sampled_cpu_seconds": 3.09,
+      "percent_of_sampled_cpu": 21.333885666942834,
+      "estimated_cores": 0.309
+    },
+    {
+      "name": "invocation function for block in nw_channel_finalize_output_frames(nw_protocol*, nw_frame_array_s*)",
+      "sampled_cpu_seconds": 3.082,
+      "percent_of_sampled_cpu": 21.27865230599282,
+      "estimated_cores": 0.3082
+    },
+    {
+      "name": "nw_channel_finalize_output_frame(nw_frame*, bool, void*)",
+      "sampled_cpu_seconds": 3.073,
+      "percent_of_sampled_cpu": 21.216514774924054,
+      "estimated_cores": 0.3073
+    },
+    {
+      "name": "__channel_sync",
+      "sampled_cpu_seconds": 2.988,
+      "percent_of_sampled_cpu": 20.629660314830158,
+      "estimated_cores": 0.2988
+    },
+    {
+      "name": "nw_write_request_list_prune",
+      "sampled_cpu_seconds": 2.745,
+      "percent_of_sampled_cpu": 18.951946975973488,
+      "estimated_cores": 0.2745
+    },
+    {
+      "name": "core::ops::function::FnOnce::call_once::h428293726174c1e4",
+      "sampled_cpu_seconds": 2.449,
+      "percent_of_sampled_cpu": 16.908312620822976,
+      "estimated_cores": 0.24489999999999998
+    },
+    {
+      "name": "core::ops::function::impls::_$LT$impl$u20$core..ops..function..FnOnce$LT$A$GT$$u20$for$u20$$RF$F$GT$::call_once::hfd11daa18fec4b01",
+      "sampled_cpu_seconds": 2.449,
+      "percent_of_sampled_cpu": 16.908312620822976,
+      "estimated_cores": 0.24489999999999998
+    },
+    {
+      "name": "main",
+      "sampled_cpu_seconds": 2.449,
+      "percent_of_sampled_cpu": 16.908312620822976,
+      "estimated_cores": 0.24489999999999998
+    },
+    {
+      "name": "network_bench::main::hf3465198aa7dfa2f",
+      "sampled_cpu_seconds": 2.449,
+      "percent_of_sampled_cpu": 16.908312620822976,
+      "estimated_cores": 0.24489999999999998
+    },
+    {
+      "name": "start",
+      "sampled_cpu_seconds": 2.449,
+      "percent_of_sampled_cpu": 16.908312620822976,
+      "estimated_cores": 0.24489999999999998
+    },
+    {
+      "name": "std::panic::catch_unwind::hb972c8fff1d8f02c",
+      "sampled_cpu_seconds": 2.449,
+      "percent_of_sampled_cpu": 16.908312620822976,
+      "estimated_cores": 0.24489999999999998
+    },
+    {
+      "name": "std::panic::catch_unwind::hd7ba7e25e37404b8",
+      "sampled_cpu_seconds": 2.449,
+      "percent_of_sampled_cpu": 16.908312620822976,
+      "estimated_cores": 0.24489999999999998
+    },
+    {
+      "name": "std::panicking::catch_unwind::do_call::h1282c9d47af4ada9",
+      "sampled_cpu_seconds": 2.449,
+      "percent_of_sampled_cpu": 16.908312620822976,
+      "estimated_cores": 0.24489999999999998
+    },
+    {
+      "name": "std::panicking::catch_unwind::do_call::h8ddd2d07bceb025a",
+      "sampled_cpu_seconds": 2.449,
+      "percent_of_sampled_cpu": 16.908312620822976,
+      "estimated_cores": 0.24489999999999998
+    },
+    {
+      "name": "std::panicking::catch_unwind::h0705b8eeb870cf80",
+      "sampled_cpu_seconds": 2.449,
+      "percent_of_sampled_cpu": 16.908312620822976,
+      "estimated_cores": 0.24489999999999998
+    },
+    {
+      "name": "std::panicking::catch_unwind::h41b41e3ab11529dd",
+      "sampled_cpu_seconds": 2.449,
+      "percent_of_sampled_cpu": 16.908312620822976,
+      "estimated_cores": 0.24489999999999998
+    },
+    {
+      "name": "std::rt::lang_start::_$u7b$$u7b$closure$u7d$$u7d$::hb86119ec951d2528",
+      "sampled_cpu_seconds": 2.449,
+      "percent_of_sampled_cpu": 16.908312620822976,
+      "estimated_cores": 0.24489999999999998
+    },
+    {
+      "name": "std::rt::lang_start_internal::_$u7b$$u7b$closure$u7d$$u7d$::h19bce2c73e86e331",
+      "sampled_cpu_seconds": 2.449,
+      "percent_of_sampled_cpu": 16.908312620822976,
+      "estimated_cores": 0.24489999999999998
+    },
+    {
+      "name": "std::rt::lang_start_internal::hdd036a54cd97d929",
+      "sampled_cpu_seconds": 2.449,
+      "percent_of_sampled_cpu": 16.908312620822976,
+      "estimated_cores": 0.24489999999999998
+    },
+    {
+      "name": "std::sys::backtrace::__rust_begin_short_backtrace::h6324a63a65a11540",
+      "sampled_cpu_seconds": 2.449,
+      "percent_of_sampled_cpu": 16.908312620822976,
+      "estimated_cores": 0.24489999999999998
+    },
+    {
+      "name": "network_bench::send::run::h4b283a76429b4bf2",
+      "sampled_cpu_seconds": 2.436,
+      "percent_of_sampled_cpu": 16.818558409279206,
+      "estimated_cores": 0.24359999999999998
+    },
+    {
+      "name": "nw_write_request_report(NWConcrete_nw_write_request*, NSObject<OS_dispatch_queue>*, NSObject<OS_nw_error>*)",
+      "sampled_cpu_seconds": 2.262,
+      "percent_of_sampled_cpu": 15.617232808616404,
+      "estimated_cores": 0.2262
+    },
+    {
+      "name": "interestun::platform::network::Socket::flush::hda0ac9687499bf99",
+      "sampled_cpu_seconds": 2.111,
+      "percent_of_sampled_cpu": 14.574703120684894,
+      "estimated_cores": 0.2111
+    },
+    {
+      "name": "in_flow_send",
+      "sampled_cpu_seconds": 1.998,
+      "percent_of_sampled_cpu": 13.794531897265948,
+      "estimated_cores": 0.1998
+    },
+    {
+      "name": "nw_connection_async_client_if_needed_with_override",
+      "sampled_cpu_seconds": 1.963,
+      "percent_of_sampled_cpu": 13.552885943109638,
+      "estimated_cores": 0.1963
+    },
+    {
+      "name": "nw_flow_copy_write_request(nw_flow_protocol*, nw_protocol_message_properties*, unsigned long long*)",
+      "sampled_cpu_seconds": 1.88,
+      "percent_of_sampled_cpu": 12.979839823253245,
+      "estimated_cores": 0.188
+    },
+    {
+      "name": "nw_connection_batch",
+      "sampled_cpu_seconds": 1.851,
+      "percent_of_sampled_cpu": 12.779618889809445,
+      "estimated_cores": 0.1851
+    },
+    {
+      "name": "__in_flow_send_block_invoke.59",
+      "sampled_cpu_seconds": 1.815,
+      "percent_of_sampled_cpu": 12.531068765534382,
+      "estimated_cores": 0.1815
+    },
+    {
+      "name": "objc_release",
+      "sampled_cpu_seconds": 1.671,
+      "percent_of_sampled_cpu": 11.536868268434134,
+      "estimated_cores": 0.1671
+    },
+    {
+      "name": "nw_write_request_copy_next_incomplete_request",
+      "sampled_cpu_seconds": 1.564,
+      "percent_of_sampled_cpu": 10.7981220657277,
+      "estimated_cores": 0.1564
+    },
+    {
+      "name": "__nw_connection_async_client_if_needed_with_override(NWConcrete_nw_connection*, NSObject<OS_dispatch_queue>*, qos_class_t, void () block_pointer)",
+      "sampled_cpu_seconds": 1.48,
+      "percent_of_sampled_cpu": 10.218171775752555,
+      "estimated_cores": 0.148
+    },
+    {
+      "name": "objc_retain",
+      "sampled_cpu_seconds": 1.479,
+      "percent_of_sampled_cpu": 10.211267605633802,
+      "estimated_cores": 0.1479
+    },
+    {
+      "name": "nw_connection_send",
+      "sampled_cpu_seconds": 1.338,
+      "percent_of_sampled_cpu": 9.23777961888981,
+      "estimated_cores": 0.1338
+    },
+    {
+      "name": "_Block_release",
+      "sampled_cpu_seconds": 1.253,
+      "percent_of_sampled_cpu": 8.650925158795912,
+      "estimated_cores": 0.1253
+    },
+    {
+      "name": "__destroy_helper_block_8_32c35_ZTS29dispatch_block_private_data_s",
+      "sampled_cpu_seconds": 0.996,
+      "percent_of_sampled_cpu": 6.876553438276719,
+      "estimated_cores": 0.0996
+    },
+    {
+      "name": "_call_dispose_helpers_excp",
+      "sampled_cpu_seconds": 0.977,
+      "percent_of_sampled_cpu": 6.745374206020436,
+      "estimated_cores": 0.0977
+    },
+    {
+      "name": "objc_destructInstance_nonnull_realized(objc_object*)",
+      "sampled_cpu_seconds": 0.641,
+      "percent_of_sampled_cpu": 4.425573046119856,
+      "estimated_cores": 0.0641
+    },
+    {
+      "name": "_dispatch_block_async_invoke2",
+      "sampled_cpu_seconds": 0.601,
+      "percent_of_sampled_cpu": 4.149406241369787,
+      "estimated_cores": 0.0601
+    },
+    {
+      "name": "nw_write_request_create",
+      "sampled_cpu_seconds": 0.561,
+      "percent_of_sampled_cpu": 3.8732394366197185,
+      "estimated_cores": 0.056100000000000004
+    },
+    {
+      "name": "qos_class_main",
+      "sampled_cpu_seconds": 0.537,
+      "percent_of_sampled_cpu": 3.707539353769677,
+      "estimated_cores": 0.053700000000000005
+    },
+    {
+      "name": "_dispatch_dispose",
+      "sampled_cpu_seconds": 0.513,
+      "percent_of_sampled_cpu": 3.5418392709196356,
+      "estimated_cores": 0.0513
+    },
+    {
+      "name": "_dispatch_event_loop_poke",
+      "sampled_cpu_seconds": 0.489,
+      "percent_of_sampled_cpu": 3.376139188069594,
+      "estimated_cores": 0.0489
+    },
+    {
+      "name": "_dispatch_kq_poll",
+      "sampled_cpu_seconds": 0.484,
+      "percent_of_sampled_cpu": 3.3416183374758353,
+      "estimated_cores": 0.0484
+    },
+    {
+      "name": "objc_destructInstance",
+      "sampled_cpu_seconds": 0.481,
+      "percent_of_sampled_cpu": 3.32090582711958,
+      "estimated_cores": 0.0481
+    },
+    {
+      "name": "kevent_id",
+      "sampled_cpu_seconds": 0.48,
+      "percent_of_sampled_cpu": 3.3140016570008286,
+      "estimated_cores": 0.048
+    },
+    {
+      "name": "_Block_copy",
+      "sampled_cpu_seconds": 0.467,
+      "percent_of_sampled_cpu": 3.224247445457056,
+      "estimated_cores": 0.046700000000000005
+    }
+  ],
+  "copy_routine_self": [
+    {
+      "name": "_platform_memmove",
+      "sampled_cpu_seconds": 0.394,
+      "percent_of_sampled_cpu": 2.72024302678818,
+      "estimated_cores": 0.039400000000000004
+    }
+  ],
+  "focus_overlapping": [
+    {
+      "name": "objc_retain + objc_release (self only)",
+      "sampled_cpu_seconds": 3.15,
+      "percent_of_sampled_cpu": 21.748135874067938,
+      "estimated_cores": 0.315
+    },
+    {
+      "name": "__channel_sync",
+      "sampled_cpu_seconds": 2.988,
+      "percent_of_sampled_cpu": 20.629660314830158,
+      "estimated_cores": 0.2988
+    },
+    {
+      "name": "nw_write_request_list_prune",
+      "sampled_cpu_seconds": 2.745,
+      "percent_of_sampled_cpu": 18.951946975973488,
+      "estimated_cores": 0.2745
+    },
+    {
+      "name": "nw_write_request_report",
+      "sampled_cpu_seconds": 2.27,
+      "percent_of_sampled_cpu": 15.672466169566418,
+      "estimated_cores": 0.227
+    },
+    {
+      "name": "nw_flow_copy_write_request",
+      "sampled_cpu_seconds": 1.88,
+      "percent_of_sampled_cpu": 12.979839823253245,
+      "estimated_cores": 0.188
+    },
+    {
+      "name": "dispatch_data_create",
+      "sampled_cpu_seconds": 0.408,
+      "percent_of_sampled_cpu": 2.816901408450704,
+      "estimated_cores": 0.040799999999999996
+    }
+  ],
+  "thread_leaf_top_15": {
+    "network_bench (0x6ff3d) (network_bench, pid: 27267)": [
+      {
+        "name": "__channel_sync",
+        "sampled_cpu_seconds": 2.988,
+        "percent_of_sampled_cpu": 20.629660314830158,
+        "estimated_cores": 0.2988
+      },
+      {
+        "name": "objc_release",
+        "sampled_cpu_seconds": 1.353,
+        "percent_of_sampled_cpu": 9.341342170671085,
+        "estimated_cores": 0.1353
+      },
+      {
+        "name": "objc_retain",
+        "sampled_cpu_seconds": 1.013,
+        "percent_of_sampled_cpu": 6.993924330295498,
+        "estimated_cores": 0.10129999999999999
+      },
+      {
+        "name": "kevent_id",
+        "sampled_cpu_seconds": 0.48,
+        "percent_of_sampled_cpu": 3.3140016570008286,
+        "estimated_cores": 0.048
+      },
+      {
+        "name": "nw_write_request_copy_next_incomplete_request",
+        "sampled_cpu_seconds": 0.373,
+        "percent_of_sampled_cpu": 2.575255454294394,
+        "estimated_cores": 0.0373
+      },
+      {
+        "name": "objc_msgSend",
+        "sampled_cpu_seconds": 0.283,
+        "percent_of_sampled_cpu": 1.9538801436067386,
+        "estimated_cores": 0.0283
+      },
+      {
+        "name": "0x1a7d68e99",
+        "sampled_cpu_seconds": 0.265,
+        "percent_of_sampled_cpu": 1.8296050814692073,
+        "estimated_cores": 0.026500000000000003
+      },
+      {
+        "name": "_platform_memmove",
+        "sampled_cpu_seconds": 0.25,
+        "percent_of_sampled_cpu": 1.7260425296879316,
+        "estimated_cores": 0.025
+      },
+      {
+        "name": "_dispatch_continuation_init_slow",
+        "sampled_cpu_seconds": 0.172,
+        "percent_of_sampled_cpu": 1.1875172604252968,
+        "estimated_cores": 0.0172
+      },
+      {
+        "name": "_Block_copy",
+        "sampled_cpu_seconds": 0.15,
+        "percent_of_sampled_cpu": 1.035625517812759,
+        "estimated_cores": 0.015
+      },
+      {
+        "name": "0x1a7d68ea9",
+        "sampled_cpu_seconds": 0.148,
+        "percent_of_sampled_cpu": 1.0218171775752554,
+        "estimated_cores": 0.014799999999999999
+      },
+      {
+        "name": "-[__NSGlobalBlock__ release]",
+        "sampled_cpu_seconds": 0.091,
+        "percent_of_sampled_cpu": 0.628279480806407,
+        "estimated_cores": 0.0091
+      },
+      {
+        "name": "_xzm_malloc_tc",
+        "sampled_cpu_seconds": 0.085,
+        "percent_of_sampled_cpu": 0.5868544600938967,
+        "estimated_cores": 0.0085
+      },
+      {
+        "name": "0x19fdd45a9",
+        "sampled_cpu_seconds": 0.081,
+        "percent_of_sampled_cpu": 0.5592377796188898,
+        "estimated_cores": 0.0081
+      },
+      {
+        "name": "nw_flow_service_writes(NWConcrete_nw_endpoint_handler*, NWConcrete_nw_endpoint_flow*, nw_flow_protocol*)",
+        "sampled_cpu_seconds": 0.081,
+        "percent_of_sampled_cpu": 0.5592377796188898,
+        "estimated_cores": 0.0081
+      }
+    ],
+    "network_bench (0x6ff35) (network_bench, pid: 27267)": [
+      {
+        "name": "start_wqthread",
+        "sampled_cpu_seconds": 0.284,
+        "percent_of_sampled_cpu": 1.9607843137254901,
+        "estimated_cores": 0.028399999999999998
+      },
+      {
+        "name": "_dispatch_block_async_invoke2",
+        "sampled_cpu_seconds": 0.138,
+        "percent_of_sampled_cpu": 0.9527754763877382,
+        "estimated_cores": 0.013800000000000002
+      },
+      {
+        "name": "_xzm_free_tc",
+        "sampled_cpu_seconds": 0.123,
+        "percent_of_sampled_cpu": 0.8492129246064622,
+        "estimated_cores": 0.0123
+      },
+      {
+        "name": "bool objc::DenseMapBase<objc::DenseMap<DisguisedPtr<objc_object>, objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>, objc::DenseMapValueInfo<objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>>, objc::DenseMapInfo<DisguisedPtr<objc_object>>, objc::detail::DenseMapPair<DisguisedPtr<objc_object>, objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>>>, DisguisedPtr<objc_object>, objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>, objc::DenseMapValueInfo<objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>>, objc::DenseMapInfo<DisguisedPtr<objc_object>>, objc::detail::DenseMapPair<DisguisedPtr<objc_object>, objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>>>::LookupBucketFor<DisguisedPtr<objc_object>>(DisguisedPtr<objc_object> const&, objc::detail::DenseMapPair<DisguisedPtr<objc_object>, objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>> const*&) const",
+        "sampled_cpu_seconds": 0.076,
+        "percent_of_sampled_cpu": 0.5247169290251312,
+        "estimated_cores": 0.0076
+      },
+      {
+        "name": "kevent",
+        "sampled_cpu_seconds": 0.073,
+        "percent_of_sampled_cpu": 0.504004418668876,
+        "estimated_cores": 0.007299999999999999
+      },
+      {
+        "name": "__xzm_xzone_free_to_freelist_chunk",
+        "sampled_cpu_seconds": 0.051,
+        "percent_of_sampled_cpu": 0.352112676056338,
+        "estimated_cores": 0.0050999999999999995
+      },
+      {
+        "name": "_free",
+        "sampled_cpu_seconds": 0.048,
+        "percent_of_sampled_cpu": 0.33140016570008285,
+        "estimated_cores": 0.0048000000000000004
+      },
+      {
+        "name": "_Block_release",
+        "sampled_cpu_seconds": 0.042,
+        "percent_of_sampled_cpu": 0.2899751449875725,
+        "estimated_cores": 0.004200000000000001
+      },
+      {
+        "name": "_object_remove_associations",
+        "sampled_cpu_seconds": 0.038,
+        "percent_of_sampled_cpu": 0.2623584645125656,
+        "estimated_cores": 0.0038
+      },
+      {
+        "name": "__in_flow_send_block_invoke",
+        "sampled_cpu_seconds": 0.037,
+        "percent_of_sampled_cpu": 0.25545429439381384,
+        "estimated_cores": 0.0036999999999999997
+      },
+      {
+        "name": "objc_object::sidetable_clearDeallocating()",
+        "sampled_cpu_seconds": 0.037,
+        "percent_of_sampled_cpu": 0.25545429439381384,
+        "estimated_cores": 0.0036999999999999997
+      },
+      {
+        "name": "objc::DenseMapBase<objc::DenseMap<DisguisedPtr<objc_object const>, unsigned long, (anonymous namespace)::RefcountMapValuePurgeable, objc::DenseMapInfo<DisguisedPtr<objc_object const>>, objc::detail::DenseMapPair<DisguisedPtr<objc_object const>, unsigned long>>, DisguisedPtr<objc_object const>, unsigned long, (anonymous namespace)::RefcountMapValuePurgeable, objc::DenseMapInfo<DisguisedPtr<objc_object const>>, objc::detail::DenseMapPair<DisguisedPtr<objc_object const>, unsigned long>>::find(DisguisedPtr<objc_object const> const&)",
+        "sampled_cpu_seconds": 0.033,
+        "percent_of_sampled_cpu": 0.22783761391880697,
+        "estimated_cores": 0.0033
+      },
+      {
+        "name": "_dispatch_lane_serial_drain",
+        "sampled_cpu_seconds": 0.026,
+        "percent_of_sampled_cpu": 0.1795084230875449,
+        "estimated_cores": 0.0026
+      },
+      {
+        "name": "bool objc::DenseMapBase<objc::DenseMap<DisguisedPtr<objc_object const>, unsigned long, (anonymous namespace)::RefcountMapValuePurgeable, objc::DenseMapInfo<DisguisedPtr<objc_object const>>, objc::detail::DenseMapPair<DisguisedPtr<objc_object const>, unsigned long>>, DisguisedPtr<objc_object const>, unsigned long, (anonymous namespace)::RefcountMapValuePurgeable, objc::DenseMapInfo<DisguisedPtr<objc_object const>>, objc::detail::DenseMapPair<DisguisedPtr<objc_object const>, unsigned long>>::LookupBucketFor<DisguisedPtr<objc_object const>>(DisguisedPtr<objc_object const> const&, objc::detail::DenseMapPair<DisguisedPtr<objc_object const>, unsigned long>*&)",
+        "sampled_cpu_seconds": 0.024,
+        "percent_of_sampled_cpu": 0.16570008285004142,
+        "estimated_cores": 0.0024000000000000002
+      },
+      {
+        "name": "__destroy_helper_block_8_32c35_ZTS29dispatch_block_private_data_s",
+        "sampled_cpu_seconds": 0.022,
+        "percent_of_sampled_cpu": 0.15189174261253796,
+        "estimated_cores": 0.0021999999999999997
+      }
+    ],
+    "Main Thread (0x6ff24) (network_bench, pid: 27267)": [
+      {
+        "name": "objc_retain",
+        "sampled_cpu_seconds": 0.458,
+        "percent_of_sampled_cpu": 3.1621099143882905,
+        "estimated_cores": 0.0458
+      },
+      {
+        "name": "objc_release",
+        "sampled_cpu_seconds": 0.302,
+        "percent_of_sampled_cpu": 2.0850593758630214,
+        "estimated_cores": 0.030199999999999998
+      },
+      {
+        "name": "kevent",
+        "sampled_cpu_seconds": 0.194,
+        "percent_of_sampled_cpu": 1.339409003037835,
+        "estimated_cores": 0.0194
+      },
+      {
+        "name": "_platform_memmove",
+        "sampled_cpu_seconds": 0.144,
+        "percent_of_sampled_cpu": 0.9942004971002486,
+        "estimated_cores": 0.0144
+      },
+      {
+        "name": "objc_msgSend",
+        "sampled_cpu_seconds": 0.113,
+        "percent_of_sampled_cpu": 0.7801712234189451,
+        "estimated_cores": 0.011300000000000001
+      },
+      {
+        "name": "malloc_type_calloc",
+        "sampled_cpu_seconds": 0.11,
+        "percent_of_sampled_cpu": 0.7594587130626899,
+        "estimated_cores": 0.011
+      },
+      {
+        "name": "_Block_copy",
+        "sampled_cpu_seconds": 0.082,
+        "percent_of_sampled_cpu": 0.5661419497376415,
+        "estimated_cores": 0.0082
+      },
+      {
+        "name": "_xzm_malloc_tc",
+        "sampled_cpu_seconds": 0.07,
+        "percent_of_sampled_cpu": 0.4832919083126208,
+        "estimated_cores": 0.007000000000000001
+      },
+      {
+        "name": "0x19fdd45a9",
+        "sampled_cpu_seconds": 0.046,
+        "percent_of_sampled_cpu": 0.3175918254625794,
+        "estimated_cores": 0.0046
+      },
+      {
+        "name": "network_bench::send::run::h4b283a76429b4bf2",
+        "sampled_cpu_seconds": 0.039,
+        "percent_of_sampled_cpu": 0.26926263463131733,
+        "estimated_cores": 0.0039
+      },
+      {
+        "name": "_xzm_xzone_malloc_tiny",
+        "sampled_cpu_seconds": 0.038,
+        "percent_of_sampled_cpu": 0.2623584645125656,
+        "estimated_cores": 0.0038
+      },
+      {
+        "name": "0x1a7d68ea9",
+        "sampled_cpu_seconds": 0.036,
+        "percent_of_sampled_cpu": 0.24855012427506215,
+        "estimated_cores": 0.0036
+      },
+      {
+        "name": "nw_write_request_create",
+        "sampled_cpu_seconds": 0.033,
+        "percent_of_sampled_cpu": 0.22783761391880697,
+        "estimated_cores": 0.0033
+      },
+      {
+        "name": "0x1a7d68e99",
+        "sampled_cpu_seconds": 0.032,
+        "percent_of_sampled_cpu": 0.22093344380005522,
+        "estimated_cores": 0.0032
+      },
+      {
+        "name": "dispatch_data_create",
+        "sampled_cpu_seconds": 0.032,
+        "percent_of_sampled_cpu": 0.22093344380005522,
+        "estimated_cores": 0.0032
+      }
+    ],
+    "network_bench (0x6ff40) (network_bench, pid: 27267)": [
+      {
+        "name": "start_wqthread",
+        "sampled_cpu_seconds": 0.253,
+        "percent_of_sampled_cpu": 1.7467550400441867,
+        "estimated_cores": 0.0253
+      },
+      {
+        "name": "_dispatch_block_async_invoke2",
+        "sampled_cpu_seconds": 0.179,
+        "percent_of_sampled_cpu": 1.235846451256559,
+        "estimated_cores": 0.0179
+      },
+      {
+        "name": "_xzm_free_tc",
+        "sampled_cpu_seconds": 0.112,
+        "percent_of_sampled_cpu": 0.7732670533001933,
+        "estimated_cores": 0.0112
+      },
+      {
+        "name": "kevent",
+        "sampled_cpu_seconds": 0.071,
+        "percent_of_sampled_cpu": 0.49019607843137253,
+        "estimated_cores": 0.0070999999999999995
+      },
+      {
+        "name": "bool objc::DenseMapBase<objc::DenseMap<DisguisedPtr<objc_object>, objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>, objc::DenseMapValueInfo<objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>>, objc::DenseMapInfo<DisguisedPtr<objc_object>>, objc::detail::DenseMapPair<DisguisedPtr<objc_object>, objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>>>, DisguisedPtr<objc_object>, objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>, objc::DenseMapValueInfo<objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>>, objc::DenseMapInfo<DisguisedPtr<objc_object>>, objc::detail::DenseMapPair<DisguisedPtr<objc_object>, objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>>>::LookupBucketFor<DisguisedPtr<objc_object>>(DisguisedPtr<objc_object> const&, objc::detail::DenseMapPair<DisguisedPtr<objc_object>, objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>> const*&) const",
+        "sampled_cpu_seconds": 0.063,
+        "percent_of_sampled_cpu": 0.43496271748135873,
+        "estimated_cores": 0.0063
+      },
+      {
+        "name": "_free",
+        "sampled_cpu_seconds": 0.046,
+        "percent_of_sampled_cpu": 0.3175918254625794,
+        "estimated_cores": 0.0046
+      },
+      {
+        "name": "_object_remove_associations",
+        "sampled_cpu_seconds": 0.044,
+        "percent_of_sampled_cpu": 0.3037834852250759,
+        "estimated_cores": 0.004399999999999999
+      },
+      {
+        "name": "__xzm_xzone_free_to_freelist_chunk",
+        "sampled_cpu_seconds": 0.043,
+        "percent_of_sampled_cpu": 0.2968793151063242,
+        "estimated_cores": 0.0043
+      },
+      {
+        "name": "__destroy_helper_block_8_32c35_ZTS29dispatch_block_private_data_s",
+        "sampled_cpu_seconds": 0.035,
+        "percent_of_sampled_cpu": 0.2416459541563104,
+        "estimated_cores": 0.0035000000000000005
+      },
+      {
+        "name": "__in_flow_send_block_invoke",
+        "sampled_cpu_seconds": 0.035,
+        "percent_of_sampled_cpu": 0.2416459541563104,
+        "estimated_cores": 0.0035000000000000005
+      },
+      {
+        "name": "_Block_release",
+        "sampled_cpu_seconds": 0.034,
+        "percent_of_sampled_cpu": 0.2347417840375587,
+        "estimated_cores": 0.0034000000000000002
+      },
+      {
+        "name": "objc_object::sidetable_clearDeallocating()",
+        "sampled_cpu_seconds": 0.031,
+        "percent_of_sampled_cpu": 0.2140292736813035,
+        "estimated_cores": 0.0031
+      },
+      {
+        "name": "objc::DenseMapBase<objc::DenseMap<DisguisedPtr<objc_object const>, unsigned long, (anonymous namespace)::RefcountMapValuePurgeable, objc::DenseMapInfo<DisguisedPtr<objc_object const>>, objc::detail::DenseMapPair<DisguisedPtr<objc_object const>, unsigned long>>, DisguisedPtr<objc_object const>, unsigned long, (anonymous namespace)::RefcountMapValuePurgeable, objc::DenseMapInfo<DisguisedPtr<objc_object const>>, objc::detail::DenseMapPair<DisguisedPtr<objc_object const>, unsigned long>>::find(DisguisedPtr<objc_object const> const&)",
+        "sampled_cpu_seconds": 0.03,
+        "percent_of_sampled_cpu": 0.2071251035625518,
+        "estimated_cores": 0.003
+      },
+      {
+        "name": "_dispatch_lane_serial_drain",
+        "sampled_cpu_seconds": 0.022,
+        "percent_of_sampled_cpu": 0.15189174261253796,
+        "estimated_cores": 0.0021999999999999997
+      },
+      {
+        "name": "bool objc::DenseMapBase<objc::DenseMap<DisguisedPtr<objc_object const>, unsigned long, (anonymous namespace)::RefcountMapValuePurgeable, objc::DenseMapInfo<DisguisedPtr<objc_object const>>, objc::detail::DenseMapPair<DisguisedPtr<objc_object const>, unsigned long>>, DisguisedPtr<objc_object const>, unsigned long, (anonymous namespace)::RefcountMapValuePurgeable, objc::DenseMapInfo<DisguisedPtr<objc_object const>>, objc::detail::DenseMapPair<DisguisedPtr<objc_object const>, unsigned long>>::LookupBucketFor<DisguisedPtr<objc_object const>>(DisguisedPtr<objc_object const> const&, objc::detail::DenseMapPair<DisguisedPtr<objc_object const>, unsigned long>*&)",
+        "sampled_cpu_seconds": 0.021,
+        "percent_of_sampled_cpu": 0.14498757249378624,
+        "estimated_cores": 0.0021000000000000003
+      }
+    ]
+  }
+}

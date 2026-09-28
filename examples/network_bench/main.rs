@@ -1,4 +1,4 @@
-//! Standalone UDP transmit-path experiment; not a tunnel or an iperf protocol.
+//! Production UDP transport control, with a counting sink or iperf3 receiver.
 use anyhow::{Context, Result, ensure};
 use clap::{Parser, Subcommand};
 use std::{
@@ -6,6 +6,8 @@ use std::{
     time::{Duration, Instant},
 };
 
+#[cfg(target_os = "macos")]
+mod iperf;
 #[cfg(target_os = "macos")]
 mod send;
 
@@ -28,7 +30,7 @@ enum Command {
         #[arg(long, default_value_t = 0)]
         packets: u64,
     },
-    /// macOS sender; requires a separate counting sink, not an iperf server.
+    /// macOS production Network.framework sender; counting sink or --iperf.
     #[cfg(target_os = "macos")]
     Send(send::Args),
 }

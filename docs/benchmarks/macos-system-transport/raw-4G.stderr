@@ -1,0 +1,80 @@
+Network.framework receive: experimental private receive_multiple (max 256)
+Network.framework peer: [C1 connected 192.168.1.226:5201 udp, local: 0.0.0.0:0, attribution: developer, path satisfied (Path is satisfied), viable, interface: en8, ipv4, ipv6, dns]
+production Network.framework bridge ready; batch=128 credits=1024
+tx=TxStats { accepted: 10330625, partial: 1107736, blocked: 379132, blocked_ns: 23389980958, wakes: 1117515, batches: [0, 308037, 226257, 222529, 219523, 159980, 45028, 5824, 1267], occupancy: [17, 0, 0, 0, 1, 0, 8, 6, 39, 191, 1188183, 0] }; readiness_waits=379132; submit_seconds=30.000149; drain_seconds=0.003409
+{
+  "accepted_payload_gbps": 3.999543778049618,
+  "backend": "production Network.framework",
+  "batch": 128,
+  "cpu_cores": 1.4411595293266763,
+  "credits": 1024,
+  "loss_percent": 0.0,
+  "missing_packets": 0,
+  "offered_bitrate": 4000000000,
+  "readiness_waits": 379132,
+  "received_gbps_receiver_interval": 3.9855588025760147,
+  "received_gbps_sender_interval": 3.999543778049618,
+  "received_packets": 10330624,
+  "receiver": {
+    "cpu_util_system": 59.41773805140508,
+    "cpu_util_total": 81.36809192405663,
+    "cpu_util_user": 21.950353872651547,
+    "sender_has_retransmits": -1,
+    "server_output_text": "-----------------------------------------------------------\nServer listening on 5201 (test #18)\n-----------------------------------------------------------\nAccepted connection from 192.168.1.211, port 54127\n[  5] local 192.168.1.226 port 5201 connected to 192.168.1.211 port 54707\n[ ID] Interval           Transfer     Bitrate         Jitter    Lost/Total Datagrams\n[  5]   0.00-1.00   sec   455 MBytes  3.81 Gbits/sec  0.008 ms  0/328476 (0%)  \n[  5]   1.00-2.01   sec   478 MBytes  3.96 Gbits/sec  0.023 ms  0/344840 (0%)  \n[  5]   2.01-3.01   sec   471 MBytes  3.98 Gbits/sec  0.002 ms  0/339992 (0%)  \n[  5]   3.01-4.01   sec   464 MBytes  3.86 Gbits/sec  0.025 ms  0/335295 (0%)  \n[  5]   4.01-5.01   sec   473 MBytes  3.99 Gbits/sec  0.012 ms  0/341407 (0%)  \n[  5]   5.01-6.02   sec   476 MBytes  3.96 Gbits/sec  0.028 ms  0/343790 (0%)  \n[  5]   6.02-7.01   sec   464 MBytes  3.92 Gbits/sec  0.002 ms  0/335425 (0%)  \n[  5]   7.01-8.01   sec   466 MBytes  3.89 Gbits/sec  0.003 ms  0/336281 (0%)  \n[  5]   8.01-9.01   sec   452 MBytes  3.82 Gbits/sec  0.003 ms  0/326770 (0%)  \n[  5]   9.01-10.00  sec   459 MBytes  3.87 Gbits/sec  0.003 ms  0/331658 (0%)  \n[  5]  10.00-11.01  sec   473 MBytes  3.93 Gbits/sec  0.002 ms  0/341732 (0%)  \n[  5]  11.01-12.01  sec   471 MBytes  3.96 Gbits/sec  0.018 ms  0/340171 (0%)  \n[  5]  12.01-13.02  sec   467 MBytes  3.90 Gbits/sec  0.004 ms  0/337469 (0%)  \n[  5]  13.02-14.01  sec   464 MBytes  3.91 Gbits/sec  0.007 ms  0/335066 (0%)  \n[  5]  14.01-15.01  sec   467 MBytes  3.93 Gbits/sec  0.004 ms  0/337045 (0%)  \n[  5]  15.01-16.02  sec   487 MBytes  4.05 Gbits/sec  0.009 ms  0/351949 (0%)  \n[  5]  16.02-17.01  sec   480 MBytes  4.04 Gbits/sec  0.005 ms  0/346769 (0%)  \n[  5]  17.01-18.01  sec   477 MBytes  4.01 Gbits/sec  0.007 ms  0/344331 (0%)  \n[  5]  18.01-19.00  sec   479 MBytes  4.04 Gbits/sec  0.003 ms  0/346028 (0%)  \n[  5]  19.00-20.00  sec   490 MBytes  4.12 Gbits/sec  0.004 ms  0/353753 (0%)  \n[  5]  20.00-21.01  sec   492 MBytes  4.09 Gbits/sec  0.003 ms  0/355377 (0%)  \n[  5]  21.01-22.00  sec   499 MBytes  4.21 Gbits/sec  0.003 ms  0/360020 (0%)  \n[  5]  22.00-23.00  sec   500 MBytes  4.21 Gbits/sec  0.003 ms  0/361408 (0%)  \n[  5]  23.00-24.01  sec   487 MBytes  4.05 Gbits/sec  0.004 ms  0/351690 (0%)  \n[  5]  24.01-25.01  sec   487 MBytes  4.11 Gbits/sec  0.003 ms  0/352033 (0%)  \n[  5]  25.01-26.02  sec   496 MBytes  4.13 Gbits/sec  0.003 ms  0/358402 (0%)  \n[  5]  26.02-27.01  sec   490 MBytes  4.13 Gbits/sec  0.004 ms  0/353910 (0%)  \n[  5]  27.01-28.00  sec   476 MBytes  4.02 Gbits/sec  0.003 ms  0/343943 (0%)  \n[  5]  28.00-29.02  sec   493 MBytes  4.09 Gbits/sec  0.004 ms  0/355795 (0%)  \n[  5]  29.02-30.01  sec   471 MBytes  3.97 Gbits/sec  0.002 ms  0/339799 (0%)  \n- - - - - - - - - - - - - - - - - - - - - - - - -\n[ ID] Interval           Transfer     Bitrate         Jitter    Lost/Total Datagrams\n[  5]   0.00-30.11  sec  14.0 GBytes  3.99 Gbits/sec  0.002 ms  0/10330624 (0%)  receiver\n",
+    "streams": [
+      {
+        "bytes": 15000066048,
+        "end_time": 30.108834,
+        "errors": 0,
+        "id": 1,
+        "jitter": 2.3100296534046867e-6,
+        "omitted_errors": 0,
+        "omitted_packets": 0,
+        "packets": 10330624,
+        "retransmits": -1,
+        "start_time": 0
+      }
+    ]
+  },
+  "receiver_buffer_requested": 4194304,
+  "seconds": 30.003554166,
+  "submit_seconds": 30.00014875,
+  "submitted_packets": 10330624,
+  "system_cpu_seconds": 14.031735,
+  "tail_settle_ms": 100,
+  "target": "192.168.1.226:5201",
+  "tx": {
+    "accepted_including_setup": 10330625,
+    "batches": [
+      0,
+      308037,
+      226257,
+      222529,
+      219523,
+      159980,
+      45028,
+      5824,
+      1267
+    ],
+    "blocked": 379132,
+    "blocked_ns": 23389980958,
+    "occupancy": [
+      17,
+      0,
+      0,
+      0,
+      1,
+      0,
+      8,
+      6,
+      39,
+      191,
+      1188183,
+      0
+    ],
+    "partial": 1107736,
+    "wakes": 1117515
+  },
+  "udp_bytes": 1452,
+  "user_cpu_seconds": 29.208173000000002
+}

@@ -1,0 +1,483 @@
+{
+  "window_seconds": [
+    2,
+    22
+  ],
+  "schemas": [
+    {
+      "name": "syscall",
+      "columns": [
+        "start",
+        "thread",
+        "call",
+        "duration",
+        "process",
+        "cputime",
+        "waittime",
+        "arg1",
+        "arg2",
+        "arg3",
+        "arg4",
+        "return",
+        "errno",
+        "backtrace",
+        "note",
+        "signature"
+      ]
+    }
+  ],
+  "rows": 1340671,
+  "diagnostics": {
+    "syscall_cpu_wait_exceeds_wall_rows": 345728,
+    "foreign_rows_skipped": 2612492
+  },
+  "syscalls": {
+    "kevent_id": {
+      "count": 318112,
+      "wall_ns": 822429766,
+      "reported_cpu_ns": 3146336865,
+      "reported_wait_ns": 72838694,
+      "errors": 0
+    },
+    "workq_kernreturn": {
+      "count": 284765,
+      "wall_ns": 50130345981,
+      "reported_cpu_ns": 7853365148,
+      "reported_wait_ns": 48837698173,
+      "errors": 284765
+    },
+    "channel_sync": {
+      "count": 259304,
+      "wall_ns": 5958471563,
+      "reported_cpu_ns": 9351341928,
+      "reported_wait_ns": 131448349,
+      "errors": 0
+    },
+    "recvmsg_x": {
+      "count": 71005,
+      "wall_ns": 4429200396,
+      "reported_cpu_ns": 6863147041,
+      "reported_wait_ns": 191138427,
+      "errors": 7139,
+      "successful_messages": 6186803
+    },
+    "kevent": {
+      "count": 46530,
+      "wall_ns": 29466009718,
+      "reported_cpu_ns": 2416765476,
+      "reported_wait_ns": 29296402433,
+      "errors": 0
+    },
+    "bsdthread_ctl": {
+      "count": 21817,
+      "wall_ns": 23780458,
+      "reported_cpu_ns": 689743956,
+      "reported_wait_ns": 1988995,
+      "errors": 0
+    },
+    "sendmsg_x": {
+      "count": 20343,
+      "wall_ns": 144976756,
+      "reported_cpu_ns": 157180113,
+      "reported_wait_ns": 13586911,
+      "errors": 0,
+      "successful_messages": 89823
+    },
+    "sys_ulock_wait2": {
+      "count": 2133,
+      "wall_ns": 17213547,
+      "reported_cpu_ns": 117401050,
+      "reported_wait_ns": 10204804,
+      "errors": 0
+    },
+    "sys_ulock_wake": {
+      "count": 2132,
+      "wall_ns": 3838093,
+      "reported_cpu_ns": 5804180,
+      "reported_wait_ns": 697334,
+      "errors": 0
+    },
+    "thread_switch": {
+      "count": 36,
+      "wall_ns": 204878,
+      "reported_cpu_ns": 271963,
+      "reported_wait_ns": 119874,
+      "errors": 0
+    },
+    "kern_invalid_63": {
+      "count": 22,
+      "wall_ns": 26668,
+      "reported_cpu_ns": 26668,
+      "reported_wait_ns": 0,
+      "errors": 0
+    },
+    "psynch_mutexwait": {
+      "count": 18,
+      "wall_ns": 186334,
+      "reported_cpu_ns": 712876,
+      "reported_wait_ns": 89711,
+      "errors": 0
+    },
+    "psynch_mutexdrop": {
+      "count": 18,
+      "wall_ns": 51332,
+      "reported_cpu_ns": 51332,
+      "reported_wait_ns": 0,
+      "errors": 0
+    },
+    "swtch_pri": {
+      "count": 1,
+      "wall_ns": 541,
+      "reported_cpu_ns": 541,
+      "reported_wait_ns": 0,
+      "errors": 0
+    }
+  },
+  "threads_syscalls": {
+    "InterestunPacket (0x5ecbb) (InterestunPacket, pid: 15142)": {
+      "count": 264361,
+      "wall_ns": 15124440046,
+      "reported_cpu_ns": 6224105345,
+      "reported_wait_ns": 12783891535,
+      "errors": 84296,
+      "channel_sync": 77277,
+      "kevent_id": 89349,
+      "workq_kernreturn": 84296,
+      "bsdthread_ctl": 6583,
+      "kevent": 5841,
+      "sys_ulock_wait2": 572,
+      "sys_ulock_wake": 424,
+      "kern_invalid_63": 2,
+      "thread_switch": 17
+    },
+    "InterestunPacket (0x5f72f) (InterestunPacket, pid: 15142)": {
+      "count": 268674,
+      "wall_ns": 15093110805,
+      "reported_cpu_ns": 6372171951,
+      "reported_wait_ns": 12742385683,
+      "errors": 85575,
+      "workq_kernreturn": 85575,
+      "bsdthread_ctl": 6524,
+      "kevent": 5866,
+      "kevent_id": 91385,
+      "channel_sync": 78302,
+      "sys_ulock_wake": 402,
+      "sys_ulock_wait2": 611,
+      "thread_switch": 4,
+      "kern_invalid_63": 5
+    },
+    "peer-0-rx (0x4f974) (InterestunPacket, pid: 15142)": {
+      "count": 45038,
+      "wall_ns": 19686335797,
+      "reported_cpu_ns": 629987701,
+      "reported_wait_ns": 19455825961,
+      "errors": 0,
+      "sendmsg_x": 20343,
+      "kevent": 19748,
+      "kevent_id": 4928,
+      "psynch_mutexdrop": 12,
+      "swtch_pri": 1,
+      "psynch_mutexwait": 6
+    },
+    "peer-0-tx (0x4f973) (InterestunPacket, pid: 15142)": {
+      "count": 89359,
+      "wall_ns": 14353383319,
+      "reported_cpu_ns": 8817660606,
+      "reported_wait_ns": 10046921893,
+      "errors": 7139,
+      "recvmsg_x": 71005,
+      "kevent_id": 10214,
+      "kevent": 7143,
+      "sys_ulock_wait2": 139,
+      "sys_ulock_wake": 828,
+      "psynch_mutexwait": 12,
+      "kern_invalid_63": 12,
+      "psynch_mutexdrop": 6
+    },
+    "InterestunPacket (0x68b94) (InterestunPacket, pid: 15142)": {
+      "count": 72401,
+      "wall_ns": 13861409773,
+      "reported_cpu_ns": 1769567247,
+      "reported_wait_ns": 13193580685,
+      "errors": 22929,
+      "workq_kernreturn": 22929,
+      "kevent": 1653,
+      "kevent_id": 24574,
+      "channel_sync": 21206,
+      "sys_ulock_wait2": 157,
+      "bsdthread_ctl": 1778,
+      "sys_ulock_wake": 101,
+      "kern_invalid_63": 2,
+      "thread_switch": 1
+    },
+    "InterestunPacket (0x5f806) (InterestunPacket, pid: 15142)": {
+      "count": 286403,
+      "wall_ns": 12878056291,
+      "reported_cpu_ns": 6788656287,
+      "reported_wait_ns": 10333607948,
+      "errors": 91965,
+      "workq_kernreturn": 91965,
+      "kevent": 6279,
+      "kevent_id": 97662,
+      "channel_sync": 82519,
+      "bsdthread_ctl": 6932,
+      "thread_switch": 14,
+      "sys_ulock_wait2": 654,
+      "sys_ulock_wake": 377,
+      "kern_invalid_63": 1
+    }
+  },
+  "top_call_stacks": {
+    "channel_sync": [
+      [
+        "__channel_sync \u2192 nw_channel_finalize_output_frame(nw_frame*, bool, void*) \u2192 invocation function for block in nw_channel_finalize_output_frames(nw_protocol*, nw_frame_array_s*) \u2192 nw_channel_finalize_output_frames(nw_protocol*, nw_frame_array_s*) \u2192 nw_protocol_ipv4_finalize_output_frames(nw_protocol*, nw_frame_array_s*) \u2192 nw_protocol_udp_finalize_output_frames(nw_protocol*, nw_frame_array_s*)",
+        217432
+      ],
+      [
+        "__channel_sync \u2192 nw_channel_add_input_frames(nw_channel*, nw_protocol*) \u2192 nw_channel_update_input_source(nw_channel*, nw_protocol*, bool) \u2192 invocation function for block in nw_channel_create(nw_context*, unsigned char*, unsigned int, void*, unsigned int, bool, bool, bool*) \u2192 _dispatch_client_callout \u2192 _dispatch_continuation_pop",
+        19067
+      ],
+      [
+        "__channel_sync \u2192 nw_channel_finalize_input_frame(nw_frame*, bool, void*) \u2192 nw_flow_process_input_frames(NWConcrete_nw_endpoint_handler*, NWConcrete_nw_endpoint_flow*, nw_protocol*, nw_frame_array_s*, bool, bool, bool) \u2192 nw_flow_service_reads(NWConcrete_nw_endpoint_handler*, NWConcrete_nw_endpoint_flow*, nw_flow_protocol*, bool) \u2192 nw_flow_input_available(nw_protocol*, nw_protocol*) \u2192 nw_channel_add_input_frames(nw_channel*, nw_protocol*)",
+        12047
+      ],
+      [
+        "__channel_sync \u2192 nw_channel_finalize_input_frame(nw_frame*, bool, void*) \u2192 nw_flow_process_input_frames(NWConcrete_nw_endpoint_handler*, NWConcrete_nw_endpoint_flow*, nw_protocol*, nw_frame_array_s*, bool, bool, bool) \u2192 nw_flow_service_reads(NWConcrete_nw_endpoint_handler*, NWConcrete_nw_endpoint_flow*, nw_flow_protocol*, bool) \u2192 nw_endpoint_handler_service_reads \u2192 nw_connection_add_read_request_on_queue(NWConcrete_nw_connection*, NSObject<OS_nw_read_request>*, bool)",
+        7930
+      ],
+      [
+        "__channel_sync \u2192 nw_channel_add_input_frames(nw_channel*, nw_protocol*) \u2192 nw_channel_update_input_source(nw_channel*, nw_protocol*, bool) \u2192 nw_channel_get_input_frames(nw_protocol*, nw_protocol*, unsigned int, unsigned int, unsigned int, nw_frame_array_s*) \u2192 nw_protocol_ipv4_get_input_frames(nw_protocol*, nw_protocol*, unsigned int, unsigned int, unsigned int, nw_frame_array_s*) \u2192 nw_protocol_udp_get_input_frames(nw_protocol*, nw_protocol*, unsigned int, unsigned int, unsigned int, nw_frame_array_s*)",
+        2332
+      ],
+      [
+        "__channel_sync \u2192 nw_channel_finalize_input_frame(nw_frame*, bool, void*) \u2192 nw_flow_process_input_frames(NWConcrete_nw_endpoint_handler*, NWConcrete_nw_endpoint_flow*, nw_protocol*, nw_frame_array_s*, bool, bool, bool) \u2192 nw_flow_service_reads(NWConcrete_nw_endpoint_handler*, NWConcrete_nw_endpoint_flow*, nw_flow_protocol*, bool) \u2192 nw_endpoint_handler_service_reads \u2192 __nw_connection_batch_block_invoke_2",
+        496
+      ]
+    ],
+    "workq_kernreturn": [
+      [
+        "start_wqthread \u2192 qos_class_main",
+        284765
+      ]
+    ],
+    "kevent_id": [
+      [
+        "kevent_id \u2192 _dispatch_kq_poll \u2192 _dispatch_event_loop_poke \u2192 __nw_connection_async_client_if_needed_with_override(NWConcrete_nw_connection*, NSObject<OS_dispatch_queue>*, qos_class_t, void () block_pointer) \u2192 nw_connection_async_client_if_needed_with_override \u2192 nw_write_request_report(NWConcrete_nw_write_request*, NSObject<OS_dispatch_queue>*, NSObject<OS_nw_error>*)",
+        235633
+      ],
+      [
+        "kevent_id \u2192 _dispatch_kq_poll \u2192 _dispatch_event_loop_poke \u2192 __nw_connection_async_client_if_needed_with_override(NWConcrete_nw_connection*, NSObject<OS_dispatch_queue>*, qos_class_t, void () block_pointer) \u2192 nw_connection_async_client_if_needed_with_override \u2192 nw_read_request_report(NWConcrete_nw_read_request*, NSObject<OS_dispatch_queue>*)",
+        20401
+      ],
+      [
+        "kevent_id \u2192 _dispatch_kq_poll \u2192 _dispatch_event_loop_poke \u2192 nw_connection_async_if_needed \u2192 nw_connection_add_read_request(NWConcrete_nw_connection*, NSObject<OS_nw_read_request>*) \u2192 nw_connection_receive_multiple",
+        12077
+      ],
+      [
+        "kevent_id \u2192 _dispatch_kq_poll \u2192 _dispatch_kq_drain \u2192 _dispatch_event_loop_drain \u2192 _dispatch_workloop_invoke \u2192 _dispatch_root_queue_drain_deferred_wlh",
+        11877
+      ],
+      [
+        "kevent_id \u2192 _dispatch_kq_poll \u2192 _dispatch_kq_drain \u2192 _dispatch_event_loop_drain \u2192 <deduplicated_symbol> \u2192 _dispatch_workloop_invoke",
+        10802
+      ],
+      [
+        "kevent_id \u2192 _dispatch_kq_poll \u2192 _dispatch_event_loop_poke \u2192 nw_connection_async_if_needed \u2192 nw_connection_batch \u2192 in_flow_send",
+        10214
+      ],
+      [
+        "kevent_id \u2192 _dispatch_kq_poll \u2192 _dispatch_kq_drain \u2192 _dispatch_event_loop_drain \u2192 _dispatch_lane_serial_drain \u2192 _dispatch_lane_invoke",
+        7093
+      ],
+      [
+        "kevent_id \u2192 _dispatch_kq_poll \u2192 _dispatch_event_loop_poke \u2192 -[OS_dispatch_data dealloc] \u2192 in_flow_receive \u2192 core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::hfde8783c452bf8a6",
+        4926
+      ],
+      [
+        "kevent_id \u2192 _dispatch_kq_poll \u2192 _dispatch_event_loop_poke \u2192 _dispatch_workloop_wakeup.cold.2 \u2192 _dispatch_workloop_wakeup \u2192 _dispatch_queue_wakeup_with_override_slow",
+        2296
+      ],
+      [
+        "kevent_id \u2192 _dispatch_kq_poll \u2192 _dispatch_event_loop_poke \u2192 _dispatch_workloop_wakeup.cold.2 \u2192 _dispatch_workloop_wakeup \u2192 nw_connection_async_if_needed",
+        2027
+      ]
+    ],
+    "bsdthread_ctl": [
+      [
+        "__bsdthread_ctl \u2192 _pthread_set_properties_self \u2192 _dispatch_set_priority_and_mach_voucher_slow \u2192 _dispatch_set_priority_and_voucher_slow \u2192 _dispatch_lane_serial_drain \u2192 _dispatch_lane_invoke",
+        11646
+      ],
+      [
+        "__bsdthread_ctl \u2192 _pthread_set_properties_self \u2192 _dispatch_set_priority_and_mach_voucher_slow \u2192 _dispatch_set_priority_and_voucher_slow \u2192 _dispatch_workloop_invoke \u2192 _dispatch_root_queue_drain_deferred_wlh",
+        9214
+      ],
+      [
+        "__bsdthread_ctl \u2192 _pthread_set_properties_self \u2192 _dispatch_set_priority_and_mach_voucher_slow \u2192 _dispatch_set_priority_and_voucher_slow \u2192 _dispatch_continuation_pop \u2192 _dispatch_source_latch_and_call",
+        957
+      ]
+    ],
+    "kevent": [
+      [
+        "kevent \u2192 interestun::platform::readiness::Poll::poll::h76c097abf396a332 \u2192 core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::hfde8783c452bf8a6 \u2192 std::sys::backtrace::__rust_begin_short_backtrace::h9cf95e15655823ae \u2192 core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h977c98190c001dd3 \u2192 _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::hcf1cbf68d3b63b9c",
+        19748
+      ],
+      [
+        "kevent \u2192 interestun::platform::network::wake::h172a39b533ed5119 \u2192 notify \u2192 __16-[INFlow refill]_block_invoke \u2192 __nw_connection_receive_multiple_block_invoke \u2192 invocation function for block in nw_read_request_report(NWConcrete_nw_read_request*, NSObject<OS_dispatch_queue>*)",
+        19636
+      ],
+      [
+        "kevent \u2192 interestun::platform::readiness::Poll::poll::h76c097abf396a332 \u2192 core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h19f1ff216f3394e1 \u2192 std::sys::backtrace::__rust_begin_short_backtrace::h9cf95e15655823ae \u2192 core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h977c98190c001dd3 \u2192 _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::hcf1cbf68d3b63b9c",
+        7143
+      ],
+      [
+        "kevent \u2192 interestun::platform::network::wake::h172a39b533ed5119 \u2192 notify \u2192 __in_flow_send_block_invoke \u2192 _dispatch_block_async_invoke2 \u2192 _dispatch_client_callout",
+        3
+      ]
+    ],
+    "sendmsg_x": [
+      [
+        "sendmsg_x \u2192 interestun::platform::batch::Sender::flush::h7917f6b68880fc5c \u2192 core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::hfde8783c452bf8a6 \u2192 std::sys::backtrace::__rust_begin_short_backtrace::h9cf95e15655823ae \u2192 core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h977c98190c001dd3 \u2192 _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::hcf1cbf68d3b63b9c",
+        20343
+      ]
+    ],
+    "recvmsg_x": [
+      [
+        "recvmsg_x \u2192 core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h19f1ff216f3394e1 \u2192 std::sys::backtrace::__rust_begin_short_backtrace::h9cf95e15655823ae \u2192 core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h977c98190c001dd3 \u2192 _$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::hcf1cbf68d3b63b9c \u2192 std::sys::thread::unix::Thread::new::thread_start::hb5c7d2a38fab9e31",
+        71005
+      ]
+    ],
+    "sys_ulock_wait2": [
+      [
+        "__ulock_wait2 \u2192 _os_unfair_lock_lock_slow \u2192 _object_remove_associations \u2192 objc_destructInstance_nonnull_realized(objc_object*) \u2192 objc_destructInstance \u2192 _Block_release",
+        883
+      ],
+      [
+        "__ulock_wait2 \u2192 _os_unfair_lock_lock_slow \u2192 nw_synchronize \u2192 nw_connection_add_write_request_on_queue(NWConcrete_nw_connection*, NSObject<OS_nw_write_request>*, bool) \u2192 __nw_connection_batch_block_invoke_2 \u2192 _dispatch_call_block_and_release",
+        466
+      ],
+      [
+        "__ulock_wait2 \u2192 _os_unfair_lock_lock_slow \u2192 nw_synchronize \u2192 __nw_connection_batch_block_invoke_2 \u2192 _dispatch_call_block_and_release \u2192 _dispatch_client_callout",
+        183
+      ],
+      [
+        "__ulock_wait2 \u2192 _os_unfair_lock_lock_slow \u2192 objc_object::sidetable_clearDeallocating() \u2192 objc_destructInstance_nonnull_realized(objc_object*) \u2192 objc_destructInstance \u2192 _Block_release",
+        119
+      ],
+      [
+        "__ulock_wait2 \u2192 _os_unfair_lock_lock_slow \u2192 nw_synchronize \u2192 nw_connection_add_write_request_on_queue(NWConcrete_nw_connection*, NSObject<OS_nw_write_request>*, bool) \u2192 _dispatch_call_block_and_release \u2192 _dispatch_client_callout",
+        108
+      ],
+      [
+        "__ulock_wait2 \u2192 _os_unfair_lock_lock_slow \u2192 nw_connection_add_write_request(NWConcrete_nw_connection*, NSObject<OS_nw_write_request>*) \u2192 nw_connection_send \u2192 __in_flow_send_block_invoke.59 \u2192 nw_connection_batch",
+        106
+      ],
+      [
+        "__ulock_wait2 \u2192 _os_unfair_lock_lock_slow \u2192 _object_remove_associations \u2192 objc_destructInstance_nonnull_realized(objc_object*) \u2192 _objc_rootDealloc \u2192 -[OS_xpc_object dealloc]",
+        58
+      ],
+      [
+        "__ulock_wait2 \u2192 _os_unfair_lock_lock_slow \u2192 _object_remove_associations \u2192 objc_destructInstance_nonnull_realized(objc_object*) \u2192 objc_destructInstance \u2192 _dispatch_dispose",
+        47
+      ],
+      [
+        "__ulock_wait2 \u2192 _os_unfair_lock_lock_slow \u2192 objc_object::sidetable_clearDeallocating() \u2192 objc_destructInstance_nonnull_realized(objc_object*) \u2192 objc_destructInstance \u2192 _dispatch_dispose",
+        44
+      ],
+      [
+        "__ulock_wait2 \u2192 _os_unfair_lock_lock_slow \u2192 nw_connection_add_read_request(NWConcrete_nw_connection*, NSObject<OS_nw_read_request>*) \u2192 nw_connection_receive_multiple \u2192 -[INFlow refill] \u2192 __16-[INFlow refill]_block_invoke",
+        29
+      ]
+    ],
+    "sys_ulock_wake": [
+      [
+        "__ulock_wake \u2192 _os_unfair_lock_unlock_slow \u2192 nw_connection_add_write_request(NWConcrete_nw_connection*, NSObject<OS_nw_write_request>*) \u2192 nw_connection_send \u2192 __in_flow_send_block_invoke.59 \u2192 nw_connection_batch",
+        801
+      ],
+      [
+        "__ulock_wake \u2192 _os_unfair_lock_unlock_slow \u2192 _object_remove_associations \u2192 objc_destructInstance_nonnull_realized(objc_object*) \u2192 objc_destructInstance \u2192 _Block_release",
+        640
+      ],
+      [
+        "__ulock_wake \u2192 _os_unfair_lock_unlock_slow \u2192 _object_remove_associations \u2192 objc_destructInstance_nonnull_realized(objc_object*) \u2192 objc_destructInstance \u2192 _dispatch_dispose",
+        325
+      ],
+      [
+        "__ulock_wake \u2192 _os_unfair_lock_unlock_slow \u2192 objc_object::rootRelease_underflow(bool) \u2192 -[NWConcrete_nw_write_request .cxx_destruct] \u2192 object_cxxDestructFromClass(objc_object*, objc_class*) \u2192 objc_destructInstance_nonnull_realized(objc_object*)",
+        133
+      ],
+      [
+        "__ulock_wake \u2192 _os_unfair_lock_unlock_slow \u2192 __nw_connection_batch_block_invoke_2 \u2192 _dispatch_call_block_and_release \u2192 _dispatch_client_callout \u2192 _dispatch_lane_serial_drain",
+        60
+      ],
+      [
+        "__ulock_wake \u2192 _os_unfair_lock_unlock_slow \u2192 nw_connection_add_read_request(NWConcrete_nw_connection*, NSObject<OS_nw_read_request>*) \u2192 nw_connection_receive_multiple \u2192 -[INFlow refill] \u2192 __16-[INFlow refill]_block_invoke",
+        28
+      ],
+      [
+        "__ulock_wake \u2192 _os_unfair_lock_unlock_slow \u2192 nw_connection_add_write_request_on_queue(NWConcrete_nw_connection*, NSObject<OS_nw_write_request>*, bool) \u2192 __nw_connection_batch_block_invoke_2 \u2192 _dispatch_call_block_and_release \u2192 _dispatch_client_callout",
+        25
+      ],
+      [
+        "__ulock_wake \u2192 _os_unfair_lock_unlock_slow \u2192 _object_remove_associations \u2192 objc_destructInstance_nonnull_realized(objc_object*) \u2192 _objc_rootDealloc \u2192 -[OS_xpc_object dealloc]",
+        23
+      ],
+      [
+        "__ulock_wake \u2192 _os_unfair_lock_unlock_slow \u2192 objc_destructInstance_nonnull_realized(objc_object*) \u2192 objc_destructInstance \u2192 _dispatch_dispose \u2192 __destroy_helper_block_8_32c35_ZTS29dispatch_block_private_data_s",
+        21
+      ],
+      [
+        "__ulock_wake \u2192 _os_unfair_lock_unlock_slow \u2192 objc_object::rootRetain_overflow(bool) \u2192 nw_connection_add_write_request(NWConcrete_nw_connection*, NSObject<OS_nw_write_request>*) \u2192 nw_connection_send \u2192 __in_flow_send_block_invoke.59",
+        19
+      ]
+    ],
+    "kern_invalid_63": [
+      [
+        "mach_vm_reclaim_update_kernel_accounting_trap \u2192 mach_vm_reclaim_update_kernel_accounting \u2192 _xzm_reclaim_mark_used \u2192 xzm_chunk_mark_used \u2192 _xzm_xzone_find_and_malloc_from_freelist_chunk \u2192 _xzm_xzone_malloc_freelist_outlined",
+        12
+      ],
+      [
+        "mach_vm_reclaim_update_kernel_accounting_trap \u2192 mach_vm_reclaim_update_kernel_accounting \u2192 _xzm_xzone_madvise_batch \u2192 -[OS_dispatch_data dealloc] \u2192 nw_flow_service_writes(NWConcrete_nw_endpoint_handler*, NWConcrete_nw_endpoint_flow*, nw_flow_protocol*) \u2192 nw_endpoint_handler_service_writes",
+        10
+      ]
+    ],
+    "thread_switch": [
+      [
+        "syscall_thread_switch \u2192 _pthread_yield_to_enqueuer_4dispatch \u2192 __DISPATCH_WAIT_FOR_ENQUEUER__ \u2192 _dispatch_lane_serial_drain \u2192 _dispatch_lane_invoke \u2192 _dispatch_root_queue_drain_deferred_wlh",
+        32
+      ],
+      [
+        "syscall_thread_switch \u2192 _pthread_yield_to_enqueuer_4dispatch \u2192 __DISPATCH_WAIT_FOR_ENQUEUER__ \u2192 _dispatch_workloop_invoke \u2192 _dispatch_root_queue_drain_deferred_wlh \u2192 _dispatch_workloop_worker_thread",
+        4
+      ]
+    ],
+    "psynch_mutexwait": [
+      [
+        "__psynch_mutexwait \u2192 _pthread_mutex_firstfit_lock_wait \u2192 _pthread_mutex_firstfit_lock_slow \u2192 std::sys::pal::unix::sync::mutex::Mutex::lock::hf11d9bf9473ab519 \u2192 core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h19f1ff216f3394e1 \u2192 std::sys::backtrace::__rust_begin_short_backtrace::h9cf95e15655823ae",
+        12
+      ],
+      [
+        "__psynch_mutexwait \u2192 _pthread_mutex_firstfit_lock_wait \u2192 _pthread_mutex_firstfit_lock_slow \u2192 std::sys::pal::unix::sync::mutex::Mutex::lock::hf11d9bf9473ab519 \u2192 core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::hfde8783c452bf8a6 \u2192 std::sys::backtrace::__rust_begin_short_backtrace::h9cf95e15655823ae",
+        6
+      ]
+    ],
+    "psynch_mutexdrop": [
+      [
+        "__psynch_mutexdrop \u2192 _pthread_mutex_firstfit_wake \u2192 _pthread_mutex_firstfit_unlock_slow \u2192 core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::hfde8783c452bf8a6 \u2192 std::sys::backtrace::__rust_begin_short_backtrace::h9cf95e15655823ae \u2192 core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h977c98190c001dd3",
+        12
+      ],
+      [
+        "__psynch_mutexdrop \u2192 _pthread_mutex_firstfit_wake \u2192 _pthread_mutex_firstfit_unlock_slow \u2192 core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h19f1ff216f3394e1 \u2192 std::sys::backtrace::__rust_begin_short_backtrace::h9cf95e15655823ae \u2192 core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h977c98190c001dd3",
+        6
+      ]
+    ],
+    "swtch_pri": [
+      [
+        "swtch_pri \u2192 cthread_yield \u2192 crossbeam_queue::array_queue::ArrayQueue$LT$T$GT$::push_or_else::hd49f148788d516e0 \u2192 core::ptr::drop_in_place$LT$$u5b$interestun..packet..Packet$u5d$$GT$::h66782de5d22a910a \u2192 core::ptr::drop_in_place$LT$alloc..collections..vec_deque..drain..Drain$LT$interestun..packet..Packet$GT$$GT$::hf2d955e376df7ab1 \u2192 interestun::platform::batch::Sender::flush::h7917f6b68880fc5c",
+        1
+      ]
+    ]
+  },
+  "thread_state_seconds": {},
+  "running_core_seconds": {},
+  "runnable_source_seconds": {}
+}
