@@ -27,7 +27,17 @@
 static void notify(int fd) {
     uint8_t byte = 1;
     // A full notification socket already represents pending work.
-    (void)send(fd, &byte, 1, MSG_DONTWAIT | MSG_NOSIGNAL);
+    ssize_t result;
+    do {
+        result = send(fd, &byte, 1, MSG_DONTWAIT | MSG_NOSIGNAL);
+    } while (result < 0 && errno == EINTR);
+    if (result < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
+        int error = errno;
+        // A failed notification must not leave the worker asleep with queued
+        // packets. EOF wakes kqueue and makes Rust fail this flow visibly.
+        (void)shutdown(fd, SHUT_WR);
+        fprintf(stderr, "Network.framework notification failed: errno=%d\n", error);
+    }
 }
 static int posix_error(nw_error_t error) {
     return nw_error_get_error_domain(error) == nw_error_domain_posix

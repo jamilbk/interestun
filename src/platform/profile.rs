@@ -14,8 +14,13 @@ pub enum Stage {
     Encrypt,
     ReceiveSetup,
     SendSetup,
+    NetworkReceive,
+    NetworkSend,
+    NetworkRelease,
+    NotifyRead,
+    Poll,
 }
-const STAGES: [&str; 7] = [
+const STAGES: [&str; 12] = [
     if cfg!(windows) {
         "wintun-read"
     } else {
@@ -31,6 +36,11 @@ const STAGES: [&str; 7] = [
     "encrypt-batch",
     "receive-setup",
     "send-setup",
+    "network-receive-bridge",
+    "network-send-bridge",
+    "network-release-buffers",
+    "network-notification-read",
+    "poll",
 ];
 const EVERY: u64 = 64;
 #[derive(Clone, Copy, Default)]
@@ -41,12 +51,12 @@ struct Counts {
     wall_ns: u64,
 }
 struct Profile {
-    counts: [Counts; 7],
+    counts: [Counts; STAGES.len()],
     next: Instant,
 }
 thread_local! {
     static PROFILE: RefCell<Profile> = RefCell::new(Profile {
-        counts: [Counts::default(); 7], next: Instant::now() + Duration::from_secs(5),
+        counts: [Counts::default(); STAGES.len()], next: Instant::now() + Duration::from_secs(5),
     });
 }
 #[cfg(target_os = "macos")]
@@ -140,7 +150,7 @@ pub fn report(peer: usize, now: Instant) {
             eprintln!("peer={peer} worker={} profile={stage} calls={} samples={} sampled_cpu_ns={} sampled_wall_ns={}",
                 std::thread::current().name().unwrap_or("unnamed"), c.calls,c.samples,c.cpu_ns,c.wall_ns);
         }
-        p.counts = [Counts::default(); 7];
+        p.counts = [Counts::default(); STAGES.len()];
         p.next = now + Duration::from_secs(5);
     });
 }

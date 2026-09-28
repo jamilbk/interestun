@@ -12,6 +12,11 @@ use std::{
 
 const _: () = assert!(crate::packet::CAPACITY == 2048);
 
+#[cfg(feature = "io-metrics")]
+pub(crate) mod metrics;
+#[cfg(feature = "io-profile")]
+use super::profile::{Span, Stage};
+
 unsafe extern "C" {
     fn in_flow_open(
         host: *const i8,
@@ -48,13 +53,16 @@ pub struct Socket {
 unsafe impl Send for Socket {}
 unsafe impl Sync for Socket {}
 
-fn drain(mut stream: &UnixStream) -> io::Result<()> {
+fn drain(mut stream: &UnixStream) -> io::Result<usize> {
+    #[cfg(feature = "io-profile")]
+    let _span = Span::new(Stage::NotifyRead);
     let mut bytes = [0; 256];
+    let mut notifications = 0;
     loop {
         match stream.read(&mut bytes) {
             Ok(0) => return Err(io::ErrorKind::UnexpectedEof.into()),
-            Ok(_) => {}
-            Err(e) if e.kind() == io::ErrorKind::WouldBlock => return Ok(()),
+            Ok(n) => notifications += n,
+            Err(e) if e.kind() == io::ErrorKind::WouldBlock => return Ok(notifications),
             Err(e) if e.kind() == io::ErrorKind::Interrupted => {}
             Err(e) => return Err(e),
         }
@@ -118,7 +126,7 @@ impl Socket {
         if queue.is_empty() {
             return Ok(0);
         }
-        drain(&self.tx)?;
+        let _notifications = drain(&self.tx)?;
         let n = queue.len().min(BATCH);
         let mut pointers = [std::ptr::null(); BATCH];
         let mut lengths = [0; BATCH];
@@ -127,15 +135,24 @@ impl Socket {
             lengths[i] = packet.len;
         }
         // SAFETY: C copies a prefix synchronously and never retains Rust pointers.
-        let sent = count(unsafe {
+        #[cfg(feature = "io-profile")]
+        let span = Span::new(Stage::NetworkSend);
+        let result = count(unsafe {
             in_flow_send(self.handle.as_ptr(), pointers.as_ptr(), lengths.as_ptr(), n)
-        })?;
+        });
+        #[cfg(feature = "io-profile")]
+        drop(span);
+        #[cfg(feature = "io-metrics")]
+        metrics::record(true, _notifications, &result);
+        let sent = result?;
         assert!(sent <= n);
         queue.drain(..sent);
         Ok(sent)
     }
     pub fn receive(&self, pool: &Pool, mut consume: impl FnMut(Received)) -> io::Result<usize> {
-        drain(&self.rx)?;
+        let _notifications = drain(&self.rx)?;
+        #[cfg(feature = "io-profile")]
+        let setup = Span::new(Stage::ReceiveSetup);
         let mut packets: [Option<Packet>; BATCH] = std::array::from_fn(|_| Packet::new(pool));
         let n = packets.iter().take_while(|p| p.is_some()).count();
         if n == 0 {
@@ -146,16 +163,25 @@ impl Socket {
         for i in 0..n {
             pointers[i] = packets[i].as_mut().unwrap().buffer().as_mut_ptr();
         }
+        #[cfg(feature = "io-profile")]
+        drop(setup);
         // SAFETY: Each pointer has CAPACITY writable bytes, matching C's ring
         // slot size; C fills at most n slots and does not retain pointers.
-        let received = count(unsafe {
+        #[cfg(feature = "io-profile")]
+        let span = Span::new(Stage::NetworkReceive);
+        let result = count(unsafe {
             in_flow_receive(
                 self.handle.as_ptr(),
                 pointers.as_ptr(),
                 lengths.as_mut_ptr(),
                 n,
             )
-        })?;
+        });
+        #[cfg(feature = "io-profile")]
+        drop(span);
+        #[cfg(feature = "io-metrics")]
+        metrics::record(false, _notifications, &result);
+        let received = result?;
         assert!(received <= n);
         for i in 0..received {
             let mut packet = packets[i].take().unwrap();
@@ -165,6 +191,9 @@ impl Socket {
                 source: Some(self.endpoint),
             });
         }
+        #[cfg(feature = "io-profile")]
+        let _release = Span::new(Stage::NetworkRelease);
+        drop(packets);
         Ok(received)
     }
 }

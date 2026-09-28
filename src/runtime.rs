@@ -534,15 +534,23 @@ impl SendWorker {
                 || readable;
             // A bounded retry handles temporary global pool exhaustion without
             // sleeping forever on an edge that was already consumed.
-            match self.poll.poll(
+            #[cfg(feature = "io-profile")]
+            let poll_span =
+                crate::platform::profile::Span::new(crate::platform::profile::Stage::Poll);
+            let result = self.poll.poll(
                 &mut events,
                 Some(if more {
                     Duration::ZERO
                 } else {
                     CONTROL_INTERVAL
                 }),
-            ) {
+            );
+            #[cfg(feature = "io-profile")]
+            drop(poll_span);
+            match result {
                 Ok(()) => {
+                    #[cfg(all(feature = "io-metrics", feature = "apple-network"))]
+                    crate::platform::network::metrics::poll(!more, &events, UDP);
                     for e in &events {
                         if e.token() == TUN
                             && (e.is_readable() || e.is_error() || e.is_read_closed())
@@ -950,8 +958,16 @@ impl ReceiveWorker {
                     .saturating_duration_since(now)
                     .min(CONTROL_INTERVAL)
             };
-            match self.poll.poll(&mut events, Some(timeout)) {
+            #[cfg(feature = "io-profile")]
+            let poll_span =
+                crate::platform::profile::Span::new(crate::platform::profile::Stage::Poll);
+            let result = self.poll.poll(&mut events, Some(timeout));
+            #[cfg(feature = "io-profile")]
+            drop(poll_span);
+            match result {
                 Ok(()) => {
+                    #[cfg(all(feature = "io-metrics", feature = "apple-network"))]
+                    crate::platform::network::metrics::poll(!timeout.is_zero(), &events, UDP);
                     for e in &events {
                         if matches!(e.token(), UDP | WILDCARD4 | WILDCARD6)
                             && (e.is_readable() || e.is_read_closed() || e.is_error())

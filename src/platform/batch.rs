@@ -150,6 +150,8 @@ mod metrics {
 #[cfg(feature = "io-metrics")]
 pub fn report_metrics(peer: usize, now: std::time::Instant) {
     metrics::report(peer, now);
+    #[cfg(feature = "apple-network")]
+    super::network::metrics::report(peer, now);
     #[cfg(feature = "io-profile")]
     profile::report(peer, now);
 }

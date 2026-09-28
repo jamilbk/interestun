@@ -82,9 +82,11 @@ Each diagnostic sample measured five seconds after one second warmup:
 
 The immediately preceding BSD daemon delivered 2.022 Gbit/s in a shorter
 three-second TCP-send sample after one second warmup. These sequential samples
-are not an interleaved A/B study. The first Apple bridge is slower for TCP;
-there is no established improvement over the earlier roughly 3 Gbit/s BSD UDP
-results. Further profiling must separate dispatch/staging costs, flow behavior,
+are not an interleaved A/B study. Later repeated Windows tests reached about
+4.1 Gbit/s forward TCP while reverse TCP remained near 0.47 Gbit/s; see the
+[follow-up measurements](network-framework-windows-testing.md). The initial
+forward TCP sample above is not representative of those later runs. There is
+no controlled comparison against the earlier BSD results. Further profiling must separate dispatch/staging costs, flow behavior,
 and the selected transport path. The Apple build was left running for further
 experiments. [Raw iperf summaries](benchmarks/macos-network-framework.json).
 

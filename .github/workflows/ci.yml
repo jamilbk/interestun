@@ -16,6 +16,7 @@ jobs:
       - run: cargo test --locked --all-features
       - if: runner.os == 'macOS'
         run: |
+          sh scripts/test-network-notify.sh
           cargo build --locked --features network-bench --example network_bench
           python3 scripts/test-network-bench.py --binary target/debug/examples/network_bench
       - if: runner.os == 'macOS'
