@@ -13,6 +13,19 @@ use std::{
 
 const _: () = assert!(crate::packet::CAPACITY == 2048);
 
+/// Relaxed diagnostic snapshot. Matches INTxStats in network_flow.m.
+#[repr(C)]
+#[derive(Default, Debug)]
+pub struct TxStats {
+    pub accepted: u64,
+    pub partial: u64,
+    pub blocked: u64,
+    pub blocked_ns: u64,
+    pub wakes: u64,
+    pub batches: [u64; 9],
+    pub occupancy: [u64; 12],
+}
+
 #[cfg(feature = "io-metrics")]
 pub(crate) mod metrics;
 #[cfg(feature = "io-profile")]
@@ -41,6 +54,7 @@ unsafe extern "C" {
         count: usize,
     ) -> i32;
     fn in_flow_close(handle: *mut c_void);
+    fn in_flow_tx_stats(handle: *mut c_void, out: *mut TxStats);
 }
 
 pub struct Socket {
@@ -86,6 +100,12 @@ fn count(n: i32) -> io::Result<usize> {
     }
 }
 impl Socket {
+    pub fn tx_stats(&self) -> TxStats {
+        let mut stats = TxStats::default();
+        // SAFETY: live handle, matching C layout, atomic snapshot only.
+        unsafe { in_flow_tx_stats(self.handle.as_ptr(), &mut stats) };
+        stats
+    }
     pub fn connect(port: u16, endpoint: SocketAddr, rx: Waker, tx: Waker) -> io::Result<Self> {
         // Host strings preserve an IPv6 scope identifier when present.
         let host = CString::new(match endpoint {

@@ -1,0 +1,22 @@
+--- a/src/platform/network_flow.m
++++ b/src/platform/network_flow.m
+@@ -286,11 +286,15 @@
+         // The immutable connection and completion are retained once for this
+         // batch. Network.framework still reports every datagram separately.
+         nw_connection_t connection = flow.connection;
++        // Completion delivery uses the connection's serial callback queue.
++        // Count every callback; submission order is not a completion fence.
++        __block size_t remaining = accepted;
+         nw_connection_send_completion_t completion = ^(nw_error_t e) {
+-            size_t previous = atomic_fetch_sub_explicit(&flow->pending, 1, memory_order_acq_rel);
+-            if (atomic_load_explicit(&flow->closing, memory_order_acquire)) return;
+-            if (e) fail(flow, posix_error(e));
+-            else if (previous == TX_SLOTS) {
++            bool closing = atomic_load_explicit(&flow->closing, memory_order_acquire);
++            if (e && !closing) fail(flow, posix_error(e));
++            if (--remaining) return;
++            size_t previous = atomic_fetch_sub_explicit(&flow->pending, accepted, memory_order_acq_rel);
++            if (!closing && previous == TX_SLOTS) {
+                 atomic_fetch_add_explicit(&flow->txWakes, 1, memory_order_relaxed);
+                 notify(flow, true);
+             }

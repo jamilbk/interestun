@@ -289,9 +289,17 @@ pub unsafe extern "C" fn interestun_ne_status(session: *mut Session) -> *mut c_c
     let session = unsafe { &*session };
     let peers: Vec<_> = session.runtime.peers.iter().map(|(key, peer)| {
         let snapshot = peer.stats.lock().unwrap_or_else(|p| p.into_inner());
-        serde_json::json!({ "public_key_hex": hex::encode(key), "tx_bytes": snapshot.tx, "rx_bytes": snapshot.rx,
+        let mut value = serde_json::json!({ "public_key_hex": hex::encode(key), "tx_bytes": snapshot.tx, "rx_bytes": snapshot.rx,
             "latest_handshake_unix_seconds": snapshot.handshake.as_secs(), "endpoint": snapshot.endpoint.map(|a| a.to_string()),
-            "drops": peer.drops.load(Ordering::Relaxed), "tx_queue_drops": peer.tx_queue_drops.load(Ordering::Relaxed) })
+            "drops": peer.drops.load(Ordering::Relaxed), "tx_queue_drops": peer.tx_queue_drops.load(Ordering::Relaxed) });
+        if let Some(socket) = peer.network_socket.as_ref().and_then(std::sync::Weak::upgrade)
+            && let crate::platform::udp::PeerSocket::Network(socket) = &*socket {
+            let s = socket.tx_stats();
+            value["network_tx"] = serde_json::json!({ "accepted": s.accepted, "partial": s.partial,
+                "blocked": s.blocked, "blocked_ns": s.blocked_ns, "wakes": s.wakes,
+                "batches": s.batches, "occupancy": s.occupancy });
+        }
+        value
     }).collect();
     let backend = if session.adapter.is_some() {
         "NEPacketTunnelFlow"

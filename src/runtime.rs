@@ -117,6 +117,10 @@ pub struct SharedPeer {
     pub stats: Mutex<Snapshot>,
     pub drops: AtomicU64,
     pub tx_queue_drops: AtomicU64,
+    // Network.framework uses a fixed configured endpoint. This weak reference
+    // exposes diagnostics without extending the connection's worker lifetime.
+    #[cfg(all(target_os = "macos", feature = "apple-packet-tunnel"))]
+    pub network_socket: Option<std::sync::Weak<PeerSocket>>,
 }
 impl SharedPeer {
     fn drop_packet(&self) {
@@ -234,6 +238,11 @@ impl Runtime {
                     }),
                     drops: AtomicU64::new(0),
                     tx_queue_drops: AtomicU64::new(0),
+                    #[cfg(all(target_os = "macos", feature = "apple-packet-tunnel"))]
+                    network_socket: socket
+                        .as_ref()
+                        .filter(|s| s.is_network())
+                        .map(Arc::downgrade),
                 });
                 peers.insert(*key, shared.clone());
                 prepared.push((peer.clone(), rx_poll, tx_poll, shared, socket));

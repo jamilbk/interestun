@@ -1,0 +1,36 @@
+--- a/tests/network_notify.m
++++ b/tests/network_notify.m
+@@ -107,6 +107,7 @@
+         flow->wakeWorker = wakeSignal;
+         flow->releaseContext = releaseSignal;
+         atomic_store(&flow->ready, true);
++        configure_send(flow);
+         uint8_t input[128];
+         const uint8_t *buffers[128];
+         size_t lengths[128];
+@@ -179,6 +180,7 @@
+         flow->wakeContext = (__bridge void *)signal;
+         flow->wakeWorker = wakeSemaphore;
+         atomic_store(&flow->ready, true);
++        configure_send(flow);
+         uint8_t value = 1;
+         const uint8_t *buffers[128];
+         size_t lengths[128];
+@@ -189,7 +191,7 @@
+         for (size_t i = 0; i < 1001; i++) {
+             assert(in_flow_send(handle, buffers, lengths, 1) == 1);
+             dispatch_sync(queue, ^{});
+-            assert(atomic_load(&flow->pending) == 0);
++            assert(atomic_load(&flow->pending) < TX_CREDIT_GROUP);
+         }
+         dispatch_suspend(queue);
+         bool suspended = true;
+@@ -210,7 +212,7 @@
+         }
+         assert(!suspended);
+         dispatch_sync(queue, ^{});
+-        assert(atomic_load(&flow->pending) == 0);
++        assert(atomic_load(&flow->pending) == (total + 1001) % TX_CREDIT_GROUP);
+         INTxStats stats;
+         in_flow_tx_stats(handle, &stats);
+         assert(stats.accepted == total + 1001 && stats.blocked > 0 && stats.wakes > 0);

@@ -10,7 +10,43 @@
 #include <sched.h>
 #include <time.h>
 
+static void test_send(nw_connection_t, dispatch_data_t, nw_content_context_t, bool, nw_connection_send_completion_t);
+static void test_batch(nw_connection_t, dispatch_block_t);
+static nw_error_domain_t test_error_domain(nw_error_t error) { assert(error); return nw_error_domain_posix; }
+static int test_error_code(nw_error_t error) { assert(error); return ENOBUFS; }
+#define nw_connection_send test_send
+#define nw_connection_batch test_batch
+#define nw_error_get_error_domain test_error_domain
+#define nw_error_get_error_code test_error_code
 #include "../src/platform/network_flow.m"
+#undef nw_connection_send
+#undef nw_connection_batch
+#undef nw_error_get_error_domain
+#undef nw_error_get_error_code
+
+static nw_connection_send_completion_t sentCallbacks[TX_SLOTS];
+static dispatch_data_t sentData[TX_SLOTS];
+static size_t submitted;
+static dispatch_queue_t completionQueue;
+static void test_send(nw_connection_t connection, dispatch_data_t data, nw_content_context_t context,
+                      bool complete, nw_connection_send_completion_t callback) {
+    (void)connection;
+    assert(context == NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT && complete && callback);
+    if (completionQueue) {
+        dispatch_async(completionQueue, ^{
+            assert(dispatch_data_get_size(data) == 1);
+            callback(nil);
+        });
+        return;
+    }
+    assert(submitted < TX_SLOTS);
+    sentCallbacks[submitted] = callback;
+    sentData[submitted++] = data;
+}
+static void test_batch(nw_connection_t connection, dispatch_block_t block) {
+    (void)connection;
+    block(); // The public API invokes this synchronously.
+}
 
 // Verify retained data ownership, FIFO order across ring wrap, partial drains,
 // the 128-message drain bound, and error propagation after the ring is empty.
@@ -58,6 +94,133 @@ static void wakeSignal(void *context, bool tx) {
     if (tx) counts->tx++; else counts->rx++;
 }
 static void releaseSignal(void *context) { ((SignalCounts *)context)->released++; }
+
+// Exercise actual submission with delayed, shuffled completions. All accepted
+// payloads must remain owned after the caller recycles its input. Cancellation
+// must retain the wake context until the final outstanding callback is freed.
+static void send_test(void) {
+    SignalCounts counts = {0};
+    @autoreleasepool {
+        INFlow *flow = [INFlow new];
+        flow.queue = dispatch_queue_create("test.network.send", DISPATCH_QUEUE_SERIAL);
+        flow->wakeContext = &counts;
+        flow->wakeWorker = wakeSignal;
+        flow->releaseContext = releaseSignal;
+        atomic_store(&flow->ready, true);
+        uint8_t input[128];
+        const uint8_t *buffers[128];
+        size_t lengths[128];
+        for (size_t i = 0; i < 128; i++) {
+            input[i] = (uint8_t)i;
+            buffers[i] = &input[i];
+            lengths[i] = 1;
+        }
+        void *handle = (__bridge_retained void *)flow;
+        assert(in_flow_send(handle, buffers, lengths, 0) == 0);
+        assert(in_flow_send(handle, buffers, lengths, 129) == -EINVAL);
+        // Fill with irregular groups, including a partial accepted prefix.
+        for (size_t i = 0; i < 10; i++) assert(in_flow_send(handle, buffers, lengths, 100) == 100);
+        assert(in_flow_send(handle, buffers, lengths, 100) == 24);
+        assert(in_flow_send(handle, buffers, lengths, 1) == -EAGAIN);
+        assert(atomic_load(&flow->pending) == TX_SLOTS);
+        memset(input, 255, sizeof(input));
+        for (size_t i = 0; i < submitted; i++) {
+            dispatch_data_apply(sentData[i], ^bool(dispatch_data_t region, size_t offset, const void *data, size_t size) {
+                (void)region;
+                assert(offset == 0 && size == 1 && *(const uint8_t *)data == i % 100);
+                return true;
+            });
+        }
+        // The last submitted datagram completing does not fence earlier sends.
+        sentCallbacks[TX_SLOTS - 1](nil);
+        sentCallbacks[TX_SLOTS - 1] = nil;
+        assert(atomic_load(&flow->pending) > 0);
+        for (size_t i = TX_SLOTS - 1; i-- > 0;) {
+            sentCallbacks[i](nil);
+            sentCallbacks[i] = nil;
+            sentData[i] = nil;
+        }
+        sentData[TX_SLOTS - 1] = nil;
+        assert(atomic_load(&flow->pending) == 0 && counts.tx >= 1);
+        INTxStats stats;
+        in_flow_tx_stats(handle, &stats);
+        assert(stats.accepted == TX_SLOTS && stats.blocked == 1 && stats.partial == 1);
+        submitted = 0;
+        assert(in_flow_send(handle, buffers, lengths, 2) == 2);
+        nw_error_t error = (nw_error_t)[NSObject new];
+        sentCallbacks[1](error);
+        sentCallbacks[1] = nil;
+        assert(atomic_load(&flow->error) == ENOBUFS);
+        assert(in_flow_send(handle, buffers, lengths, 1) == -ENOBUFS);
+        unsigned wakes = counts.tx;
+        flow = nil;
+        in_flow_close(handle);
+        assert(counts.released == 0);
+        sentCallbacks[0](error);
+        assert(counts.tx == wakes); // No worker wake after closing.
+        sentCallbacks[0] = nil;
+        sentData[0] = nil;
+        sentData[1] = nil;
+        submitted = 0;
+    }
+    assert(counts.released == 1);
+}
+
+static void wakeSemaphore(void *context, bool tx) {
+    if (tx) dispatch_semaphore_signal((__bridge dispatch_semaphore_t)context);
+}
+static void concurrent_send_test(void) {
+    @autoreleasepool {
+        INFlow *flow = [INFlow new];
+        dispatch_queue_t queue = dispatch_queue_create("test.network.completions", DISPATCH_QUEUE_SERIAL);
+        flow.queue = queue;
+        completionQueue = queue;
+        dispatch_semaphore_t signal = dispatch_semaphore_create(0);
+        flow->wakeContext = (__bridge void *)signal;
+        flow->wakeWorker = wakeSemaphore;
+        atomic_store(&flow->ready, true);
+        uint8_t value = 1;
+        const uint8_t *buffers[128];
+        size_t lengths[128];
+        for (size_t i = 0; i < 128; i++) { buffers[i] = &value; lengths[i] = 1; }
+        void *handle = (__bridge_retained void *)flow;
+        // Lone datagrams must return their credits without a full batch or a
+        // retry timer, across many credit-window wraps.
+        for (size_t i = 0; i < 1001; i++) {
+            assert(in_flow_send(handle, buffers, lengths, 1) == 1);
+            dispatch_sync(queue, ^{});
+            assert(atomic_load(&flow->pending) == 0);
+        }
+        dispatch_suspend(queue);
+        bool suspended = true;
+        const size_t total = 100003;
+        uint64_t deadline = clock_gettime_nsec_np(CLOCK_MONOTONIC) + 10 * NSEC_PER_SEC;
+        for (size_t sent = 0; sent < total;) {
+            assert(clock_gettime_nsec_np(CLOCK_MONOTONIC) < deadline);
+            int n = in_flow_send(handle, buffers, lengths, MIN(128, total - sent));
+            if (n == -EAGAIN) {
+                if (suspended) { dispatch_resume(queue); suspended = false; }
+                // No retry timer: the full-window transition must wake us.
+                assert(dispatch_semaphore_wait(signal, dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC)) == 0);
+            } else {
+                assert(n > 0);
+                sent += (size_t)n;
+            }
+            assert(atomic_load(&flow->pending) <= TX_SLOTS);
+        }
+        assert(!suspended);
+        dispatch_sync(queue, ^{});
+        assert(atomic_load(&flow->pending) == 0);
+        INTxStats stats;
+        in_flow_tx_stats(handle, &stats);
+        assert(stats.accepted == total + 1001 && stats.blocked > 0 && stats.wakes > 0);
+        completionQueue = nil;
+        __weak INFlow *weak = flow;
+        flow = nil;
+        in_flow_close(handle);
+        assert(!weak); // Close also releases an idle flow.
+    }
+}
 static void signal_test(void) {
     SignalCounts counts = {0};
     @autoreleasepool {
@@ -211,6 +374,8 @@ static void close_mid_batch_test(void) {
 }
 #endif
 int main(void) {
+    send_test();
+    concurrent_send_test();
     ring_test();
     signal_test();
     concurrent_ring_test();
@@ -218,6 +383,6 @@ int main(void) {
     grouped_receive_test();
     close_mid_batch_test();
     #endif
-    puts("PASS Network.framework ring ownership, wrap, partial drains, concurrent producer/consumer, and lifetime");
+    puts("PASS Network.framework TX ownership, errors, credits, wakeups, cancellation; RX ring and lifetime");
     return 0;
 }

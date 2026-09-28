@@ -1,0 +1,93 @@
+{
+  "cipher": "Aes256Gcm",
+  "failed": false,
+  "interface": "utun4",
+  "listen_port": 51820,
+  "peers": [
+    {
+      "drops": 0,
+      "endpoint": "192.168.1.226:51820",
+      "latest_handshake_unix_seconds": 1790616498,
+      "network_tx": {
+        "accepted": 276404,
+        "batches": [
+          0,
+          20,
+          16,
+          75,
+          248,
+          361,
+          522,
+          514,
+          1509
+        ],
+        "blocked": 2,
+        "blocked_ns": 423959,
+        "occupancy": [
+          11,
+          20,
+          30,
+          69,
+          177,
+          387,
+          368,
+          387,
+          538,
+          775,
+          503,
+          0
+        ],
+        "partial": 7,
+        "wakes": 7
+      },
+      "public_key_hex": "6137bdd76d285529bfcf0eacf57cfcc5c283feaf0ed71d7e633bd3b273e2260b",
+      "rx_bytes": 230958,
+      "tx_bytes": 392399819,
+      "tx_queue_drops": 0
+    }
+  ],
+  "skywalk": "unverified",
+  "tun_backend": "Network Extension utun descriptor",
+  "udp_backend": "Network.framework",
+  "utun_options": {
+    "after": {
+      "channels": 0,
+      "dont_truncate": 0,
+      "external_stats": 0,
+      "flags": 0,
+      "flowswitch_enabled": 1,
+      "netif_enabled": 1,
+      "netif_ring_size": 64,
+      "pending_packets": 1024,
+      "receive_bytes": 4194304,
+      "receive_low_water": 1,
+      "rx_flowswitch_ring_size": 128,
+      "rx_kernel_pipe_ring_size": 0,
+      "send_bytes": 524288,
+      "send_low_water": 2048,
+      "slot_size": 4096,
+      "tx_flowswitch_ring_size": 64,
+      "tx_kernel_pipe_ring_size": 0
+    },
+    "before": {
+      "channels": 0,
+      "dont_truncate": 0,
+      "external_stats": 0,
+      "flags": 0,
+      "flowswitch_enabled": 1,
+      "netif_enabled": 1,
+      "netif_ring_size": 64,
+      "pending_packets": 64,
+      "receive_bytes": 524288,
+      "receive_low_water": 1,
+      "rx_flowswitch_ring_size": 128,
+      "rx_kernel_pipe_ring_size": 0,
+      "send_bytes": 524288,
+      "send_low_water": 2048,
+      "slot_size": 4096,
+      "tx_flowswitch_ring_size": 64,
+      "tx_kernel_pipe_ring_size": 0
+    },
+    "interface": "utun4"
+  }
+}

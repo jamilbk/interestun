@@ -1,0 +1,23 @@
+{
+  "version": "1790616465",
+  "architecture": "arm64",
+  "app_id": "dev.jamilbk.interestun",
+  "extension_id": "dev.jamilbk.interestun.packet-tunnel",
+  "provisioned": true,
+  "installed": false,
+  "tunnel_started": false,
+  "signing": "automatic development",
+  "team_id": "47R2M6779T",
+  "app_group": "47R2M6779T.dev.jamilbk.interestun",
+  "rust_features": [
+    "default",
+    "apple-packet-tunnel"
+  ],
+  "skywalk": "unverified",
+  "tun_frontend": "Network Extension utun descriptor",
+  "sha256": {
+    "Contents/MacOS/interestunctl": "49701d51e086458c6188437e2aeb6411ce069c9d04c2095c81c2196b57392ad2",
+    "Contents/Library/SystemExtensions/dev.jamilbk.interestun.packet-tunnel.systemextension/Contents/MacOS/InterestunPacketTunnel": "18fc424cedf56343be6d86cd9758732e3da0560d27df877965827c1fb88d83a4"
+  },
+  "bundle": "/Users/jamil/tmp/interestun/target/apple/Interestun.app"
+}

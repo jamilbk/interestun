@@ -1,0 +1,1308 @@
+{
+  "input": "target/apple-path/tx-completion-20260928/selected-samples.xml",
+  "window_start_seconds": 2,
+  "window_end_seconds": 22,
+  "samples": 32042,
+  "sampled_cpu_seconds": 32.042,
+  "estimated_cores": 1.6021,
+  "states": [
+    {
+      "name": "Running",
+      "sampled_cpu_seconds": 32.042,
+      "percent_of_sampled_cpu": 100.0,
+      "estimated_cores": 1.6021
+    }
+  ],
+  "threads": [
+    {
+      "name": "peer-0-tx (0x4f973) (InterestunPacket, pid: 15142)",
+      "sampled_cpu_seconds": 8.877,
+      "percent_of_sampled_cpu": 27.704263154609574,
+      "estimated_cores": 0.44385
+    },
+    {
+      "name": "InterestunPacket (0x504fb) (InterestunPacket, pid: 15142)",
+      "sampled_cpu_seconds": 6.504,
+      "percent_of_sampled_cpu": 20.29835840459397,
+      "estimated_cores": 0.3252
+    },
+    {
+      "name": "InterestunPacket (0x4fb32) (InterestunPacket, pid: 15142)",
+      "sampled_cpu_seconds": 6.385,
+      "percent_of_sampled_cpu": 19.92697085075838,
+      "estimated_cores": 0.31925
+    },
+    {
+      "name": "InterestunPacket (0x50f3e) (InterestunPacket, pid: 15142)",
+      "sampled_cpu_seconds": 5.083,
+      "percent_of_sampled_cpu": 15.863554085263091,
+      "estimated_cores": 0.25415
+    },
+    {
+      "name": "InterestunPacket (0x507c8) (InterestunPacket, pid: 15142)",
+      "sampled_cpu_seconds": 4.837,
+      "percent_of_sampled_cpu": 15.095811747081955,
+      "estimated_cores": 0.24184999999999998
+    },
+    {
+      "name": "peer-0-rx (0x4f974) (InterestunPacket, pid: 15142)",
+      "sampled_cpu_seconds": 0.356,
+      "percent_of_sampled_cpu": 1.1110417576930278,
+      "estimated_cores": 0.0178
+    }
+  ],
+  "categories_exclusive": [
+    {
+      "name": "Dispatch: Network.framework asynchronous send service",
+      "sampled_cpu_seconds": 16.004,
+      "percent_of_sampled_cpu": 49.946944635166346,
+      "estimated_cores": 0.8002
+    },
+    {
+      "name": "Other framework, dispatch and callback work",
+      "sampled_cpu_seconds": 6.805,
+      "percent_of_sampled_cpu": 21.237750452531053,
+      "estimated_cores": 0.34025
+    },
+    {
+      "name": "TX: utun read",
+      "sampled_cpu_seconds": 3.49,
+      "percent_of_sampled_cpu": 10.891954309968167,
+      "estimated_cores": 0.17450000000000002
+    },
+    {
+      "name": "TX: Network.framework send submission",
+      "sampled_cpu_seconds": 2.593,
+      "percent_of_sampled_cpu": 8.092503589039385,
+      "estimated_cores": 0.12965
+    },
+    {
+      "name": "TX: encryption and transport framing",
+      "sampled_cpu_seconds": 1.773,
+      "percent_of_sampled_cpu": 5.533362461768928,
+      "estimated_cores": 0.08864999999999999
+    },
+    {
+      "name": "TX: other routing, buffers, clocks and polling",
+      "sampled_cpu_seconds": 1.021,
+      "percent_of_sampled_cpu": 3.186442793833094,
+      "estimated_cores": 0.05105
+    },
+    {
+      "name": "RX: receive worker",
+      "sampled_cpu_seconds": 0.356,
+      "percent_of_sampled_cpu": 1.1110417576930278,
+      "estimated_cores": 0.0178
+    }
+  ],
+  "leaf_top_40": [
+    {
+      "name": "__channel_sync",
+      "sampled_cpu_seconds": 5.77,
+      "percent_of_sampled_cpu": 18.007615005305535,
+      "estimated_cores": 0.2885
+    },
+    {
+      "name": "recvmsg_x",
+      "sampled_cpu_seconds": 3.49,
+      "percent_of_sampled_cpu": 10.891954309968167,
+      "estimated_cores": 0.17450000000000002
+    },
+    {
+      "name": "objc_release",
+      "sampled_cpu_seconds": 2.206,
+      "percent_of_sampled_cpu": 6.884713813120279,
+      "estimated_cores": 0.1103
+    },
+    {
+      "name": "objc_retain",
+      "sampled_cpu_seconds": 1.902,
+      "percent_of_sampled_cpu": 5.935959053741963,
+      "estimated_cores": 0.09509999999999999
+    },
+    {
+      "name": "start_wqthread",
+      "sampled_cpu_seconds": 1.655,
+      "percent_of_sampled_cpu": 5.165095811747082,
+      "estimated_cores": 0.08275
+    },
+    {
+      "name": "ring_core_0_17_14__aes_gcm_enc_kernel",
+      "sampled_cpu_seconds": 1.534,
+      "percent_of_sampled_cpu": 4.787466450284002,
+      "estimated_cores": 0.0767
+    },
+    {
+      "name": "kevent_id",
+      "sampled_cpu_seconds": 1.173,
+      "percent_of_sampled_cpu": 3.660820173522252,
+      "estimated_cores": 0.05865
+    },
+    {
+      "name": "objc_msgSend",
+      "sampled_cpu_seconds": 0.933,
+      "percent_of_sampled_cpu": 2.9118032582235815,
+      "estimated_cores": 0.046650000000000004
+    },
+    {
+      "name": "_dispatch_block_async_invoke2",
+      "sampled_cpu_seconds": 0.754,
+      "percent_of_sampled_cpu": 2.353161475563323,
+      "estimated_cores": 0.0377
+    },
+    {
+      "name": "_platform_memmove",
+      "sampled_cpu_seconds": 0.632,
+      "percent_of_sampled_cpu": 1.972411210286499,
+      "estimated_cores": 0.0316
+    },
+    {
+      "name": "0x1a7d68e99",
+      "sampled_cpu_seconds": 0.523,
+      "percent_of_sampled_cpu": 1.6322326945883527,
+      "estimated_cores": 0.02615
+    },
+    {
+      "name": "_Block_release",
+      "sampled_cpu_seconds": 0.521,
+      "percent_of_sampled_cpu": 1.625990886960864,
+      "estimated_cores": 0.02605
+    },
+    {
+      "name": "_Block_copy",
+      "sampled_cpu_seconds": 0.503,
+      "percent_of_sampled_cpu": 1.5698146183134636,
+      "estimated_cores": 0.02515
+    },
+    {
+      "name": "_xzm_free_tc",
+      "sampled_cpu_seconds": 0.43,
+      "percent_of_sampled_cpu": 1.341988639910118,
+      "estimated_cores": 0.0215
+    },
+    {
+      "name": "nw_write_request_copy_next_incomplete_request",
+      "sampled_cpu_seconds": 0.398,
+      "percent_of_sampled_cpu": 1.2421197178702952,
+      "estimated_cores": 0.0199
+    },
+    {
+      "name": "mach_absolute_time",
+      "sampled_cpu_seconds": 0.349,
+      "percent_of_sampled_cpu": 1.0891954309968166,
+      "estimated_cores": 0.01745
+    },
+    {
+      "name": "0x1a7d68ea9",
+      "sampled_cpu_seconds": 0.329,
+      "percent_of_sampled_cpu": 1.0267773547219274,
+      "estimated_cores": 0.01645
+    },
+    {
+      "name": "0x19fdd45a9",
+      "sampled_cpu_seconds": 0.322,
+      "percent_of_sampled_cpu": 1.0049310280257162,
+      "estimated_cores": 0.0161
+    },
+    {
+      "name": "_dispatch_continuation_init_slow",
+      "sampled_cpu_seconds": 0.297,
+      "percent_of_sampled_cpu": 0.9269084326821048,
+      "estimated_cores": 0.014849999999999999
+    },
+    {
+      "name": "__xzm_xzone_free_to_freelist_chunk",
+      "sampled_cpu_seconds": 0.28,
+      "percent_of_sampled_cpu": 0.873853067848449,
+      "estimated_cores": 0.014000000000000002
+    },
+    {
+      "name": "ip_network_table_deps_treebitmap::tree_bitmap::TreeBitmap$LT$T$GT$::longest_match::h418f96edbe7161e0",
+      "sampled_cpu_seconds": 0.255,
+      "percent_of_sampled_cpu": 0.7958304725048374,
+      "estimated_cores": 0.012750000000000001
+    },
+    {
+      "name": "_object_remove_associations",
+      "sampled_cpu_seconds": 0.219,
+      "percent_of_sampled_cpu": 0.6834779352100369,
+      "estimated_cores": 0.01095
+    },
+    {
+      "name": "_xzm_malloc_tc",
+      "sampled_cpu_seconds": 0.214,
+      "percent_of_sampled_cpu": 0.6678734161413146,
+      "estimated_cores": 0.0107
+    },
+    {
+      "name": "bool objc::DenseMapBase<objc::DenseMap<DisguisedPtr<objc_object>, objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>, objc::DenseMapValueInfo<objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>>, objc::DenseMapInfo<DisguisedPtr<objc_object>>, objc::detail::DenseMapPair<DisguisedPtr<objc_object>, objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>>>, DisguisedPtr<objc_object>, objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>, objc::DenseMapValueInfo<objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>>, objc::DenseMapInfo<DisguisedPtr<objc_object>>, objc::detail::DenseMapPair<DisguisedPtr<objc_object>, objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>>>::LookupBucketFor<DisguisedPtr<objc_object>>(DisguisedPtr<objc_object> const&, objc::detail::DenseMapPair<DisguisedPtr<objc_object>, objc::SmallDenseMap<void const*, objc::ObjcAssociation, 1u, objc::DenseMapValueInfo<objc::ObjcAssociation>, objc::DenseMapInfo<void const*>, objc::detail::DenseMapPair<void const*, objc::ObjcAssociation>>> const*&) const",
+      "sampled_cpu_seconds": 0.203,
+      "percent_of_sampled_cpu": 0.6335434741901255,
+      "estimated_cores": 0.010150000000000001
+    },
+    {
+      "name": "objc_object::sidetable_clearDeallocating()",
+      "sampled_cpu_seconds": 0.184,
+      "percent_of_sampled_cpu": 0.5742463017289807,
+      "estimated_cores": 0.0092
+    },
+    {
+      "name": "kevent",
+      "sampled_cpu_seconds": 0.177,
+      "percent_of_sampled_cpu": 0.5523999750327695,
+      "estimated_cores": 0.00885
+    },
+    {
+      "name": "_free",
+      "sampled_cpu_seconds": 0.168,
+      "percent_of_sampled_cpu": 0.5243118407090693,
+      "estimated_cores": 0.008400000000000001
+    },
+    {
+      "name": "_cleanup_generic_captures",
+      "sampled_cpu_seconds": 0.149,
+      "percent_of_sampled_cpu": 0.4650146682479246,
+      "estimated_cores": 0.00745
+    },
+    {
+      "name": "-[__NSGlobalBlock__ release]",
+      "sampled_cpu_seconds": 0.147,
+      "percent_of_sampled_cpu": 0.45877286062043565,
+      "estimated_cores": 0.00735
+    },
+    {
+      "name": "objc_storeStrong",
+      "sampled_cpu_seconds": 0.146,
+      "percent_of_sampled_cpu": 0.45565195680669124,
+      "estimated_cores": 0.007299999999999999
+    },
+    {
+      "name": "core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h19f1ff216f3394e1",
+      "sampled_cpu_seconds": 0.141,
+      "percent_of_sampled_cpu": 0.4400474377379689,
+      "estimated_cores": 0.007049999999999999
+    },
+    {
+      "name": "-[__NSGlobalBlock__ retain]",
+      "sampled_cpu_seconds": 0.135,
+      "percent_of_sampled_cpu": 0.42132201485550214,
+      "estimated_cores": 0.006750000000000001
+    },
+    {
+      "name": "sendmsg_x",
+      "sampled_cpu_seconds": 0.123,
+      "percent_of_sampled_cpu": 0.3838711690905686,
+      "estimated_cores": 0.00615
+    },
+    {
+      "name": "nw_flow_service_writes(NWConcrete_nw_endpoint_handler*, NWConcrete_nw_endpoint_flow*, nw_flow_protocol*)",
+      "sampled_cpu_seconds": 0.115,
+      "percent_of_sampled_cpu": 0.3589039385806129,
+      "estimated_cores": 0.00575
+    },
+    {
+      "name": "__destroy_helper_block_8_32c35_ZTS29dispatch_block_private_data_s",
+      "sampled_cpu_seconds": 0.112,
+      "percent_of_sampled_cpu": 0.3495412271393796,
+      "estimated_cores": 0.0056
+    },
+    {
+      "name": "objc_retain_x28",
+      "sampled_cpu_seconds": 0.106,
+      "percent_of_sampled_cpu": 0.3308158042569128,
+      "estimated_cores": 0.0053
+    },
+    {
+      "name": "customRR_retain",
+      "sampled_cpu_seconds": 0.091,
+      "percent_of_sampled_cpu": 0.2840022470507459,
+      "estimated_cores": 0.00455
+    },
+    {
+      "name": "swift_retain",
+      "sampled_cpu_seconds": 0.091,
+      "percent_of_sampled_cpu": 0.2840022470507459,
+      "estimated_cores": 0.00455
+    },
+    {
+      "name": "_dispatch_lane_serial_drain",
+      "sampled_cpu_seconds": 0.086,
+      "percent_of_sampled_cpu": 0.2683977279820236,
+      "estimated_cores": 0.0043
+    },
+    {
+      "name": "nw_channel_get_output_frames(nw_protocol*, nw_protocol*, unsigned int, unsigned int, unsigned int, nw_frame_array_s*)",
+      "sampled_cpu_seconds": 0.084,
+      "percent_of_sampled_cpu": 0.26215592035453467,
+      "estimated_cores": 0.004200000000000001
+    }
+  ],
+  "inclusive_top_60_overlapping": [
+    {
+      "name": "start_wqthread",
+      "sampled_cpu_seconds": 22.804,
+      "percent_of_sampled_cpu": 71.16909056862868,
+      "estimated_cores": 1.1401999999999999
+    },
+    {
+      "name": "_pthread_wqthread",
+      "sampled_cpu_seconds": 21.153,
+      "percent_of_sampled_cpu": 66.01647837213658,
+      "estimated_cores": 1.05765
+    },
+    {
+      "name": "_dispatch_workloop_worker_thread",
+      "sampled_cpu_seconds": 21.137,
+      "percent_of_sampled_cpu": 65.96654391111666,
+      "estimated_cores": 1.05685
+    },
+    {
+      "name": "_dispatch_root_queue_drain_deferred_wlh",
+      "sampled_cpu_seconds": 21.089,
+      "percent_of_sampled_cpu": 65.81674052805693,
+      "estimated_cores": 1.0544499999999999
+    },
+    {
+      "name": "_dispatch_client_callout",
+      "sampled_cpu_seconds": 20.802,
+      "percent_of_sampled_cpu": 64.92104113351226,
+      "estimated_cores": 1.0401
+    },
+    {
+      "name": "_dispatch_lane_invoke",
+      "sampled_cpu_seconds": 20.724,
+      "percent_of_sampled_cpu": 64.6776106360402,
+      "estimated_cores": 1.0362
+    },
+    {
+      "name": "_dispatch_lane_serial_drain",
+      "sampled_cpu_seconds": 20.687,
+      "percent_of_sampled_cpu": 64.56213719493165,
+      "estimated_cores": 1.03435
+    },
+    {
+      "name": "_dispatch_workloop_invoke",
+      "sampled_cpu_seconds": 17.695,
+      "percent_of_sampled_cpu": 55.22439298420823,
+      "estimated_cores": 0.88475
+    },
+    {
+      "name": "_dispatch_call_block_and_release",
+      "sampled_cpu_seconds": 17.255,
+      "percent_of_sampled_cpu": 53.85119530616066,
+      "estimated_cores": 0.8627499999999999
+    },
+    {
+      "name": "nw_endpoint_handler_service_writes",
+      "sampled_cpu_seconds": 16.004,
+      "percent_of_sampled_cpu": 49.946944635166346,
+      "estimated_cores": 0.8002
+    },
+    {
+      "name": "__nw_connection_batch_block_invoke_2",
+      "sampled_cpu_seconds": 16.002,
+      "percent_of_sampled_cpu": 49.94070282753886,
+      "estimated_cores": 0.8000999999999999
+    },
+    {
+      "name": "nw_flow_service_writes(NWConcrete_nw_endpoint_handler*, NWConcrete_nw_endpoint_flow*, nw_flow_protocol*)",
+      "sampled_cpu_seconds": 15.737,
+      "percent_of_sampled_cpu": 49.11366331689657,
+      "estimated_cores": 0.78685
+    },
+    {
+      "name": "_$LT$alloc..boxed..Box$LT$F$C$A$GT$$u20$as$u20$core..ops..function..FnOnce$LT$Args$GT$$GT$::call_once::hcf1cbf68d3b63b9c",
+      "sampled_cpu_seconds": 9.233,
+      "percent_of_sampled_cpu": 28.815304912302604,
+      "estimated_cores": 0.46165
+    },
+    {
+      "name": "_pthread_start",
+      "sampled_cpu_seconds": 9.233,
+      "percent_of_sampled_cpu": 28.815304912302604,
+      "estimated_cores": 0.46165
+    },
+    {
+      "name": "core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h977c98190c001dd3",
+      "sampled_cpu_seconds": 9.233,
+      "percent_of_sampled_cpu": 28.815304912302604,
+      "estimated_cores": 0.46165
+    },
+    {
+      "name": "std::sys::backtrace::__rust_begin_short_backtrace::h9cf95e15655823ae",
+      "sampled_cpu_seconds": 9.233,
+      "percent_of_sampled_cpu": 28.815304912302604,
+      "estimated_cores": 0.46165
+    },
+    {
+      "name": "std::sys::thread::unix::Thread::new::thread_start::hb5c7d2a38fab9e31",
+      "sampled_cpu_seconds": 9.233,
+      "percent_of_sampled_cpu": 28.815304912302604,
+      "estimated_cores": 0.46165
+    },
+    {
+      "name": "thread_start",
+      "sampled_cpu_seconds": 9.233,
+      "percent_of_sampled_cpu": 28.815304912302604,
+      "estimated_cores": 0.46165
+    },
+    {
+      "name": "core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h19f1ff216f3394e1",
+      "sampled_cpu_seconds": 8.851,
+      "percent_of_sampled_cpu": 27.623119655452218,
+      "estimated_cores": 0.44255000000000005
+    },
+    {
+      "name": "nw_protocol_udp_finalize_output_frames(nw_protocol*, nw_frame_array_s*)",
+      "sampled_cpu_seconds": 6.1,
+      "percent_of_sampled_cpu": 19.03751326384121,
+      "estimated_cores": 0.305
+    },
+    {
+      "name": "nw_protocol_ipv4_finalize_output_frames(nw_protocol*, nw_frame_array_s*)",
+      "sampled_cpu_seconds": 6.001,
+      "percent_of_sampled_cpu": 18.728543786280508,
+      "estimated_cores": 0.30005000000000004
+    },
+    {
+      "name": "nw_channel_finalize_output_frames(nw_protocol*, nw_frame_array_s*)",
+      "sampled_cpu_seconds": 5.93,
+      "percent_of_sampled_cpu": 18.506959615504652,
+      "estimated_cores": 0.2965
+    },
+    {
+      "name": "invocation function for block in nw_channel_finalize_output_frames(nw_protocol*, nw_frame_array_s*)",
+      "sampled_cpu_seconds": 5.916,
+      "percent_of_sampled_cpu": 18.46326696211223,
+      "estimated_cores": 0.2958
+    },
+    {
+      "name": "nw_channel_finalize_output_frame(nw_frame*, bool, void*)",
+      "sampled_cpu_seconds": 5.884,
+      "percent_of_sampled_cpu": 18.363398040072404,
+      "estimated_cores": 0.2942
+    },
+    {
+      "name": "__channel_sync",
+      "sampled_cpu_seconds": 5.77,
+      "percent_of_sampled_cpu": 18.007615005305535,
+      "estimated_cores": 0.2885
+    },
+    {
+      "name": "nw_write_request_list_prune",
+      "sampled_cpu_seconds": 4.639,
+      "percent_of_sampled_cpu": 14.477872791960552,
+      "estimated_cores": 0.23195000000000002
+    },
+    {
+      "name": "nw_write_request_report(NWConcrete_nw_write_request*, NSObject<OS_dispatch_queue>*, NSObject<OS_nw_error>*)",
+      "sampled_cpu_seconds": 3.934,
+      "percent_of_sampled_cpu": 12.277635603270706,
+      "estimated_cores": 0.1967
+    },
+    {
+      "name": "recvmsg_x",
+      "sampled_cpu_seconds": 3.49,
+      "percent_of_sampled_cpu": 10.891954309968167,
+      "estimated_cores": 0.17450000000000002
+    },
+    {
+      "name": "nw_connection_async_client_if_needed_with_override",
+      "sampled_cpu_seconds": 3.267,
+      "percent_of_sampled_cpu": 10.195992759503152,
+      "estimated_cores": 0.16335
+    },
+    {
+      "name": "__nw_connection_async_client_if_needed_with_override(NWConcrete_nw_connection*, NSObject<OS_dispatch_queue>*, qos_class_t, void () block_pointer)",
+      "sampled_cpu_seconds": 2.721,
+      "percent_of_sampled_cpu": 8.491979277198677,
+      "estimated_cores": 0.13605
+    },
+    {
+      "name": "interestun::platform::network::Socket::flush::h299d0099b5300651",
+      "sampled_cpu_seconds": 2.681,
+      "percent_of_sampled_cpu": 8.367143124648898,
+      "estimated_cores": 0.13405
+    },
+    {
+      "name": "nw_flow_copy_write_request(nw_flow_protocol*, nw_protocol_message_properties*, unsigned long long*)",
+      "sampled_cpu_seconds": 2.614,
+      "percent_of_sampled_cpu": 8.15804256912802,
+      "estimated_cores": 0.13069999999999998
+    },
+    {
+      "name": "in_flow_send",
+      "sampled_cpu_seconds": 2.593,
+      "percent_of_sampled_cpu": 8.092503589039385,
+      "estimated_cores": 0.12965
+    },
+    {
+      "name": "_Block_release",
+      "sampled_cpu_seconds": 2.572,
+      "percent_of_sampled_cpu": 8.026964608950752,
+      "estimated_cores": 0.1286
+    },
+    {
+      "name": "nw_connection_batch",
+      "sampled_cpu_seconds": 2.57,
+      "percent_of_sampled_cpu": 8.020722801323263,
+      "estimated_cores": 0.1285
+    },
+    {
+      "name": "__in_flow_send_block_invoke.59",
+      "sampled_cpu_seconds": 2.483,
+      "percent_of_sampled_cpu": 7.749204169527495,
+      "estimated_cores": 0.12415000000000001
+    },
+    {
+      "name": "objc_release",
+      "sampled_cpu_seconds": 2.206,
+      "percent_of_sampled_cpu": 6.884713813120279,
+      "estimated_cores": 0.1103
+    },
+    {
+      "name": "nw_write_request_copy_next_incomplete_request",
+      "sampled_cpu_seconds": 2.119,
+      "percent_of_sampled_cpu": 6.613195181324512,
+      "estimated_cores": 0.10595000000000002
+    },
+    {
+      "name": "_dispatch_workloop_stealer_invoke",
+      "sampled_cpu_seconds": 2.097,
+      "percent_of_sampled_cpu": 6.544535297422134,
+      "estimated_cores": 0.10485
+    },
+    {
+      "name": "objc_retain",
+      "sampled_cpu_seconds": 1.902,
+      "percent_of_sampled_cpu": 5.935959053741963,
+      "estimated_cores": 0.09509999999999999
+    },
+    {
+      "name": "_call_dispose_helpers_excp",
+      "sampled_cpu_seconds": 1.884,
+      "percent_of_sampled_cpu": 5.879782785094563,
+      "estimated_cores": 0.09419999999999999
+    },
+    {
+      "name": "nw_connection_add_write_request_on_queue(NWConcrete_nw_connection*, NSObject<OS_nw_write_request>*, bool)",
+      "sampled_cpu_seconds": 1.812,
+      "percent_of_sampled_cpu": 5.655077710504962,
+      "estimated_cores": 0.0906
+    },
+    {
+      "name": "__destroy_helper_block_8_32c35_ZTS29dispatch_block_private_data_s",
+      "sampled_cpu_seconds": 1.787,
+      "percent_of_sampled_cpu": 5.57705511516135,
+      "estimated_cores": 0.08935
+    },
+    {
+      "name": "boringtun::noise::session::TransportSender::encapsulate_in_place_at::h70ee258334650281",
+      "sampled_cpu_seconds": 1.768,
+      "percent_of_sampled_cpu": 5.517757942700206,
+      "estimated_cores": 0.0884
+    },
+    {
+      "name": "nw_connection_send",
+      "sampled_cpu_seconds": 1.76,
+      "percent_of_sampled_cpu": 5.49279071219025,
+      "estimated_cores": 0.088
+    },
+    {
+      "name": "boringtun::noise::session::seal_in_place::ha1600a694bf1f18c",
+      "sampled_cpu_seconds": 1.75,
+      "percent_of_sampled_cpu": 5.461581674052805,
+      "estimated_cores": 0.0875
+    },
+    {
+      "name": "ring::aead::algorithm::Algorithm::seal::h59b0d2b765db2042",
+      "sampled_cpu_seconds": 1.737,
+      "percent_of_sampled_cpu": 5.421009924474128,
+      "estimated_cores": 0.08685000000000001
+    },
+    {
+      "name": "ring::aead::less_safe_key::LessSafeKey::seal_in_place_separate_tag::h268b3c0c50f5aee9",
+      "sampled_cpu_seconds": 1.737,
+      "percent_of_sampled_cpu": 5.421009924474128,
+      "estimated_cores": 0.08685000000000001
+    },
+    {
+      "name": "ring::aead::aes_gcm::seal::hc34f8a1ca11161d6",
+      "sampled_cpu_seconds": 1.734,
+      "percent_of_sampled_cpu": 5.411647213032895,
+      "estimated_cores": 0.0867
+    },
+    {
+      "name": "ring::aead::aes_gcm::seal_whole_partial::ha44373a1d4d51d87",
+      "sampled_cpu_seconds": 1.723,
+      "percent_of_sampled_cpu": 5.377317271081705,
+      "estimated_cores": 0.08615
+    },
+    {
+      "name": "qos_class_main",
+      "sampled_cpu_seconds": 1.655,
+      "percent_of_sampled_cpu": 5.165095811747082,
+      "estimated_cores": 0.08275
+    },
+    {
+      "name": "core::ops::function::FnOnce::call_once::hbd2683ff3beb4c9b",
+      "sampled_cpu_seconds": 1.542,
+      "percent_of_sampled_cpu": 4.812433680793958,
+      "estimated_cores": 0.0771
+    },
+    {
+      "name": "ring::aead::aes_gcm::aarch64::seal_whole::h74f9b637ab6ecfe1",
+      "sampled_cpu_seconds": 1.542,
+      "percent_of_sampled_cpu": 4.812433680793958,
+      "estimated_cores": 0.0771
+    },
+    {
+      "name": "ring_core_0_17_14__aes_gcm_enc_kernel",
+      "sampled_cpu_seconds": 1.534,
+      "percent_of_sampled_cpu": 4.787466450284002,
+      "estimated_cores": 0.0767
+    },
+    {
+      "name": "_dispatch_kq_poll",
+      "sampled_cpu_seconds": 1.175,
+      "percent_of_sampled_cpu": 3.667061981149741,
+      "estimated_cores": 0.058750000000000004
+    },
+    {
+      "name": "kevent_id",
+      "sampled_cpu_seconds": 1.173,
+      "percent_of_sampled_cpu": 3.660820173522252,
+      "estimated_cores": 0.05865
+    },
+    {
+      "name": "_dispatch_event_loop_poke",
+      "sampled_cpu_seconds": 1.156,
+      "percent_of_sampled_cpu": 3.607764808688596,
+      "estimated_cores": 0.0578
+    },
+    {
+      "name": "objc_destructInstance_nonnull_realized(objc_object*)",
+      "sampled_cpu_seconds": 1.088,
+      "percent_of_sampled_cpu": 3.395543349353973,
+      "estimated_cores": 0.054400000000000004
+    },
+    {
+      "name": "_dispatch_block_async_invoke2",
+      "sampled_cpu_seconds": 1.064,
+      "percent_of_sampled_cpu": 3.320641657824106,
+      "estimated_cores": 0.053200000000000004
+    },
+    {
+      "name": "_Block_copy",
+      "sampled_cpu_seconds": 0.935,
+      "percent_of_sampled_cpu": 2.9180450658510706,
+      "estimated_cores": 0.04675
+    }
+  ],
+  "copy_routine_self": [
+    {
+      "name": "_platform_memmove",
+      "sampled_cpu_seconds": 0.632,
+      "percent_of_sampled_cpu": 1.972411210286499,
+      "estimated_cores": 0.0316
+    }
+  ],
+  "focus_overlapping": [
+    {
+      "name": "__channel_sync",
+      "sampled_cpu_seconds": 5.77,
+      "percent_of_sampled_cpu": 18.007615005305535,
+      "estimated_cores": 0.2885
+    },
+    {
+      "name": "nw_write_request_list_prune",
+      "sampled_cpu_seconds": 4.639,
+      "percent_of_sampled_cpu": 14.477872791960552,
+      "estimated_cores": 0.23195000000000002
+    },
+    {
+      "name": "objc_retain + objc_release (self only)",
+      "sampled_cpu_seconds": 4.108,
+      "percent_of_sampled_cpu": 12.820672866862243,
+      "estimated_cores": 0.20539999999999997
+    },
+    {
+      "name": "nw_write_request_report",
+      "sampled_cpu_seconds": 3.944,
+      "percent_of_sampled_cpu": 12.308844641408152,
+      "estimated_cores": 0.1972
+    },
+    {
+      "name": "nw_flow_copy_write_request",
+      "sampled_cpu_seconds": 2.614,
+      "percent_of_sampled_cpu": 8.15804256912802,
+      "estimated_cores": 0.13069999999999998
+    },
+    {
+      "name": "ring_core_0_17_14__aes_gcm_enc_kernel",
+      "sampled_cpu_seconds": 1.534,
+      "percent_of_sampled_cpu": 4.787466450284002,
+      "estimated_cores": 0.0767
+    },
+    {
+      "name": "dispatch_data_create",
+      "sampled_cpu_seconds": 0.584,
+      "percent_of_sampled_cpu": 1.822607827226765,
+      "estimated_cores": 0.029199999999999997
+    }
+  ],
+  "thread_leaf_top_15": {
+    "InterestunPacket (0x507c8) (InterestunPacket, pid: 15142)": [
+      {
+        "name": "__channel_sync",
+        "sampled_cpu_seconds": 1.247,
+        "percent_of_sampled_cpu": 3.8917670557393422,
+        "estimated_cores": 0.06235
+      },
+      {
+        "name": "objc_release",
+        "sampled_cpu_seconds": 0.398,
+        "percent_of_sampled_cpu": 1.2421197178702952,
+        "estimated_cores": 0.0199
+      },
+      {
+        "name": "start_wqthread",
+        "sampled_cpu_seconds": 0.342,
+        "percent_of_sampled_cpu": 1.0673491043006054,
+        "estimated_cores": 0.0171
+      },
+      {
+        "name": "objc_retain",
+        "sampled_cpu_seconds": 0.314,
+        "percent_of_sampled_cpu": 0.9799637975157606,
+        "estimated_cores": 0.0157
+      },
+      {
+        "name": "kevent_id",
+        "sampled_cpu_seconds": 0.224,
+        "percent_of_sampled_cpu": 0.6990824542787591,
+        "estimated_cores": 0.0112
+      },
+      {
+        "name": "_dispatch_block_async_invoke2",
+        "sampled_cpu_seconds": 0.16,
+        "percent_of_sampled_cpu": 0.49934461019911364,
+        "estimated_cores": 0.008
+      },
+      {
+        "name": "objc_msgSend",
+        "sampled_cpu_seconds": 0.148,
+        "percent_of_sampled_cpu": 0.4618937644341801,
+        "estimated_cores": 0.0073999999999999995
+      },
+      {
+        "name": "0x1a7d68e99",
+        "sampled_cpu_seconds": 0.104,
+        "percent_of_sampled_cpu": 0.3245739966294239,
+        "estimated_cores": 0.0052
+      },
+      {
+        "name": "_xzm_free_tc",
+        "sampled_cpu_seconds": 0.102,
+        "percent_of_sampled_cpu": 0.31833218900193494,
+        "estimated_cores": 0.0050999999999999995
+      },
+      {
+        "name": "_Block_release",
+        "sampled_cpu_seconds": 0.094,
+        "percent_of_sampled_cpu": 0.2933649584919793,
+        "estimated_cores": 0.0047
+      },
+      {
+        "name": "nw_write_request_copy_next_incomplete_request",
+        "sampled_cpu_seconds": 0.087,
+        "percent_of_sampled_cpu": 0.2715186317957681,
+        "estimated_cores": 0.00435
+      },
+      {
+        "name": "_platform_memmove",
+        "sampled_cpu_seconds": 0.08,
+        "percent_of_sampled_cpu": 0.24967230509955682,
+        "estimated_cores": 0.004
+      },
+      {
+        "name": "_Block_copy",
+        "sampled_cpu_seconds": 0.076,
+        "percent_of_sampled_cpu": 0.237188689844579,
+        "estimated_cores": 0.0038
+      },
+      {
+        "name": "__xzm_xzone_free_to_freelist_chunk",
+        "sampled_cpu_seconds": 0.066,
+        "percent_of_sampled_cpu": 0.2059796517071344,
+        "estimated_cores": 0.0033
+      },
+      {
+        "name": "_dispatch_continuation_init_slow",
+        "sampled_cpu_seconds": 0.061,
+        "percent_of_sampled_cpu": 0.19037513263841208,
+        "estimated_cores": 0.0030499999999999998
+      }
+    ],
+    "InterestunPacket (0x50f3e) (InterestunPacket, pid: 15142)": [
+      {
+        "name": "__channel_sync",
+        "sampled_cpu_seconds": 1.253,
+        "percent_of_sampled_cpu": 3.910492478621809,
+        "estimated_cores": 0.06265
+      },
+      {
+        "name": "objc_release",
+        "sampled_cpu_seconds": 0.43,
+        "percent_of_sampled_cpu": 1.341988639910118,
+        "estimated_cores": 0.0215
+      },
+      {
+        "name": "start_wqthread",
+        "sampled_cpu_seconds": 0.391,
+        "percent_of_sampled_cpu": 1.220273391174084,
+        "estimated_cores": 0.01955
+      },
+      {
+        "name": "objc_retain",
+        "sampled_cpu_seconds": 0.338,
+        "percent_of_sampled_cpu": 1.0548654890456277,
+        "estimated_cores": 0.016900000000000002
+      },
+      {
+        "name": "kevent_id",
+        "sampled_cpu_seconds": 0.27,
+        "percent_of_sampled_cpu": 0.8426440297110043,
+        "estimated_cores": 0.013500000000000002
+      },
+      {
+        "name": "_dispatch_block_async_invoke2",
+        "sampled_cpu_seconds": 0.163,
+        "percent_of_sampled_cpu": 0.508707321640347,
+        "estimated_cores": 0.008150000000000001
+      },
+      {
+        "name": "objc_msgSend",
+        "sampled_cpu_seconds": 0.153,
+        "percent_of_sampled_cpu": 0.47749828350290247,
+        "estimated_cores": 0.00765
+      },
+      {
+        "name": "0x1a7d68e99",
+        "sampled_cpu_seconds": 0.125,
+        "percent_of_sampled_cpu": 0.39011297671805756,
+        "estimated_cores": 0.00625
+      },
+      {
+        "name": "_Block_release",
+        "sampled_cpu_seconds": 0.119,
+        "percent_of_sampled_cpu": 0.3713875538355908,
+        "estimated_cores": 0.0059499999999999996
+      },
+      {
+        "name": "nw_write_request_copy_next_incomplete_request",
+        "sampled_cpu_seconds": 0.091,
+        "percent_of_sampled_cpu": 0.2840022470507459,
+        "estimated_cores": 0.00455
+      },
+      {
+        "name": "_xzm_free_tc",
+        "sampled_cpu_seconds": 0.081,
+        "percent_of_sampled_cpu": 0.2527932089133013,
+        "estimated_cores": 0.00405
+      },
+      {
+        "name": "_Block_copy",
+        "sampled_cpu_seconds": 0.075,
+        "percent_of_sampled_cpu": 0.23406778603083453,
+        "estimated_cores": 0.00375
+      },
+      {
+        "name": "_dispatch_continuation_init_slow",
+        "sampled_cpu_seconds": 0.072,
+        "percent_of_sampled_cpu": 0.22470507458960115,
+        "estimated_cores": 0.0036
+      },
+      {
+        "name": "_platform_memmove",
+        "sampled_cpu_seconds": 0.069,
+        "percent_of_sampled_cpu": 0.21534236314836777,
+        "estimated_cores": 0.0034500000000000004
+      },
+      {
+        "name": "0x1a7d68ea9",
+        "sampled_cpu_seconds": 0.061,
+        "percent_of_sampled_cpu": 0.19037513263841208,
+        "estimated_cores": 0.0030499999999999998
+      }
+    ],
+    "peer-0-tx (0x4f973) (InterestunPacket, pid: 15142)": [
+      {
+        "name": "recvmsg_x",
+        "sampled_cpu_seconds": 3.49,
+        "percent_of_sampled_cpu": 10.891954309968167,
+        "estimated_cores": 0.17450000000000002
+      },
+      {
+        "name": "ring_core_0_17_14__aes_gcm_enc_kernel",
+        "sampled_cpu_seconds": 1.534,
+        "percent_of_sampled_cpu": 4.787466450284002,
+        "estimated_cores": 0.0767
+      },
+      {
+        "name": "objc_retain",
+        "sampled_cpu_seconds": 0.359,
+        "percent_of_sampled_cpu": 1.1204044691342612,
+        "estimated_cores": 0.01795
+      },
+      {
+        "name": "objc_release",
+        "sampled_cpu_seconds": 0.309,
+        "percent_of_sampled_cpu": 0.9643592784470383,
+        "estimated_cores": 0.01545
+      },
+      {
+        "name": "mach_absolute_time",
+        "sampled_cpu_seconds": 0.3,
+        "percent_of_sampled_cpu": 0.9362711441233381,
+        "estimated_cores": 0.015
+      },
+      {
+        "name": "_platform_memmove",
+        "sampled_cpu_seconds": 0.29,
+        "percent_of_sampled_cpu": 0.9050621059858935,
+        "estimated_cores": 0.014499999999999999
+      },
+      {
+        "name": "ip_network_table_deps_treebitmap::tree_bitmap::TreeBitmap$LT$T$GT$::longest_match::h418f96edbe7161e0",
+        "sampled_cpu_seconds": 0.253,
+        "percent_of_sampled_cpu": 0.7895886648773485,
+        "estimated_cores": 0.01265
+      },
+      {
+        "name": "objc_msgSend",
+        "sampled_cpu_seconds": 0.233,
+        "percent_of_sampled_cpu": 0.7271705886024593,
+        "estimated_cores": 0.01165
+      },
+      {
+        "name": "core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::h19f1ff216f3394e1",
+        "sampled_cpu_seconds": 0.141,
+        "percent_of_sampled_cpu": 0.4400474377379689,
+        "estimated_cores": 0.007049999999999999
+      },
+      {
+        "name": "_xzm_malloc_tc",
+        "sampled_cpu_seconds": 0.089,
+        "percent_of_sampled_cpu": 0.27776043942325696,
+        "estimated_cores": 0.00445
+      },
+      {
+        "name": "_Block_copy",
+        "sampled_cpu_seconds": 0.082,
+        "percent_of_sampled_cpu": 0.25591411272704573,
+        "estimated_cores": 0.0041
+      },
+      {
+        "name": "0x19fdd45a9",
+        "sampled_cpu_seconds": 0.077,
+        "percent_of_sampled_cpu": 0.24030959365832344,
+        "estimated_cores": 0.00385
+      },
+      {
+        "name": "_xzm_xzone_malloc_tiny",
+        "sampled_cpu_seconds": 0.072,
+        "percent_of_sampled_cpu": 0.22470507458960115,
+        "estimated_cores": 0.0036
+      },
+      {
+        "name": "0x1a7d68e99",
+        "sampled_cpu_seconds": 0.065,
+        "percent_of_sampled_cpu": 0.20285874789338992,
+        "estimated_cores": 0.0032500000000000003
+      },
+      {
+        "name": "class_createInstance",
+        "sampled_cpu_seconds": 0.064,
+        "percent_of_sampled_cpu": 0.19973784407964545,
+        "estimated_cores": 0.0032
+      }
+    ],
+    "peer-0-rx (0x4f974) (InterestunPacket, pid: 15142)": [
+      {
+        "name": "sendmsg_x",
+        "sampled_cpu_seconds": 0.123,
+        "percent_of_sampled_cpu": 0.3838711690905686,
+        "estimated_cores": 0.00615
+      },
+      {
+        "name": "kevent",
+        "sampled_cpu_seconds": 0.079,
+        "percent_of_sampled_cpu": 0.24655140128581238,
+        "estimated_cores": 0.00395
+      },
+      {
+        "name": "core::ops::function::FnOnce::call_once$u7b$$u7b$vtable.shim$u7d$$u7d$::hfde8783c452bf8a6",
+        "sampled_cpu_seconds": 0.023,
+        "percent_of_sampled_cpu": 0.07178078771612259,
+        "estimated_cores": 0.00115
+      },
+      {
+        "name": "mach_absolute_time",
+        "sampled_cpu_seconds": 0.019,
+        "percent_of_sampled_cpu": 0.05929717246114475,
+        "estimated_cores": 0.00095
+      },
+      {
+        "name": "kevent_id",
+        "sampled_cpu_seconds": 0.016,
+        "percent_of_sampled_cpu": 0.049934461019911364,
+        "estimated_cores": 0.0008
+      },
+      {
+        "name": "_platform_memset",
+        "sampled_cpu_seconds": 0.013,
+        "percent_of_sampled_cpu": 0.040571749578677985,
+        "estimated_cores": 0.00065
+      },
+      {
+        "name": "DYLD-STUB$$objc_release",
+        "sampled_cpu_seconds": 0.007,
+        "percent_of_sampled_cpu": 0.021846326696211223,
+        "estimated_cores": 0.00035
+      },
+      {
+        "name": "clock_gettime",
+        "sampled_cpu_seconds": 0.005,
+        "percent_of_sampled_cpu": 0.015604519068722301,
+        "estimated_cores": 0.00025
+      },
+      {
+        "name": "objc_release",
+        "sampled_cpu_seconds": 0.005,
+        "percent_of_sampled_cpu": 0.015604519068722301,
+        "estimated_cores": 0.00025
+      },
+      {
+        "name": "ring_core_0_17_14__aes_gcm_dec_kernel",
+        "sampled_cpu_seconds": 0.004,
+        "percent_of_sampled_cpu": 0.012483615254977841,
+        "estimated_cores": 0.0002
+      },
+      {
+        "name": "in_flow_receive",
+        "sampled_cpu_seconds": 0.003,
+        "percent_of_sampled_cpu": 0.00936271144123338,
+        "estimated_cores": 0.00015000000000000001
+      },
+      {
+        "name": "-[OS_dispatch_data dealloc]",
+        "sampled_cpu_seconds": 0.002,
+        "percent_of_sampled_cpu": 0.0062418076274889205,
+        "estimated_cores": 0.0001
+      },
+      {
+        "name": "__xzm_xzone_free_to_freelist_chunk",
+        "sampled_cpu_seconds": 0.002,
+        "percent_of_sampled_cpu": 0.0062418076274889205,
+        "estimated_cores": 0.0001
+      },
+      {
+        "name": "_dispatch_data_apply",
+        "sampled_cpu_seconds": 0.002,
+        "percent_of_sampled_cpu": 0.0062418076274889205,
+        "estimated_cores": 0.0001
+      },
+      {
+        "name": "_dispatch_workloop_push",
+        "sampled_cpu_seconds": 0.002,
+        "percent_of_sampled_cpu": 0.0062418076274889205,
+        "estimated_cores": 0.0001
+      }
+    ],
+    "InterestunPacket (0x4fb32) (InterestunPacket, pid: 15142)": [
+      {
+        "name": "__channel_sync",
+        "sampled_cpu_seconds": 1.59,
+        "percent_of_sampled_cpu": 4.962237063853692,
+        "estimated_cores": 0.0795
+      },
+      {
+        "name": "objc_release",
+        "sampled_cpu_seconds": 0.498,
+        "percent_of_sampled_cpu": 1.5542100992447412,
+        "estimated_cores": 0.0249
+      },
+      {
+        "name": "start_wqthread",
+        "sampled_cpu_seconds": 0.454,
+        "percent_of_sampled_cpu": 1.416890331439985,
+        "estimated_cores": 0.0227
+      },
+      {
+        "name": "objc_retain",
+        "sampled_cpu_seconds": 0.451,
+        "percent_of_sampled_cpu": 1.4075276199987516,
+        "estimated_cores": 0.02255
+      },
+      {
+        "name": "kevent_id",
+        "sampled_cpu_seconds": 0.299,
+        "percent_of_sampled_cpu": 0.9331502403095937,
+        "estimated_cores": 0.01495
+      },
+      {
+        "name": "_dispatch_block_async_invoke2",
+        "sampled_cpu_seconds": 0.233,
+        "percent_of_sampled_cpu": 0.7271705886024593,
+        "estimated_cores": 0.01165
+      },
+      {
+        "name": "objc_msgSend",
+        "sampled_cpu_seconds": 0.199,
+        "percent_of_sampled_cpu": 0.6210598589351476,
+        "estimated_cores": 0.00995
+      },
+      {
+        "name": "_xzm_free_tc",
+        "sampled_cpu_seconds": 0.144,
+        "percent_of_sampled_cpu": 0.4494101491792023,
+        "estimated_cores": 0.0072
+      },
+      {
+        "name": "_Block_release",
+        "sampled_cpu_seconds": 0.134,
+        "percent_of_sampled_cpu": 0.41820111104175767,
+        "estimated_cores": 0.0067
+      },
+      {
+        "name": "_Block_copy",
+        "sampled_cpu_seconds": 0.121,
+        "percent_of_sampled_cpu": 0.3776293614630797,
+        "estimated_cores": 0.00605
+      },
+      {
+        "name": "nw_write_request_copy_next_incomplete_request",
+        "sampled_cpu_seconds": 0.118,
+        "percent_of_sampled_cpu": 0.36826665002184633,
+        "estimated_cores": 0.0059
+      },
+      {
+        "name": "0x1a7d68e99",
+        "sampled_cpu_seconds": 0.112,
+        "percent_of_sampled_cpu": 0.3495412271393796,
+        "estimated_cores": 0.0056
+      },
+      {
+        "name": "_platform_memmove",
+        "sampled_cpu_seconds": 0.104,
+        "percent_of_sampled_cpu": 0.3245739966294239,
+        "estimated_cores": 0.0052
+      },
+      {
+        "name": "0x1a7d68ea9",
+        "sampled_cpu_seconds": 0.082,
+        "percent_of_sampled_cpu": 0.25591411272704573,
+        "estimated_cores": 0.0041
+      },
+      {
+        "name": "__xzm_xzone_free_to_freelist_chunk",
+        "sampled_cpu_seconds": 0.079,
+        "percent_of_sampled_cpu": 0.24655140128581238,
+        "estimated_cores": 0.00395
+      }
+    ],
+    "InterestunPacket (0x504fb) (InterestunPacket, pid: 15142)": [
+      {
+        "name": "__channel_sync",
+        "sampled_cpu_seconds": 1.68,
+        "percent_of_sampled_cpu": 5.2431184070906935,
+        "estimated_cores": 0.08399999999999999
+      },
+      {
+        "name": "objc_release",
+        "sampled_cpu_seconds": 0.566,
+        "percent_of_sampled_cpu": 1.7664315585793646,
+        "estimated_cores": 0.0283
+      },
+      {
+        "name": "start_wqthread",
+        "sampled_cpu_seconds": 0.468,
+        "percent_of_sampled_cpu": 1.4605829848324074,
+        "estimated_cores": 0.0234
+      },
+      {
+        "name": "objc_retain",
+        "sampled_cpu_seconds": 0.44,
+        "percent_of_sampled_cpu": 1.3731976780475625,
+        "estimated_cores": 0.022
+      },
+      {
+        "name": "kevent_id",
+        "sampled_cpu_seconds": 0.306,
+        "percent_of_sampled_cpu": 0.9549965670058049,
+        "estimated_cores": 0.0153
+      },
+      {
+        "name": "objc_msgSend",
+        "sampled_cpu_seconds": 0.2,
+        "percent_of_sampled_cpu": 0.6241807627488921,
+        "estimated_cores": 0.01
+      },
+      {
+        "name": "_dispatch_block_async_invoke2",
+        "sampled_cpu_seconds": 0.198,
+        "percent_of_sampled_cpu": 0.6179389551214032,
+        "estimated_cores": 0.0099
+      },
+      {
+        "name": "_Block_copy",
+        "sampled_cpu_seconds": 0.149,
+        "percent_of_sampled_cpu": 0.4650146682479246,
+        "estimated_cores": 0.00745
+      },
+      {
+        "name": "_Block_release",
+        "sampled_cpu_seconds": 0.136,
+        "percent_of_sampled_cpu": 0.4244429186692466,
+        "estimated_cores": 0.0068000000000000005
+      },
+      {
+        "name": "0x1a7d68e99",
+        "sampled_cpu_seconds": 0.117,
+        "percent_of_sampled_cpu": 0.36514574620810186,
+        "estimated_cores": 0.00585
+      },
+      {
+        "name": "_xzm_free_tc",
+        "sampled_cpu_seconds": 0.103,
+        "percent_of_sampled_cpu": 0.3214530928156794,
+        "estimated_cores": 0.00515
+      },
+      {
+        "name": "nw_write_request_copy_next_incomplete_request",
+        "sampled_cpu_seconds": 0.102,
+        "percent_of_sampled_cpu": 0.31833218900193494,
+        "estimated_cores": 0.0050999999999999995
+      },
+      {
+        "name": "_dispatch_continuation_init_slow",
+        "sampled_cpu_seconds": 0.1,
+        "percent_of_sampled_cpu": 0.31209038137444606,
+        "estimated_cores": 0.005
+      },
+      {
+        "name": "_platform_memmove",
+        "sampled_cpu_seconds": 0.087,
+        "percent_of_sampled_cpu": 0.2715186317957681,
+        "estimated_cores": 0.00435
+      },
+      {
+        "name": "__xzm_xzone_free_to_freelist_chunk",
+        "sampled_cpu_seconds": 0.073,
+        "percent_of_sampled_cpu": 0.22782597840334562,
+        "estimated_cores": 0.0036499999999999996
+      }
+    ]
+  }
+}

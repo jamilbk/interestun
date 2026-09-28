@@ -1,0 +1,20 @@
+{
+  "checked_at": "2026-09-28T10:40:43.422495-07:00",
+  "bundle": "/Applications/Interestun.app",
+  "version": "1790616930",
+  "team_id": "47R2M6779T",
+  "sha256": {
+    "Contents/MacOS/interestunctl": "d076891e62373489e826abaef2a7e80a3ab31cb5f2874239e661ebb1ff186cf8",
+    "Contents/Library/SystemExtensions/dev.jamilbk.interestun.packet-tunnel.systemextension/Contents/MacOS/InterestunPacketTunnel": "99b419b79beacb735acd6f73d7e91389576febbb10dade0a60016bc8506a4671"
+  },
+  "status": "System extension: dev.jamilbk.interestun.packet-tunnel version=1790615891 enabled=false\nSystem extension: dev.jamilbk.interestun.packet-tunnel version=1790603726 enabled=false\nSystem extension: dev.jamilbk.interestun.packet-tunnel version=1790616767 enabled=false\nSystem extension: dev.jamilbk.interestun.packet-tunnel version=1790615891 enabled=false\nSystem extension: dev.jamilbk.interestun.packet-tunnel version=1790616465 enabled=false\nSystem extension: dev.jamilbk.interestun.packet-tunnel version=1790604265 enabled=false\nSystem extension: dev.jamilbk.interestun.packet-tunnel version=1790604015 enabled=false\nSystem extension: dev.jamilbk.interestun.packet-tunnel version=1790616026 enabled=false\nSystem extension: dev.jamilbk.interestun.packet-tunnel version=1790615891 enabled=false\nSystem extension: dev.jamilbk.interestun.packet-tunnel version=1790616930 enabled=true\nSystem extension: dev.jamilbk.interestun.packet-tunnel version=1790616183 enabled=false\nSystem extension: dev.jamilbk.interestun.packet-tunnel version=1790616026 enabled=false\nSystem extension: dev.jamilbk.interestun.packet-tunnel version=1790601131 enabled=false\nVPN: connected",
+  "extension_activated": true,
+  "tunnel_started": true,
+  "provider_pid": 15142,
+  "installed_extension_binary": "/Library/SystemExtensions/3C47E7D1-1299-4C67-AB89-E4B829476A26/dev.jamilbk.interestun.packet-tunnel.systemextension/Contents/MacOS/InterestunPacketTunnel",
+  "interface": "utun4",
+  "tun_frontend": "Network Extension utun descriptor",
+  "udp_backend": "Network.framework",
+  "skywalk": "NE netif enabled; existing control-socket frontend; no mapped utun channel",
+  "boot_time": "kern.boottime: { sec = 1790602326, usec = 46295 } Mon Sep 28 06:32:06 2026"
+}

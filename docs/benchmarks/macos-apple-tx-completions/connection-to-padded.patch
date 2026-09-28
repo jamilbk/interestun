@@ -1,0 +1,23 @@
+--- a/src/platform/network_flow.m
++++ b/src/platform/network_flow.m
+@@ -51,7 +51,9 @@
+     bool notifyScheduled; // Only the callback queue accesses this.
+ #endif
+     _Atomic(size_t) pending;
++    char pendingPadding[128];
+     size_t completedCredits; // Only the serial callback queue accesses this.
++    char completionPadding[128];
+     nw_connection_send_completion_t sendCompletion;
+     _Atomic(uint64_t) txAccepted, txPartial, txBlocked, txBlockedNs, txWakes, txBlockedSince;
+     _Atomic(uint64_t) txBatches[9], txOccupancy[12];
+@@ -86,6 +88,10 @@
+ }
+ 
+ static void configure_send(INFlow *flow) {
++    // Pending includes at most 31 completed, unpublished credits. That cannot
++    // strand a full window: at least 993 callbacks are still outstanding when
++    // pending == 1024. Packets are submitted immediately, including lone sends.
++    // Keep the callback-local counter off the producer's cache lines.
+     // A single heap block for the connection. Close breaks this intentional
+     // self-reference; outstanding sends keep the block and signal owner alive.
+     #pragma clang diagnostic push

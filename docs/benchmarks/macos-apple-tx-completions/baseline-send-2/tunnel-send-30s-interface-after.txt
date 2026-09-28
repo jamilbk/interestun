@@ -1,0 +1,3 @@
+Name       Mtu   Network       Address            Ipkts Ierrs     Ibytes    Opkts Oerrs     Obytes  Coll
+utun4      1420  <Link#26>                       175798     0    9154434 12608310     0 17954077565     0
+utun4      1420  10.20.0.2/32  10.20.0.2         175798     -    9154434 12608310     - 17954077565     -

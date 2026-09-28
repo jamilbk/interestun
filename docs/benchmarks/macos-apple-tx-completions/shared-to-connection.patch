@@ -1,0 +1,85 @@
+--- a/src/platform/network_flow.m
++++ b/src/platform/network_flow.m
+@@ -17,6 +17,7 @@
+ #endif
+ #define RX_BATCH 128
+ #define TX_SLOTS 1024
++#define TX_CREDIT_GROUP 32
+ #define PACKET_CAPACITY 2048
+ 
+ // Snapshot counters are diagnostic, not a transactional view of the queue.
+@@ -50,6 +51,8 @@
+     bool notifyScheduled; // Only the callback queue accesses this.
+ #endif
+     _Atomic(size_t) pending;
++    size_t completedCredits; // Only the serial callback queue accesses this.
++    nw_connection_send_completion_t sendCompletion;
+     _Atomic(uint64_t) txAccepted, txPartial, txBlocked, txBlockedNs, txWakes, txBlockedSince;
+     _Atomic(uint64_t) txBatches[9], txOccupancy[12];
+     _Atomic(int) error;
+@@ -80,6 +83,27 @@
+     atomic_store_explicit(&flow->error, error, memory_order_release);
+     notify(flow, false);
+     notify(flow, true);
++}
++
++static void configure_send(INFlow *flow) {
++    // A single heap block for the connection. Close breaks this intentional
++    // self-reference; outstanding sends keep the block and signal owner alive.
++    #pragma clang diagnostic push
++    #pragma clang diagnostic ignored "-Warc-retain-cycles"
++    flow->sendCompletion = ^(nw_error_t e) {
++        size_t previous = 0;
++        if (++flow->completedCredits == TX_CREDIT_GROUP) {
++            flow->completedCredits = 0;
++            previous = atomic_fetch_sub_explicit(&flow->pending, TX_CREDIT_GROUP, memory_order_acq_rel);
++        }
++        if (atomic_load_explicit(&flow->closing, memory_order_acquire)) return;
++        if (e) fail(flow, posix_error(e));
++        else if (previous == TX_SLOTS) {
++            atomic_fetch_add_explicit(&flow->txWakes, 1, memory_order_relaxed);
++            notify(flow, true);
++        }
++    };
++    #pragma clang diagnostic pop
+ }
+ 
+ @implementation INFlow
+@@ -226,6 +250,7 @@
+         #else
+         fprintf(stderr, "Network.framework receive: public receive_message (window %d)\n", RX_WINDOW);
+         #endif
++        configure_send(flow);
+         flow.queue = dispatch_queue_create("interestun.udp.network", DISPATCH_QUEUE_SERIAL);
+         nw_parameters_t parameters = nw_parameters_create_secure_udp(
+             NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
+@@ -283,18 +308,10 @@
+         if (accepted != count) atomic_fetch_add_explicit(&flow->txPartial, 1, memory_order_relaxed);
+         atomic_fetch_add_explicit(&flow->txBatches[64 - __builtin_clzll(accepted)], 1, memory_order_relaxed);
+         atomic_fetch_add_explicit(&flow->txOccupancy[pending ? 64 - __builtin_clzll(pending) : 0], 1, memory_order_relaxed);
+-        // The immutable connection and completion are retained once for this
+-        // batch. Network.framework still reports every datagram separately.
++        // Cache both references outside the packet loop. Every datagram still
++        // has an error/completion callback; credits publish in groups of 32.
+         nw_connection_t connection = flow.connection;
+-        nw_connection_send_completion_t completion = ^(nw_error_t e) {
+-            size_t previous = atomic_fetch_sub_explicit(&flow->pending, 1, memory_order_acq_rel);
+-            if (atomic_load_explicit(&flow->closing, memory_order_acquire)) return;
+-            if (e) fail(flow, posix_error(e));
+-            else if (previous == TX_SLOTS) {
+-                atomic_fetch_add_explicit(&flow->txWakes, 1, memory_order_relaxed);
+-                notify(flow, true);
+-            }
+-        };
++        nw_connection_send_completion_t completion = flow->sendCompletion;
+         nw_connection_batch(connection, ^{
+             for (size_t i = 0; i < accepted; i++) {
+                 dispatch_data_t data = dispatch_data_create(buffers[i], lengths[i], NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
+@@ -353,6 +370,7 @@
+         dispatch_sync(flow.queue, ^{
+             nw_connection_set_state_changed_handler(flow.connection, nil);
+             nw_connection_cancel(flow.connection);
++            flow->sendCompletion = nil;
+             size_t read = atomic_load_explicit(&flow->readIndex, memory_order_relaxed);
+             size_t write = atomic_load_explicit(&flow->writeIndex, memory_order_acquire);
+             for (; read != write; read++) {

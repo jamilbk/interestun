@@ -7,6 +7,7 @@
 #include <stdatomic.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <time.h>
 
 #define RX_SLOTS 1024
 #ifdef IN_NETWORK_MULTIPLE
@@ -17,6 +18,13 @@
 #define RX_BATCH 128
 #define TX_SLOTS 1024
 #define PACKET_CAPACITY 2048
+
+// Snapshot counters are diagnostic, not a transactional view of the queue.
+// Histograms use bucket 0 for zero and bucket n for [2^(n-1), 2^n).
+typedef struct {
+    uint64_t accepted, partial, blocked, blocked_ns, wakes;
+    uint64_t batches[9], occupancy[12];
+} INTxStats;
 
 #ifdef IN_NETWORK_MULTIPLE
 // Private SPI: verified against macOS 27.0 (26A428), not a public SDK contract.
@@ -42,6 +50,8 @@ typedef void (*INReceiveMultiple)(nw_connection_t, uint32_t, uint32_t, nw_connec
     bool notifyScheduled; // Only the callback queue accesses this.
 #endif
     _Atomic(size_t) pending;
+    _Atomic(uint64_t) txAccepted, txPartial, txBlocked, txBlockedNs, txWakes, txBlockedSince;
+    _Atomic(uint64_t) txBatches[9], txOccupancy[12];
     _Atomic(int) error;
     _Atomic(bool) closing, ready;
     void *wakeContext;
@@ -248,29 +258,62 @@ void *in_flow_open(const char *host, const char *port, const char *localHost,
 int in_flow_send(void *handle, const uint8_t *const *buffers, const size_t *lengths, size_t count) {
     @autoreleasepool {
         INFlow *flow = (__bridge INFlow *)handle;
+        if (!count) return 0;
+        if (count > 128) return -EINVAL;
         int error = atomic_load_explicit(&flow->error, memory_order_acquire);
         if (error) return -error;
         if (!atomic_load_explicit(&flow->ready, memory_order_acquire)) return -EAGAIN;
         size_t pending = atomic_load_explicit(&flow->pending, memory_order_relaxed);
         size_t accepted;
         do {
-            if (pending == TX_SLOTS) return -EAGAIN;
+            if (pending == TX_SLOTS) {
+                atomic_fetch_add_explicit(&flow->txBlocked, 1, memory_order_relaxed);
+                uint64_t zero = 0;
+                atomic_compare_exchange_strong_explicit(&flow->txBlockedSince, &zero,
+                    clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW), memory_order_relaxed, memory_order_relaxed);
+                return -EAGAIN;
+            }
             accepted = MIN(count, TX_SLOTS - pending);
         } while (!atomic_compare_exchange_weak_explicit(&flow->pending, &pending, pending + accepted,
                                                         memory_order_acq_rel, memory_order_relaxed));
-        nw_connection_batch(flow.connection, ^{
+        uint64_t since = atomic_exchange_explicit(&flow->txBlockedSince, 0, memory_order_relaxed);
+        if (since) atomic_fetch_add_explicit(&flow->txBlockedNs,
+            clock_gettime_nsec_np(CLOCK_MONOTONIC_RAW) - since, memory_order_relaxed);
+        atomic_fetch_add_explicit(&flow->txAccepted, accepted, memory_order_relaxed);
+        if (accepted != count) atomic_fetch_add_explicit(&flow->txPartial, 1, memory_order_relaxed);
+        atomic_fetch_add_explicit(&flow->txBatches[64 - __builtin_clzll(accepted)], 1, memory_order_relaxed);
+        atomic_fetch_add_explicit(&flow->txOccupancy[pending ? 64 - __builtin_clzll(pending) : 0], 1, memory_order_relaxed);
+        // The immutable connection and completion are retained once for this
+        // batch. Network.framework still reports every datagram separately.
+        nw_connection_t connection = flow.connection;
+        nw_connection_send_completion_t completion = ^(nw_error_t e) {
+            size_t previous = atomic_fetch_sub_explicit(&flow->pending, 1, memory_order_acq_rel);
+            if (atomic_load_explicit(&flow->closing, memory_order_acquire)) return;
+            if (e) fail(flow, posix_error(e));
+            else if (previous == TX_SLOTS) {
+                atomic_fetch_add_explicit(&flow->txWakes, 1, memory_order_relaxed);
+                notify(flow, true);
+            }
+        };
+        nw_connection_batch(connection, ^{
             for (size_t i = 0; i < accepted; i++) {
                 dispatch_data_t data = dispatch_data_create(buffers[i], lengths[i], NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
-                nw_connection_send(flow.connection, data, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, true, ^(nw_error_t e) {
-                    size_t previous = atomic_fetch_sub_explicit(&flow->pending, 1, memory_order_acq_rel);
-                    if (atomic_load_explicit(&flow->closing, memory_order_acquire)) return;
-                    if (e) fail(flow, posix_error(e));
-                    else if (previous == TX_SLOTS) notify(flow, true);
-                });
+                nw_connection_send(connection, data, NW_CONNECTION_DEFAULT_MESSAGE_CONTEXT, true, completion);
             }
         });
         return (int)accepted;
     }
+}
+
+void in_flow_tx_stats(void *handle, INTxStats *out) {
+    INFlow *flow = (__bridge INFlow *)handle;
+    out->accepted = atomic_load_explicit(&flow->txAccepted, memory_order_relaxed);
+    out->partial = atomic_load_explicit(&flow->txPartial, memory_order_relaxed);
+    out->blocked = atomic_load_explicit(&flow->txBlocked, memory_order_relaxed);
+    out->blocked_ns = atomic_load_explicit(&flow->txBlockedNs, memory_order_relaxed);
+    out->wakes = atomic_load_explicit(&flow->txWakes, memory_order_relaxed);
+    for (size_t i = 0; i < 9; i++) out->batches[i] = atomic_load_explicit(&flow->txBatches[i], memory_order_relaxed);
+    for (size_t i = 0; i < 12; i++) out->occupancy[i] = atomic_load_explicit(&flow->txOccupancy[i], memory_order_relaxed);
 }
 
 int in_flow_receive(void *handle, uint8_t *const *buffers, size_t *lengths, size_t capacity) {

@@ -123,7 +123,15 @@ constitute a latency measurement of every packet.
 
 ## Candidate experiments after this profile
 
-These are options, not measured improvements:
+The [send bridge/completion experiment](apple-tx-completions.md) subsequently
+tested options 1 and 2 with one UDP connection and MTU 1420. It found substantial
+real batching and negligible credit stalls, but no repeatable throughput gain
+from the completion-accounting variants. The private adaptive-write hook was
+traced to write-timeout notification handling. Options 3–5 below remain untested
+in that follow-up; jumbo frames and multiple outer connections were excluded by
+the user.
+
+These were the candidate options, not promises of measured improvements:
 
 1. Measure actual accepted batch sizes and time blocked on send credits, then
    simplify our Objective-C submission shim. Cache the connection once per
