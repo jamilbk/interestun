@@ -1,12 +1,12 @@
 //! Ownership wrapper around the bounded Network.framework bridge.
 use super::batch::{Received, Receiver};
+use super::readiness::Waker;
 use crate::packet::{BATCH, Packet};
 use std::{
     collections::VecDeque,
     ffi::{CString, c_void},
-    io::{self, Read},
+    io,
     net::SocketAddr,
-    os::{fd::AsRawFd, unix::net::UnixStream},
     ptr::NonNull,
 };
 
@@ -23,8 +23,9 @@ unsafe extern "C" {
         port: *const i8,
         local_host: *const i8,
         local_port: *const i8,
-        rx: i32,
-        tx: i32,
+        context: *mut c_void,
+        wake: unsafe extern "C" fn(*mut c_void, bool),
+        release: unsafe extern "C" fn(*mut c_void),
     ) -> *mut c_void;
     fn in_flow_send(
         handle: *mut c_void,
@@ -43,8 +44,6 @@ unsafe extern "C" {
 
 pub struct Socket {
     handle: NonNull<c_void>,
-    rx: UnixStream,
-    tx: UnixStream,
     endpoint: SocketAddr,
 }
 // SAFETY: C protects its ring with a lock and cross-thread state with atomics.
@@ -53,20 +52,22 @@ pub struct Socket {
 unsafe impl Send for Socket {}
 unsafe impl Sync for Socket {}
 
-fn drain(mut stream: &UnixStream) -> io::Result<usize> {
-    #[cfg(feature = "io-profile")]
-    let _span = Span::new(Stage::NotifyRead);
-    let mut bytes = [0; 256];
-    let mut notifications = 0;
-    loop {
-        match stream.read(&mut bytes) {
-            Ok(0) => return Err(io::ErrorKind::UnexpectedEof.into()),
-            Ok(n) => notifications += n,
-            Err(e) if e.kind() == io::ErrorKind::WouldBlock => return Ok(notifications),
-            Err(e) if e.kind() == io::ErrorKind::Interrupted => {}
-            Err(e) => return Err(e),
-        }
+struct Signals {
+    rx: Waker,
+    tx: Waker,
+}
+unsafe extern "C" fn wake(context: *mut c_void, tx: bool) {
+    // SAFETY: C owns this Box until the final retained flow is released.
+    let signals = unsafe { &*context.cast::<Signals>() };
+    let signal = if tx { &signals.tx } else { &signals.rx };
+    // Only EBADF/invalid registration can fail; Arc owns the registered queue.
+    if let Err(error) = signal.wake() {
+        eprintln!("worker wake failed: {error}");
     }
+}
+unsafe extern "C" fn release(context: *mut c_void) {
+    // SAFETY: Called exactly once by flow deallocation, including open failure.
+    drop(unsafe { Box::from_raw(context.cast::<Signals>()) });
 }
 fn count(n: i32) -> io::Result<usize> {
     if n < 0 {
@@ -76,7 +77,7 @@ fn count(n: i32) -> io::Result<usize> {
     }
 }
 impl Socket {
-    pub fn connect(port: u16, endpoint: SocketAddr) -> io::Result<Self> {
+    pub fn connect(port: u16, endpoint: SocketAddr, rx: Waker, tx: Waker) -> io::Result<Self> {
         // Host strings preserve an IPv6 scope identifier when present.
         let host = CString::new(match endpoint {
             SocketAddr::V4(a) => a.ip().to_string(),
@@ -91,42 +92,26 @@ impl Socket {
             c"::"
         };
         let local_port = CString::new(port.to_string()).unwrap();
-        let (rx, rx_write) = UnixStream::pair()?;
-        let (tx, tx_write) = UnixStream::pair()?;
-        for s in [&rx, &rx_write, &tx, &tx_write] {
-            s.set_nonblocking(true)?;
-        }
-        // SAFETY: Arguments remain valid throughout open; bridge duplicates the
-        // notification writers and consumes endpoint strings synchronously.
+        let context = Box::into_raw(Box::new(Signals { rx, tx })).cast();
+        // SAFETY: C consumes the signal Box on all paths; callbacks own it.
         let handle = unsafe {
             in_flow_open(
                 host.as_ptr(),
                 remote_port.as_ptr(),
                 local.as_ptr(),
                 local_port.as_ptr(),
-                rx_write.as_raw_fd(),
-                tx_write.as_raw_fd(),
+                context,
+                wake,
+                release,
             )
         };
         let handle = NonNull::new(handle).ok_or_else(io::Error::last_os_error)?;
-        Ok(Self {
-            handle,
-            rx,
-            tx,
-            endpoint,
-        })
-    }
-    pub fn rx_fd(&self) -> i32 {
-        self.rx.as_raw_fd()
-    }
-    pub fn tx_fd(&self) -> i32 {
-        self.tx.as_raw_fd()
+        Ok(Self { handle, endpoint })
     }
     pub fn flush(&self, queue: &mut VecDeque<Packet>) -> io::Result<usize> {
         if queue.is_empty() {
             return Ok(0);
         }
-        let _notifications = drain(&self.tx)?;
         let n = queue.len().min(BATCH);
         let mut pointers = [std::ptr::null(); BATCH];
         let mut lengths = [0; BATCH];
@@ -143,7 +128,7 @@ impl Socket {
         #[cfg(feature = "io-profile")]
         drop(span);
         #[cfg(feature = "io-metrics")]
-        metrics::record(true, _notifications, &result);
+        metrics::record(true, 0, &result);
         let sent = result?;
         assert!(sent <= n);
         queue.drain(..sent);
@@ -154,7 +139,6 @@ impl Socket {
         receiver: &mut Receiver,
         mut consume: impl FnMut(Received),
     ) -> io::Result<usize> {
-        let _notifications = drain(&self.rx)?;
         #[cfg(feature = "io-profile")]
         let setup = Span::new(Stage::ReceiveSetup);
         let packets = receiver.receive_buffers();
@@ -184,7 +168,7 @@ impl Socket {
         #[cfg(feature = "io-profile")]
         drop(span);
         #[cfg(feature = "io-metrics")]
-        metrics::record(false, _notifications, &result);
+        metrics::record(false, 0, &result);
         let received = result?;
         assert!(received <= n);
         for (i, mut packet) in packets.drain(..received).enumerate() {
@@ -200,7 +184,7 @@ impl Socket {
 impl Drop for Socket {
     fn drop(&mut self) {
         // SAFETY: Last Rust owner; bridge serializes cancellation. Callback
-        // storage and duplicate notification writers live until callbacks end.
+        // storage and signal ownership live until callbacks end.
         unsafe { in_flow_close(self.handle.as_ptr()) };
     }
 }

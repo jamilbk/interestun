@@ -381,11 +381,34 @@ impl Sender {
         if count == 0 {
             return Ok(0);
         }
+        let result = self.send_slices(fd, tun, queue.iter().take(count).map(Packet::data));
+        match result {
+            Ok(0) => Err(io::Error::from(io::ErrorKind::WouldBlock)),
+            Ok(n) => {
+                queue.drain(..n);
+                Ok(n)
+            }
+            Err(e) if e.kind() == io::ErrorKind::WouldBlock => Err(e),
+            Err(e) => {
+                queue.drain(..count);
+                Err(e)
+            }
+        }
+    }
+    pub(super) fn send_slices<'a>(
+        &mut self,
+        fd: RawFd,
+        tun: bool,
+        data: impl ExactSizeIterator<Item = &'a [u8]>,
+    ) -> io::Result<usize> {
+        let count = data.len().min(BATCH);
+        if count == 0 {
+            return Ok(0);
+        }
         #[cfg(feature = "io-profile")]
         let setup_span = Span::new(Stage::SendSetup);
         let Descriptors { afs, iovs, msgs } = &mut *self.scratch;
-        for (i, packet) in queue.iter().take(count).enumerate() {
-            let data = packet.data();
+        for (i, data) in data.take(count).enumerate() {
             let payload = libc::iovec {
                 iov_base: data.as_ptr() as *mut c_void,
                 iov_len: data.len(),
@@ -437,18 +460,13 @@ impl Sender {
         drop(span);
         #[cfg(feature = "io-metrics")]
         metrics::record(tun, true, if available() { count } else { 1 }, &result);
-        match result {
-            Ok(0) => Err(io::Error::from(io::ErrorKind::WouldBlock)),
-            Ok(n) => {
-                queue.drain(..n);
+        result.and_then(|n| {
+            if n == 0 {
+                Err(io::ErrorKind::WouldBlock.into())
+            } else {
                 Ok(n)
             }
-            Err(e) if e.kind() == io::ErrorKind::WouldBlock => Err(e),
-            Err(e) => {
-                queue.drain(..count);
-                Err(e)
-            }
-        }
+        })
     }
 }
 

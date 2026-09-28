@@ -1,11 +1,13 @@
 #[cfg(target_os = "macos")]
 pub mod batch;
-#[cfg(any(windows, test))]
+#[cfg(any(windows, test, feature = "apple-coalesce"))]
 pub mod coalesce;
 #[cfg(all(target_os = "macos", feature = "apple-network"))]
 pub mod network;
 #[cfg(all(any(windows, target_os = "macos"), feature = "io-profile"))]
 pub mod profile;
+#[cfg(target_os = "macos")]
+pub mod readiness;
 #[cfg(target_os = "macos")]
 pub mod udp;
 #[cfg(target_os = "macos")]
@@ -17,3 +19,6 @@ pub mod wintun;
 pub use utun::Utun as Tunnel;
 #[cfg(windows)]
 pub type Tunnel = dyn wintun::PacketIo;
+
+#[cfg(all(target_os = "macos", feature = "apple-coalesce"))]
+pub mod coalesce_macos;

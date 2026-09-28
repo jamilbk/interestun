@@ -39,7 +39,9 @@ work and starvation of handshakes or shutdown. A congested peer cannot stop the
 shared utun reader from dispatching packets to other peers.
 The utun pending-packet limit is set to 1024 and verified with getsockopt at
 startup. Darwin's default of one pending packet prevents effective receive
-batching under load; this limit allows eight batches of 128.
+batching under load; this limit allows eight batches of 128. The independent
+control-socket receive byte limit is enlarged to 4 MiB and verified at startup,
+so the packet-count flow-control threshold fits inside its byte capacity.
 Readiness from kqueue is retained until a syscall returns WouldBlock, including
 across fairness-budget boundaries. Idle descriptors are not probed on unrelated
 wakeups. Buffer-pool exhaustion retains readiness because no syscall occurred.
@@ -130,8 +132,11 @@ threading, backpressure, control ownership, and validation differences.
 
 The macOS experiment selects the [UDP backend at build time](apple-udp-backends.md).
 Network.framework is now the default and uses no BSD UDP listeners. It retains
-BoringTun's TX/RX ownership, with bounded callback staging and notification
-descriptors. It currently requires configured peer endpoints; the discovery and
+BoringTun's TX/RX ownership, with a bounded retained-message ring and atomic
+worker signals. A native kqueue loop replaces mio on macOS, and active batches
+usually collect callback signals without a kernel call. Default macOS builds
+coalesce compatible authenticated TCP segments for local delivery before utun
+injection; forwarded packets retain their original MTU/DF semantics. It currently requires configured peer endpoints; the discovery and
 roaming behavior described above applies to the BSD comparison build.
 
 The first two-host TCP measurements are recorded in [performance](performance.md).
@@ -142,3 +147,5 @@ Connected flow sockets and utun writes still contend on kernel resources.
 A per-worker recycle cache could reduce shared-pool atomics; reconfiguration could
 hand ownership between peer workers without rekeying. Neither improvement should
 be claimed until benchmarked under the same packet/byte accounting.
+
+See the [native worker measurements](native-worker-performance.md) for the current optimization sweep.

@@ -53,11 +53,19 @@ until Rust drains it. A short lock protects the ring; atomics protect send credi
 and cross-thread state. Send and receive calls never synchronously wait for the
 callback queue. Cancellation alone uses a lifecycle barrier.
 
-Separate nonblocking Unix socketpairs notify the TX/RX workers. Mio's kqueue
-polls these local notification descriptors and utun; it does not poll the
-framework's underlying network socket. Tokio could use `AsyncFd` for the same
-notification bridge. Network.framework independently drives its own I/O and
-callback delivery, so using mio does not eliminate dispatch scheduling.
+The macOS workers use a small native kqueue driver. Network.framework callbacks
+publish bits in an atomic pending-work mask, then trigger `EVFILT_USER` only when
+the worker has armed its sleep. A sequentially consistent arm/recheck protocol
+prevents lost wakeups. Callback ownership keeps the queue descriptor alive.
+There are no notification socketpairs, socket reads/writes for signaling, mio,
+or Tokio in the macOS dependency graph. Windows retains its mio/IOCP backend.
+
+Utun and BSD comparison sockets register descriptor events directly. During
+active work the driver consumes pending callback bits in userspace and probes
+kernel descriptor events every 32 batches. Idle workers wait immediately in
+kqueue, using the existing control/timer deadline. This bounded probe interval
+prevents a continuously active source from starving another descriptor.
+Network.framework still drives its own I/O and dispatch callback delivery.
 
 RX notification is coalesced after already-queued callbacks, on an
 empty-to-nonempty transition; TX notification occurs on full-to-writable credit
@@ -69,9 +77,23 @@ into cached packet-pool buffers outside the lock. Unused buffers stay cached.
 This removes the old payload staging copy and per-call checkout/return churn;
 it is not zero-copy. TX still makes owned dispatch-data copies before returning
 to Rust, and partial accepted sends retain their tails. No Rust buffer pointer
-escapes a synchronous bridge call. Callbacks retain their state and notification
-writers through cancellation. Connection waiting/failure and asynchronous I/O
+escapes a synchronous bridge call. Callbacks retain their state and worker signals through cancellation. Connection waiting/failure and asynchronous I/O
 errors fail visibly; they do not select another backend.
+
+The utun control socket has a verified 4 MiB receive buffer as well as its
+1024-packet pending limit. The two limits are independent.
+
+Default macOS builds also enable `apple-coalesce`: adjacent compatible TCP data
+for local delivery is combined after authentication and AllowedIPs validation,
+then injected with `sendmsg_x`. Headers and checksums are validated, ordering and
+PSH boundaries are preserved, and new checksums are computed for aggregates.
+Non-TCP, incompatible, and forwarded packets remain separate. Local addresses are
+refreshed once per second. Aggregation uses only packets already queued, adding
+no timer delay. Scratch buffers are preallocated. This reduces kernel packet/ACK
+work; it does add a copy for merged payloads. To isolate this feature while
+keeping Network.framework, rebuild with `--no-default-features --features apple-network`.
+For a BSD comparison with the same coalescing, use
+`--no-default-features --features apple-coalesce`.
 
 ## Path selection and measurements
 
@@ -120,3 +142,7 @@ cargo test --locked --all-features --test live_macos -- --ignored --nocapture
 The [standalone transmit benchmark](network-framework-benchmark.md) remains
 available to remove utun from the comparison and isolate raw versus encrypted
 sends. Loopback correctness tests do not establish Ethernet throughput.
+
+The subsequent [native worker optimization sweep](native-worker-performance.md)
+records direct signaling, coalescing, rejected experiments, and repeated
+30-second TCP measurements with the Windows peer.

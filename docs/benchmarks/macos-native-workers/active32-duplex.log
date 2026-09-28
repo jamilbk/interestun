@@ -1,0 +1,44 @@
+peer=0 worker=peer-0-tx io=utun-rx calls=112704 requested=14426112 packets=538711 would_block=43678 errors=0
+peer=0 worker=peer-0-tx io=utun-tx calls=0 requested=0 packets=0 would_block=0 errors=0
+peer=0 worker=peer-0-tx io=udp-rx calls=0 requested=0 packets=0 would_block=0 errors=0
+peer=0 worker=peer-0-tx io=udp-tx calls=0 requested=0 packets=0 would_block=0 errors=0
+peer=0 worker=peer-0-tx network=tx calls=69026 packets=538712 notifications=0 would_block=0 errors=0
+peer=0 worker=peer-0-tx network=poll calls=112704 blocking=43678 udp_events=0 timeouts=0
+peer=0 worker=peer-0-tx profile=utun-read calls=112704 samples=1761 sampled_cpu_ns=6600169 sampled_wall_ns=6517249
+peer=0 worker=peer-0-tx profile=encrypt-batch calls=112704 samples=1761 sampled_cpu_ns=2703215 sampled_wall_ns=2440472
+peer=0 worker=peer-0-tx profile=receive-setup calls=112704 samples=1761 sampled_cpu_ns=868841 sampled_wall_ns=580981
+peer=0 worker=peer-0-tx profile=network-send-bridge calls=69026 samples=1079 sampled_cpu_ns=4315640 sampled_wall_ns=4201670
+peer=0 worker=peer-0-tx profile=poll calls=112704 samples=1761 sampled_cpu_ns=2629083 sampled_wall_ns=59877166
+peer=0 worker=peer-0-rx io=utun-rx calls=0 requested=0 packets=0 would_block=0 errors=0
+peer=0 worker=peer-0-rx io=utun-tx calls=54239 requested=950616 packets=950616 would_block=0 errors=0
+peer=0 worker=peer-0-rx io=udp-rx calls=0 requested=0 packets=0 would_block=0 errors=0
+peer=0 worker=peer-0-rx io=udp-tx calls=0 requested=0 packets=0 would_block=0 errors=0
+peer=0 worker=peer-0-rx network=rx calls=81665 packets=950616 notifications=0 would_block=27426 errors=0
+peer=0 worker=peer-0-rx network=poll calls=81678 blocking=27439 udp_events=43006 timeouts=13
+peer=0 worker=peer-0-rx profile=utun-write calls=54239 samples=848 sampled_cpu_ns=6434687 sampled_wall_ns=6483299
+peer=0 worker=peer-0-rx profile=receive-setup calls=81665 samples=1277 sampled_cpu_ns=640915 sampled_wall_ns=403242
+peer=0 worker=peer-0-rx profile=send-setup calls=54239 samples=848 sampled_cpu_ns=224679 sampled_wall_ns=72783
+peer=0 worker=peer-0-rx profile=network-receive-bridge calls=81665 samples=1277 sampled_cpu_ns=5008344 sampled_wall_ns=4887706
+peer=0 worker=peer-0-rx profile=poll calls=81678 samples=1277 sampled_cpu_ns=1662729 sampled_wall_ns=61392231
+peer=0 worker=peer-0-tx io=utun-rx calls=54976 requested=7036928 packets=1276687 would_block=16186 errors=0
+peer=0 worker=peer-0-tx io=utun-tx calls=0 requested=0 packets=0 would_block=0 errors=0
+peer=0 worker=peer-0-tx io=udp-rx calls=0 requested=0 packets=0 would_block=0 errors=0
+peer=0 worker=peer-0-tx io=udp-tx calls=0 requested=0 packets=0 would_block=0 errors=0
+peer=0 worker=peer-0-tx network=tx calls=38790 packets=1276687 notifications=0 would_block=0 errors=0
+peer=0 worker=peer-0-tx network=poll calls=54976 blocking=16186 udp_events=0 timeouts=0
+peer=0 worker=peer-0-tx profile=utun-read calls=54976 samples=859 sampled_cpu_ns=10802494 sampled_wall_ns=10796756
+peer=0 worker=peer-0-tx profile=encrypt-batch calls=54976 samples=859 sampled_cpu_ns=5904173 sampled_wall_ns=5809935
+peer=0 worker=peer-0-tx profile=receive-setup calls=54976 samples=859 sampled_cpu_ns=437829 sampled_wall_ns=317953
+peer=0 worker=peer-0-tx profile=network-send-bridge calls=38790 samples=607 sampled_cpu_ns=8259616 sampled_wall_ns=8256826
+peer=0 worker=peer-0-tx profile=poll calls=54976 samples=859 sampled_cpu_ns=1222663 sampled_wall_ns=66251677
+peer=0 worker=peer-0-rx io=utun-rx calls=0 requested=0 packets=0 would_block=0 errors=0
+peer=0 worker=peer-0-rx io=utun-tx calls=26392 requested=515620 packets=515620 would_block=0 errors=0
+peer=0 worker=peer-0-rx io=udp-rx calls=0 requested=0 packets=0 would_block=0 errors=0
+peer=0 worker=peer-0-rx io=udp-tx calls=0 requested=0 packets=0 would_block=0 errors=0
+peer=0 worker=peer-0-rx network=rx calls=36199 packets=515620 notifications=0 would_block=9807 errors=0
+peer=0 worker=peer-0-rx network=poll calls=36214 blocking=9822 udp_events=17999 timeouts=15
+peer=0 worker=peer-0-rx profile=utun-write calls=26392 samples=413 sampled_cpu_ns=4570415 sampled_wall_ns=4625421
+peer=0 worker=peer-0-rx profile=receive-setup calls=36199 samples=566 sampled_cpu_ns=317936 sampled_wall_ns=210003
+peer=0 worker=peer-0-rx profile=send-setup calls=26392 samples=413 sampled_cpu_ns=117353 sampled_wall_ns=38960
+peer=0 worker=peer-0-rx profile=network-receive-bridge calls=36199 samples=566 sampled_cpu_ns=2556283 sampled_wall_ns=2513589
+peer=0 worker=peer-0-rx profile=poll calls=36214 samples=566 sampled_cpu_ns=660306 sampled_wall_ns=66543047

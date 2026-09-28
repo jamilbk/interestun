@@ -4,7 +4,9 @@ A barebones Rust userspace tunnel for macOS and Windows, based on Firezone's Bor
 One main housekeeping/control thread and one shared adapter (BSD utun or Wintun).
 Both platforms use one send thread and one receive thread per peer.
 Network.framework also schedules callback work on dispatch queues. Windows
-additionally uses a Wintun reader thread and receive-side TCP coalescing.
+additionally uses a Wintun reader thread. Both platforms support receive-side
+TCP coalescing. macOS uses a native kqueue/atomic-signal worker loop, without mio
+or Tokio.
 This is an experimental implementation, not a production VPN.
 
 The default transport cipher is **AES-256-GCM**. It uses a distinct authenticated
@@ -25,7 +27,8 @@ The dependency is pinned to a commit on `jamilbk/boringtun`.
 The macOS experiment now defaults to Network.framework-only UDP. Active peers
 must have configured endpoints; automatic discovery/roaming is not yet supported
 in this backend. Rebuild with `--no-default-features` for the BSD comparison.
-See [Apple UDP backends](docs/apple-udp-backends.md) for limitations and results.
+See [Apple UDP backends](docs/apple-udp-backends.md) for limitations and
+[native worker measurements](docs/native-worker-performance.md) for current results.
 
 ```sh
 CARGO_TARGET_DIR=target cargo build --release --locked
@@ -68,7 +71,7 @@ testing; stock `wg` uses its compile-time `/var/run/wireguard` directory.
 The details below describe macOS's BSD comparison backend; see the [Windows data path](docs/windows.md#data-path-and-validation)
 for Wintun, shared UDP listeners, and IOCP differences.
 
-- Mio uses kqueue on macOS. Each peer has a send thread owning its transmit key
+- A native event loop uses kqueue on macOS. Each peer has a send thread owning its transmit key
   and nonce counter, and a receive thread owning replay, handshake, and timer
   state. They share a connected UDP socket with separate read/write readiness.
 - Peer 0's send thread reads the shared utun; its receive thread reads wildcard

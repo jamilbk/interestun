@@ -1,5 +1,8 @@
 # Network.framework tunnel measurements against Windows
 
+For the newer native event loop, coalescing and utun byte-buffer sweep, see
+[native worker performance](native-worker-performance.md).
+
 Before the receive bridge optimization on September 27, 2026, the
 Network.framework-only macOS daemon sustained about
 **4.1 Gbit/s TCP payload throughput to Windows**. The reverse direction remained

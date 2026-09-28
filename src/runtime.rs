@@ -1,3 +1,4 @@
+use crate::platform::readiness::{Events, Interest, Poll, Token, Waker};
 use crate::{
     config::{Cipher, Config},
     packet::{self, BATCH, Packet, Pool},
@@ -16,7 +17,6 @@ use boringtun::{
     x25519,
 };
 use crossbeam_queue::ArrayQueue;
-use mio::{Events, Interest, Poll, Token, Waker, unix::SourceFd};
 use std::{
     collections::{BTreeMap, VecDeque},
     io,
@@ -54,7 +54,7 @@ impl<T> Inbox<T> {
     fn new(poll: &Poll) -> io::Result<Self> {
         Ok(Self {
             queue: ArrayQueue::new(QUEUE),
-            waker: Waker::new(poll.registry(), WAKE)?,
+            waker: Waker::new(poll, WAKE)?,
             notified: AtomicBool::new(false),
         })
     }
@@ -162,8 +162,7 @@ pub struct Runtime {
     _wildcards: Arc<Vec<UdpSocket>>,
 }
 fn register(poll: &Poll, fd: i32, token: Token, interest: Interest) -> io::Result<()> {
-    poll.registry()
-        .register(&mut SourceFd(&fd), token, interest)
+    poll.register(fd, token, interest)
 }
 
 impl Runtime {
@@ -207,10 +206,19 @@ impl Runtime {
                 let tx_poll = Poll::new()?;
                 let socket = peer
                     .endpoint
-                    .map(|e| PeerSocket::connect(backend, port, e).map(Arc::new))
+                    .map(|e| {
+                        PeerSocket::connect(
+                            backend,
+                            port,
+                            e,
+                            Waker::new(&rx_poll, UDP)?,
+                            Waker::new(&tx_poll, UDP)?,
+                        )
+                        .map(Arc::new)
+                    })
                     .transpose()?;
                 if let Some(s) = &socket {
-                    register(&rx_poll, s.rx_fd(), UDP, Interest::READABLE)?;
+                    s.register_rx(&rx_poll, UDP)?;
                 }
                 let shared = Arc::new(SharedPeer {
                     rx: Inbox::new(&rx_poll)?,
@@ -395,9 +403,7 @@ impl SendWorker {
                 let control = std::mem::take(&mut *self.shared.control.lock().unwrap());
                 if let Some(socket) = control.socket {
                     if registered {
-                        self.poll
-                            .registry()
-                            .deregister(&mut SourceFd(&self.socket.as_ref().unwrap().tx_fd()))?;
+                        self.socket.as_ref().unwrap().deregister_tx(&self.poll)?;
                         registered = false;
                     }
                     self.socket = Some(socket);
@@ -515,12 +521,10 @@ impl SendWorker {
             }
             if let Some(socket) = &self.socket {
                 if blocked && !registered {
-                    register(&self.poll, socket.tx_fd(), UDP, socket.tx_interest())?;
+                    socket.register_tx(&self.poll, UDP)?;
                     registered = true;
                 } else if !blocked && registered {
-                    self.poll
-                        .registry()
-                        .deregister(&mut SourceFd(&socket.tx_fd()))?;
+                    socket.deregister_tx(&self.poll)?;
                     registered = false;
                 }
             }
@@ -537,7 +541,7 @@ impl SendWorker {
             #[cfg(feature = "io-profile")]
             let poll_span =
                 crate::platform::profile::Span::new(crate::platform::profile::Stage::Poll);
-            let result = self.poll.poll(
+            let result = self.poll.poll_active(
                 &mut events,
                 Some(if more {
                     Duration::ZERO
@@ -613,12 +617,16 @@ impl ReceiveWorker {
         if self.endpoint == Some(endpoint) && self.socket.is_some() {
             return Ok(());
         }
-        let socket = Arc::new(PeerSocket::connect(self.backend, self.port, endpoint)?);
-        register(&self.poll, socket.rx_fd(), UDP, Interest::READABLE)?;
+        let socket = Arc::new(PeerSocket::connect(
+            self.backend,
+            self.port,
+            endpoint,
+            Waker::new(&self.poll, UDP)?,
+            self.shared.tx.waker.with_token(UDP),
+        )?);
+        socket.register_rx(&self.poll, UDP)?;
         if let Some(old) = &self.socket {
-            self.poll
-                .registry()
-                .deregister(&mut SourceFd(&old.rx_fd()))?;
+            old.deregister_rx(&self.poll)?;
         }
         self.socket = Some(socket.clone());
         self.endpoint = Some(endpoint);
@@ -840,6 +848,8 @@ impl ReceiveWorker {
         self.readable[UDP.0] = self.socket.is_some();
         let mut receiver = Receiver::new(self.pool.clone());
         let mut writer = batch::Sender::new();
+        #[cfg(feature = "apple-coalesce")]
+        let mut coalescer = crate::platform::coalesce_macos::Coalescer::default();
         let mut events = Events::with_capacity(8);
         let mut snapshot_at = Instant::now();
         let mut blocked = false;
@@ -922,7 +932,12 @@ impl ReceiveWorker {
                     .injection_gate
                     .as_ref()
                     .map(|gate| gate.lock().unwrap());
-                match writer.flush(self.tun.fd.as_raw_fd(), true, &mut self.injection) {
+                #[cfg(feature = "apple-coalesce")]
+                let result =
+                    coalescer.flush(&mut writer, self.tun.fd.as_raw_fd(), &mut self.injection);
+                #[cfg(not(feature = "apple-coalesce"))]
+                let result = writer.flush(self.tun.fd.as_raw_fd(), true, &mut self.injection);
+                match result {
                     Ok(_) => {}
                     Err(e) if e.kind() == io::ErrorKind::WouldBlock => blocked = true,
                     Err(e) if e.kind() == io::ErrorKind::Interrupted => {}
@@ -934,8 +949,7 @@ impl ReceiveWorker {
                 registered = true;
             } else if !blocked && registered {
                 self.poll
-                    .registry()
-                    .deregister(&mut SourceFd(&self.tun.fd.as_raw_fd()))?;
+                    .deregister(self.tun.fd.as_raw_fd(), Interest::WRITABLE)?;
                 registered = false;
             }
             #[cfg(feature = "io-metrics")]
@@ -961,7 +975,7 @@ impl ReceiveWorker {
             #[cfg(feature = "io-profile")]
             let poll_span =
                 crate::platform::profile::Span::new(crate::platform::profile::Stage::Poll);
-            let result = self.poll.poll(&mut events, Some(timeout));
+            let result = self.poll.poll_active(&mut events, Some(timeout));
             #[cfg(feature = "io-profile")]
             drop(poll_span);
             match result {

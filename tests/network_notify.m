@@ -1,4 +1,4 @@
-// Exercise notification failures deterministically without creating a utun.
+// Exercise retained message/signal ownership without creating a utun.
 #import <Foundation/Foundation.h>
 #import <Network/Network.h>
 #include <assert.h>
@@ -8,36 +8,14 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-static int injectedError;
-static int calls;
-static ssize_t testSend(int fd, const void *buffer, size_t length, int flags);
-#define send testSend
 #include "../src/platform/network_flow.m"
-#undef send
 
-static ssize_t testSend(int fd, const void *buffer, size_t length, int flags) {
-    calls++;
-    if (injectedError) {
-        errno = injectedError;
-        injectedError = 0;
-        return -1;
-    }
-    return send(fd, buffer, length, flags);
-}
-static void ready(int kq, bool eof) {
-    struct kevent event;
-    struct timespec timeout = { .tv_sec = 1, .tv_nsec = 0 };
-    assert(kevent(kq, NULL, 0, &event, 1, &timeout) == 1);
-    assert(event.filter == EVFILT_READ);
-    assert(((event.flags & EV_EOF) != 0) == eof);
-}
 // Verify retained data ownership, FIFO order across ring wrap, partial drains,
 // the 128-message drain bound, and error propagation after the ring is empty.
 static void ring_test(void) {
     @autoreleasepool {
         INFlow *flow = [INFlow new];
         flow->ringLock = (os_unfair_lock)OS_UNFAIR_LOCK_INIT;
-        flow->rxWriter = flow->txWriter = -1;
         atomic_init(&flow->ready, false);
         atomic_init(&flow->closing, false);
         atomic_init(&flow->error, 0);
@@ -50,13 +28,13 @@ static void ring_test(void) {
             flow->packets[slot] = dispatch_data_create(&i, sizeof(i), NULL, DISPATCH_DATA_DESTRUCTOR_DEFAULT);
             flow->lengths[slot] = sizeof(i);
         }
-        uint8_t storage[RX_WINDOW][PACKET_CAPACITY];
-        uint8_t *buffers[RX_WINDOW];
-        size_t lengths[RX_WINDOW];
-        for (size_t i = 0; i < RX_WINDOW; i++) buffers[i] = storage[i];
+        uint8_t storage[RX_BATCH][PACKET_CAPACITY];
+        uint8_t *buffers[RX_BATCH];
+        size_t lengths[RX_BATCH];
+        for (size_t i = 0; i < RX_BATCH; i++) buffers[i] = storage[i];
         void *handle = (__bridge_retained void *)flow;
         for (uint64_t start = 0; start < RX_SLOTS;) {
-            size_t limit = start == 0 ? 3 : RX_WINDOW;
+            size_t limit = start == 0 ? 3 : RX_BATCH;
             int n = in_flow_receive(handle, buffers, lengths, limit);
             assert(n == (int)MIN(limit, RX_SLOTS - start));
             for (int i = 0; i < n; i++) {
@@ -67,48 +45,40 @@ static void ring_test(void) {
             }
             start += n;
         }
-        assert(in_flow_receive(handle, buffers, lengths, RX_WINDOW) == -EAGAIN);
+        assert(in_flow_receive(handle, buffers, lengths, RX_BATCH) == -EAGAIN);
         atomic_store(&flow->error, EIO);
-        assert(in_flow_receive(handle, buffers, lengths, RX_WINDOW) == -EIO);
+        assert(in_flow_receive(handle, buffers, lengths, RX_BATCH) == -EIO);
         in_flow_close(handle);
     }
 }
+typedef struct { unsigned rx, tx, released; } SignalCounts;
+static void wakeSignal(void *context, bool tx) {
+    SignalCounts *counts = context;
+    if (tx) counts->tx++; else counts->rx++;
+}
+static void releaseSignal(void *context) { ((SignalCounts *)context)->released++; }
+static void signal_test(void) {
+    SignalCounts counts = {0};
+    @autoreleasepool {
+        INFlow *flow = [INFlow new];
+        flow->ringLock = (os_unfair_lock)OS_UNFAIR_LOCK_INIT;
+        flow->wakeContext = &counts;
+        flow->wakeWorker = wakeSignal;
+        flow->releaseContext = releaseSignal;
+        flow.queue = dispatch_queue_create("test.network.signals", DISPATCH_QUEUE_SERIAL);
+        atomic_init(&flow->closing, false);
+        notify(flow, false);
+        notify(flow, true);
+        assert(counts.rx == 1 && counts.tx == 1 && counts.released == 0);
+        void *handle = (__bridge_retained void *)flow;
+        flow = nil;
+        in_flow_close(handle);
+    }
+    assert(counts.released == 1);
+}
 int main(void) {
     ring_test();
-    int pair[2];
-    assert(socketpair(AF_UNIX, SOCK_STREAM, 0, pair) == 0);
-    assert(fcntl(pair[0], F_SETFL, O_NONBLOCK) == 0);
-    assert(fcntl(pair[1], F_SETFL, O_NONBLOCK) == 0);
-    int kq = kqueue();
-    assert(kq >= 0);
-    struct kevent registration;
-    EV_SET(&registration, pair[1], EVFILT_READ, EV_ADD | EV_CLEAR, 0, 0, NULL);
-    assert(kevent(kq, &registration, 1, NULL, 0, NULL) == 0);
-    uint8_t buffer[1024];
-    injectedError = EINTR;
-    notify(pair[0]);
-    assert(calls == 2);
-    ready(kq, false);
-    assert(recv(pair[1], buffer, sizeof(buffer), MSG_DONTWAIT) == 1);
-
-    memset(buffer, 0, sizeof(buffer));
-    while (send(pair[0], buffer, sizeof(buffer), MSG_DONTWAIT) >= 0) {}
-    assert(errno == EAGAIN || errno == EWOULDBLOCK);
-    notify(pair[0]); // Already pending: EAGAIN must not close the channel.
-    ready(kq, false);
-    while (recv(pair[1], buffer, sizeof(buffer), MSG_DONTWAIT) > 0) {}
-    assert(errno == EAGAIN || errno == EWOULDBLOCK);
-    notify(pair[0]);
-    ready(kq, false);
-    assert(recv(pair[1], buffer, sizeof(buffer), MSG_DONTWAIT) == 1);
-
-    injectedError = ENOBUFS;
-    notify(pair[0]); // Unexpected failure must become readable EOF, not a stall.
-    ready(kq, true);
-    assert(recv(pair[1], buffer, sizeof(buffer), MSG_DONTWAIT) == 0);
-    close(pair[0]);
-    close(pair[1]);
-    close(kq);
-    puts("PASS ring ownership/wrap/partial drains; notification EINTR/full-channel/EOF");
+    signal_test();
+    puts("PASS ring ownership/wrap/partial drains; signal direction/lifetime");
     return 0;
 }

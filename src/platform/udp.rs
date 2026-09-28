@@ -1,7 +1,7 @@
 //! Connected peer transport. The daemon selects one backend at build time.
 use super::batch::{Received, Receiver, Sender};
+use super::readiness::{Interest, Poll, Token, Waker};
 use crate::packet::Packet;
-use mio::Interest;
 use socket2::{Domain, Protocol, Socket, Type};
 use std::{
     collections::VecDeque,
@@ -50,7 +50,14 @@ pub enum PeerSocket {
     Network(super::network::Socket),
 }
 impl PeerSocket {
-    pub fn connect(backend: Backend, port: u16, endpoint: SocketAddr) -> io::Result<Self> {
+    pub fn connect(
+        backend: Backend,
+        port: u16,
+        endpoint: SocketAddr,
+        rx: Waker,
+        tx: Waker,
+    ) -> io::Result<Self> {
+        let _ = (&rx, &tx);
         match backend {
             Backend::Bsd => {
                 let local = SocketAddr::new(
@@ -65,7 +72,7 @@ impl PeerSocket {
             }
             #[cfg(feature = "apple-network")]
             Backend::Network => Ok(Self::Network(super::network::Socket::connect(
-                port, endpoint,
+                port, endpoint, rx, tx,
             )?)),
         }
     }
@@ -73,22 +80,39 @@ impl PeerSocket {
         match self {
             Self::Bsd(s) => s.as_raw_fd(),
             #[cfg(feature = "apple-network")]
-            Self::Network(s) => s.rx_fd(),
+            Self::Network(_) => -1,
         }
     }
     pub fn tx_fd(&self) -> i32 {
         match self {
             Self::Bsd(s) => s.as_raw_fd(),
             #[cfg(feature = "apple-network")]
-            Self::Network(s) => s.tx_fd(),
+            Self::Network(_) => -1,
         }
     }
-    pub fn tx_interest(&self) -> Interest {
-        match self {
-            Self::Bsd(_) => Interest::WRITABLE,
-            #[cfg(feature = "apple-network")]
-            Self::Network(_) => Interest::READABLE,
+    pub fn register_rx(&self, poll: &Poll, token: Token) -> io::Result<()> {
+        if !self.is_network() {
+            poll.register(self.rx_fd(), token, Interest::READABLE)?;
         }
+        Ok(())
+    }
+    pub fn deregister_rx(&self, poll: &Poll) -> io::Result<()> {
+        if !self.is_network() {
+            poll.deregister(self.rx_fd(), Interest::READABLE)?;
+        }
+        Ok(())
+    }
+    pub fn register_tx(&self, poll: &Poll, token: Token) -> io::Result<()> {
+        if !self.is_network() {
+            poll.register(self.tx_fd(), token, Interest::WRITABLE)?;
+        }
+        Ok(())
+    }
+    pub fn deregister_tx(&self, poll: &Poll) -> io::Result<()> {
+        if !self.is_network() {
+            poll.deregister(self.tx_fd(), Interest::WRITABLE)?;
+        }
+        Ok(())
     }
     pub fn is_network(&self) -> bool {
         match self {

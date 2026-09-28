@@ -41,7 +41,11 @@ pub fn record(send: bool, notifications: usize, result: &io::Result<usize>) {
         }
     });
 }
-pub fn poll(blocking: bool, events: &mio::Events, udp: mio::Token) {
+pub fn poll(
+    blocking: bool,
+    events: &crate::platform::readiness::Events,
+    udp: crate::platform::readiness::Token,
+) {
     METRICS.with_borrow_mut(|m| {
         m.polls.calls += 1;
         m.polls.blocking += u64::from(blocking);

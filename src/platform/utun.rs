@@ -56,6 +56,32 @@ impl Utun {
                 (&addr as *const libc::sockaddr_ctl).cast(),
                 size_of::<libc::sockaddr_ctl>() as _,
             ))?;
+            // The packet limit alone does not enlarge the control socket's
+            // byte limit (XNU defaults to 512 KiB). Leave enough byte/mbuf room
+            // for 1024 maximum-size packets so packet-count flow control acts
+            // before ctl_enqueuembuf starts dropping bursts.
+            let receive_bytes: libc::c_int = 4 * 1024 * 1024;
+            check(libc::setsockopt(
+                raw,
+                libc::SOL_SOCKET,
+                libc::SO_RCVBUF,
+                (&receive_bytes as *const libc::c_int).cast(),
+                size_of::<libc::c_int>() as _,
+            ))?;
+            let mut actual_bytes: libc::c_int = 0;
+            let mut byte_len = size_of::<libc::c_int>() as libc::socklen_t;
+            check(libc::getsockopt(
+                raw,
+                libc::SOL_SOCKET,
+                libc::SO_RCVBUF,
+                (&mut actual_bytes as *mut libc::c_int).cast(),
+                &mut byte_len,
+            ))?;
+            if actual_bytes < receive_bytes {
+                return Err(io::Error::other(
+                    "utun receive buffer was clamped below 4 MiB",
+                ));
+            }
             // Darwin defaults to one pending packet, which prevents effective
             // recvmsg_x batches. Allow eight batches of 128 before flow control.
             // UTUN_OPT_MAX_PENDING_PACKETS from bsd/net/if_utun.h.
@@ -82,6 +108,7 @@ impl Utun {
                     "utun pending-packet limit was not applied",
                 ));
             }
+            eprintln!("utun queue: pending_packets={actual} receive_bytes={actual_bytes}");
             let mut name = [0u8; libc::IFNAMSIZ];
             let mut len = name.len() as libc::socklen_t;
             check(libc::getsockopt(

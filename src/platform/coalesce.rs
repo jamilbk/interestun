@@ -167,7 +167,10 @@ fn plain_options(mut options: &[u8]) -> bool {
 
 /// Combine only adjacent, compatible, in-order data already available in a
 /// worker's queue. Any other packet is a barrier, preserving all packet ordering.
-fn combine<'a>(mut packets: impl Iterator<Item = &'a [u8]>, output: &mut Vec<u8>) -> usize {
+pub(crate) fn combine<'a>(
+    mut packets: impl Iterator<Item = &'a [u8]>,
+    output: &mut Vec<u8>,
+) -> usize {
     output.clear();
     let Some(first) = packets.next().and_then(Segment::parse) else {
         return 1;
@@ -257,10 +260,10 @@ fn tcp_checksum(p: &[u8], ip: usize) -> u16 {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use crate::packet::{self, Pool};
-    fn tcp(ip: usize, seq: u32, payload: usize, flags: u8) -> Vec<u8> {
+    pub(crate) fn tcp(ip: usize, seq: u32, payload: usize, flags: u8) -> Vec<u8> {
         let mut p = vec![0; ip + 20 + payload];
         if ip == 20 {
             p[0] = 0x45;
@@ -301,7 +304,7 @@ mod tests {
         let sum = tcp_checksum(p, ip);
         p[ip + 16..ip + 18].copy_from_slice(&sum.to_be_bytes());
     }
-    fn packet(pool: &Pool, bytes: &[u8]) -> Packet {
+    pub(crate) fn packet(pool: &Pool, bytes: &[u8]) -> Packet {
         let mut p = Packet::new(pool).unwrap();
         p.buffer()[..bytes.len()].copy_from_slice(bytes);
         p.len = bytes.len();

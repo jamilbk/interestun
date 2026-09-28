@@ -1,0 +1,59 @@
+{
+  "baseline_commit": "307b5f4",
+  "host": "Apple M2 Pro; macOS 27.0 (26A428); en8 10 GbE",
+  "cipher": "AES-256-GCM",
+  "mtu": 1420,
+  "pending_packets": 1024,
+  "receive_byte_buffer_selected": 4194304,
+  "batch_selected": 128,
+  "initial_sweep_features": [
+    "apple-network",
+    "io-profile"
+  ],
+  "coalescing_variants": "coalesce and later include apple-coalesce",
+  "release_variants": [
+    "final-release-1",
+    "final-release-2",
+    "paced-release",
+    "utun4m",
+    "batch64-utun4m",
+    "selected-repeat"
+  ],
+  "cpu_method": "Daemon CPU-time delta from 0.5-second ps snapshots inside seconds 2 through the test duration; one core = 100 percent; does not include Windows daemon or iperf.",
+  "source_xnu": "f6217f891ac0bb64f3d375211650a4c1ff8ca1ea (published source, not claimed identical to the running kernel)",
+  "limitations": [
+    "Sequential experiments, no randomized A/B confidence intervals",
+    "Windows daemon revision and CPU not independently verified",
+    "No proof of Network.framework internal transport/channel/offload selection",
+    "Short-run maximum is not a sustained or absolute platform ceiling"
+  ],
+  "variant_configuration": {
+    "native-wake": "Native kqueue and direct callback signals, kernel probe each iteration; no coalescing.",
+    "active32": "native-wake plus one descriptor probe per 32 active iterations.",
+    "qos": "active32 plus USER_INITIATED QoS for worker/dispatch threads; no coalescing.",
+    "coalesce": "active32 plus batched TCP coalescing (initial experiment before local-address guard).",
+    "coalesce-parallel": "Same coalesce binary; iperf 4/8 streams.",
+    "shared-completions": "coalesce plus reused completion blocks with weak flow references.",
+    "shared-strong": "coalesce plus reused strong completion blocks and nonatomic immutable connection properties.",
+    "tcp-options": "Same shared-strong binary; iperf socket window and application zero-copy options.",
+    "ipv4-no-checksum": "Per-message callbacks restored; requested IPv4 UDP no-checksum. Failed experiment, reverted.",
+    "restored-local-coalesce": "active32 plus coalescing restricted to local destination addresses; normal checksums/callbacks.",
+    "owned-send-buffers": "restored-local-coalesce plus boxed Rust packet ownership passed to asynchronous dispatch-data destruction.",
+    "receive-window512": "restored-local-coalesce with 512 outstanding receives; drain batch remains 128.",
+    "final-release-1": "restored-local-coalesce, normal release without io-profile, utun byte buffer unchanged.",
+    "final-release-2": "Same release binary, second pass in different mode order.",
+    "paced-release": "Same release binary, iperf offered-rate pacing.",
+    "utun4m": "Release, 128 batch, 128 outstanding receives, 4 MiB utun SO_RCVBUF, coalescer ambiguous-error prefix hardened.",
+    "batch64-utun4m": "utun4m with I/O batch reduced to 64; receive request window still 128.",
+    "selected-repeat": "utun4m with 128 batch restored, final build."
+  },
+  "selected_binary_sha256": "f918b00ea320f02fe317c30d28454c1d369ef41f2d16743db16c244055e62564",
+  "validation": [
+    "cargo fmt --check",
+    "cargo clippy --locked --all-targets --all-features -- -D warnings",
+    "cargo test --locked --all-features",
+    "cargo test --locked --no-default-features",
+    "Native ring and signal ownership tests under AddressSanitizer",
+    "Live Windows TCP tunnel tests"
+  ]
+}

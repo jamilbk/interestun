@@ -89,3 +89,15 @@ Crypto remains independent and peer UDP sockets have one batch writer each.
 The concurrent multi-peer regression test passes with this guard. The original
 single-thread-per-peer design also allowed concurrent shared-utun writes across
 peers; the new simultaneous-traffic test exposed this existing vulnerability.
+
+## Follow-up: pending packets versus socket bytes
+
+The native-worker sweep kept 1024 pending packets but found utun output errors
+under TCP load. The independently configured control-socket receive byte limit
+was still XNU's 512 KiB default. The daemon now requests and verifies 4 MiB with
+`SO_RCVBUF`, so packet-count flow control fits within that capacity. A subsequent
+30-second send/reverse/duplex sequence recorded zero utun output errors, while
+TCP retransmissions remained. This fixes a local queue-capacity mismatch; it
+does not establish that all remaining loss is on Windows or that UDP offload
+absence explains the entire throughput limit. See the
+[native-worker sweep](native-worker-performance.md).
