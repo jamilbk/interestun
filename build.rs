@@ -6,6 +6,9 @@ fn main() {
     {
         let mut build = cc::Build::new();
         build.file("src/platform/network_flow.m");
+        if std::env::var_os("CARGO_FEATURE_APPLE_NETWORK_MULTIPLE").is_some() {
+            build.define("IN_NETWORK_MULTIPLE", None);
+        }
         if std::env::var_os("CARGO_FEATURE_NETWORK_BENCH").is_some() {
             build.file("examples/network_bench/network.m");
         }

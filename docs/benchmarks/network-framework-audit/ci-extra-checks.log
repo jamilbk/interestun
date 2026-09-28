@@ -1,0 +1,41 @@
+
+RUN cargo build --locked --features network-bench --example network_bench
+   Compiling interestun v0.1.0 (/Users/jamil/tmp/interestun)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.72s
+
+RUN python3 scripts/test-network-bench.py --binary /Users/jamil/.cache/cargo/target/debug/examples/network_bench
+PASS bsd raw batch=1 size=20 window=1: 257 unique datagrams
+PASS bsd raw batch=128 size=1420 window=8: 257 unique datagrams
+PASS bsd aes batch=1 size=20 window=1: 257 unique datagrams
+PASS bsd aes batch=128 size=1420 window=8: 257 unique datagrams
+PASS bsd chacha batch=1 size=20 window=1: 257 unique datagrams
+PASS bsd chacha batch=128 size=1420 window=8: 257 unique datagrams
+PASS network raw batch=1 size=20 window=1: 257 unique datagrams
+PASS network raw batch=128 size=1420 window=8: 257 unique datagrams
+PASS network aes batch=1 size=20 window=1: 257 unique datagrams
+PASS network aes batch=128 size=1420 window=8: 257 unique datagrams
+PASS network chacha batch=1 size=20 window=1: 257 unique datagrams
+PASS network chacha batch=128 size=1420 window=8: 257 unique datagrams
+
+RUN sh scripts/test-wg.sh
+  CC      wg.o
+  CC      config.o
+  CC      curve25519.o
+  CC      encoding.o
+  CC      genkey.o
+  CC      ipc.o
+  CC      pubkey.o
+  CC      set.o
+  CC      setconf.o
+  CC      show.o
+  CC      showconf.o
+  CC      terminal.o
+  LD      wg
+   Compiling interestun v0.1.0 (/Users/jamil/tmp/interestun)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.56s
+     Running tests/uapi.rs (/Users/jamil/.cache/cargo/target/debug/deps/uapi-f886d7021d118371)
+
+running 1 test
+test ipc_get_set_invalid_request_and_optional_real_wg ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s

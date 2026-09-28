@@ -1,0 +1,4 @@
+utun queue: pending_packets=1024 receive_bytes=4194304
+utun14 ready; UAPI /var/run/wireguard/utun14.sock; cipher Aes256Gcm; UDP backend Network; batch syscalls true
+Network.framework receive: experimental private receive_multiple (max 256)
+Network.framework peer: [C1 connected 192.168.1.226:51820 udp, local: 0.0.0.0:51820, attribution: developer, path satisfied (Path is satisfied), viable, interface: en8, ipv4, ipv6, dns]

@@ -1,0 +1,15 @@
+
+RUN plain
+PASS Network.framework ring ownership, wrap, partial drains, concurrent producer/consumer, and lifetime
+PASS Network.framework ring ownership, wrap, partial drains, concurrent producer/consumer, and lifetime
+PASS private receive_multiple host ABI: boundaries, batch limit, lone packet, cancellation
+
+RUN address
+PASS Network.framework ring ownership, wrap, partial drains, concurrent producer/consumer, and lifetime
+PASS Network.framework ring ownership, wrap, partial drains, concurrent producer/consumer, and lifetime
+PASS private receive_multiple host ABI: boundaries, batch limit, lone packet, cancellation
+
+RUN thread
+PASS Network.framework ring ownership, wrap, partial drains, concurrent producer/consumer, and lifetime
+PASS Network.framework ring ownership, wrap, partial drains, concurrent producer/consumer, and lifetime
+PASS private receive_multiple host ABI: boundaries, batch limit, lone packet, cancellation

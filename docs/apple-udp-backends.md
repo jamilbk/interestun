@@ -5,14 +5,24 @@ BSD UDP listener or peer socket in this mode and never falls back to BSD.
 Rebuild to compare the implementations in separate runs:
 
 ```sh
-# Network.framework (default feature apple-network)
+# Network.framework with experimental private receive batching (default)
 CARGO_TARGET_DIR=target cargo build --release --locked
 sudo ./target/release/interestun utun
+
+# Public Network.framework APIs only; same UDP backend and TCP coalescing
+CARGO_TARGET_DIR=target cargo build --release --locked --no-default-features --features apple-network,apple-coalesce
 
 # BSD comparison build; stop the previous daemon before starting this one
 CARGO_TARGET_DIR=target cargo build --release --locked --no-default-features
 sudo ./target/release/interestun utun
 ```
+
+The `apple-network-multiple` default enables private `nw_connection_receive_multiple`
+SPI, validated on macOS 27.0 (26A428). Its signature and last-in-group callback
+semantics are inferred from that installed implementation, not a supported Apple
+contract. Missing symbols fail visibly with `ENOTSUP`; rebuild with the public
+Network.framework selection above. An exported symbol alone does not establish
+ABI compatibility on another release. See the [audit and host ABI test](network-framework-audit.md).
 
 There is no runtime `--udp-backend` switch. The startup log reports the compiled
 selection. Configuration updates and rollback preserve it. Windows remains on
@@ -47,11 +57,16 @@ TX key/counter and RX handshake/replay ownership.
 
 Each Apple flow has a serial dispatch callback queue, at most 1024 sends awaiting
 content-processed callbacks, and a 1024-slot ring retaining immutable framework
-messages. Up to 128 outstanding message receives reserve capacity in that ring.
-Receive posting is batched with `nw_connection_batch`; a full ring stops posting
-until Rust drains it. A short lock protects the ring; atomics protect send credits
-and cross-thread state. Send and receive calls never synchronously wait for the
-callback queue. Cancellation alone uses a lifecycle barrier.
+messages. The default posts one receive request for 1–256 messages, publishes
+each returned group once, and signals Rust once per group. The public API build
+posts up to 128 individual message receives using `nw_connection_batch`.
+Both reserve ring capacity before posting and stop posting when the ring fills.
+
+The queue has one producer and one consumer, with release/acquire cursor
+publication instead of a mutex. Rust guards concurrent receive calls once per
+batch to enforce that contract. Send and receive calls never synchronously wait
+for the callback queue. Cancellation alone uses a lifecycle barrier; callbacks
+release any group abandoned before publication.
 
 The macOS workers use a small native kqueue driver. Network.framework callbacks
 publish bits in an atomic pending-work mask, then trigger `EVFILT_USER` only when
@@ -67,18 +82,22 @@ kqueue, using the existing control/timer deadline. This bounded probe interval
 prevents a continuously active source from starving another descriptor.
 Network.framework still drives its own I/O and dispatch callback delivery.
 
-RX notification is coalesced after already-queued callbacks, on an
-empty-to-nonempty transition; TX notification occurs on full-to-writable credit
-transitions. No timer or packet-count threshold delays a lone received message.
-Workers keep draining until `WouldBlock`, including after partial batches.
+The default signals RX at the end of each framework receive group. The public
+API variant coalesces notifications after already-queued callbacks. TX notification
+occurs on full-to-writable credit transitions. No timer or minimum batch greater
+than one delays a lone received message. Workers keep draining until `WouldBlock`,
+including after partial batches.
 
-Rust drains up to 128 retained messages under the ring lock, then copies directly
-into cached packet-pool buffers outside the lock. Unused buffers stay cached.
-This removes the old payload staging copy and per-call checkout/return churn;
-it is not zero-copy. TX still makes owned dispatch-data copies before returning
-to Rust, and partial accepted sends retain their tails. No Rust buffer pointer
-escapes a synchronous bridge call. Callbacks retain their state and worker signals through cancellation. Connection waiting/failure and asynchronous I/O
-errors fail visibly; they do not select another backend.
+Rust drains up to 128 retained message references, releases the ring slots, then
+copies directly into cached packet-pool buffers. Unused buffers stay cached.
+There is no staging-payload copy or ring mutex, but this is not zero-copy: received
+framework storage is immutable and authenticated decryption requires writable
+storage. TX still makes owned dispatch-data copies before returning to Rust,
+and partial accepted sends retain their tails. No Rust buffer pointer escapes
+a synchronous bridge call. Several ownership-transfer TX experiments were slower;
+see the [audit](network-framework-audit.md). Callbacks retain their state and
+worker signals through cancellation. Connection waiting/failure and asynchronous
+I/O errors fail visibly; they do not select another backend.
 
 The utun control socket has a verified 4 MiB receive buffer as well as its
 1024-packet pending limit. The two limits are independent.
@@ -91,7 +110,7 @@ Non-TCP, incompatible, and forwarded packets remain separate. Local addresses ar
 refreshed once per second. Aggregation uses only packets already queued, adding
 no timer delay. Scratch buffers are preallocated. This reduces kernel packet/ACK
 work; it does add a copy for merged payloads. To isolate this feature while
-keeping Network.framework, rebuild with `--no-default-features --features apple-network`.
+keeping Network.framework, rebuild with `--no-default-features --features apple-network-multiple`.
 For a BSD comparison with the same coalescing, use
 `--no-default-features --features apple-coalesce`.
 

@@ -8,6 +8,7 @@ use std::{
     io,
     net::SocketAddr,
     ptr::NonNull,
+    sync::atomic::{AtomicBool, Ordering},
 };
 
 const _: () = assert!(crate::packet::CAPACITY == 2048);
@@ -45,8 +46,16 @@ unsafe extern "C" {
 pub struct Socket {
     handle: NonNull<c_void>,
     endpoint: SocketAddr,
+    receiving: AtomicBool,
 }
-// SAFETY: C protects its ring with a lock and cross-thread state with atomics.
+struct ReceiveGuard<'a>(&'a AtomicBool);
+impl Drop for ReceiveGuard<'_> {
+    fn drop(&mut self) {
+        self.0.store(false, Ordering::Release);
+    }
+}
+// SAFETY: C publishes its SPSC ring with atomics; the receive guard enforces one
+// consumer even if callers use different Receiver instances concurrently.
 // Async callbacks retain immutable framework buffers, never Rust pointers.
 // Arc ownership prevents close racing a Rust call; RX scratch belongs to its worker.
 unsafe impl Send for Socket {}
@@ -106,7 +115,11 @@ impl Socket {
             )
         };
         let handle = NonNull::new(handle).ok_or_else(io::Error::last_os_error)?;
-        Ok(Self { handle, endpoint })
+        Ok(Self {
+            handle,
+            endpoint,
+            receiving: AtomicBool::new(false),
+        })
     }
     pub fn flush(&self, queue: &mut VecDeque<Packet>) -> io::Result<usize> {
         if queue.is_empty() {
@@ -139,6 +152,10 @@ impl Socket {
         receiver: &mut Receiver,
         mut consume: impl FnMut(Received),
     ) -> io::Result<usize> {
+        if self.receiving.swap(true, Ordering::Acquire) {
+            return Err(io::ErrorKind::WouldBlock.into());
+        }
+        let _guard = ReceiveGuard(&self.receiving);
         #[cfg(feature = "io-profile")]
         let setup = Span::new(Stage::ReceiveSetup);
         let packets = receiver.receive_buffers();

@@ -24,8 +24,13 @@ named-pipe control, and testing, see [Windows backend](docs/windows.md).
 Requires Rust 1.88+ and the standard `wireguard-tools` package for `wg`.
 The dependency is pinned to a commit on `jamilbk/boringtun`.
 
-The macOS experiment now defaults to Network.framework-only UDP. Active peers
-must have configured endpoints; automatic discovery/roaming is not yet supported
+The macOS experiment now defaults to Network.framework-only UDP.
+The experimental `apple-network-multiple` default uses private Apple receive
+batching SPI, validated on macOS 27.0 (26A428). For public Network.framework APIs
+only, build with `--no-default-features --features apple-network,apple-coalesce`.
+See the [framework audit](docs/network-framework-audit.md) for results and limits.
+
+Active peers must have configured endpoints; automatic discovery/roaming is not yet supported
 in this backend. Rebuild with `--no-default-features` for the BSD comparison.
 See [Apple UDP backends](docs/apple-udp-backends.md) for limitations and
 [native worker measurements](docs/native-worker-performance.md) for current results.

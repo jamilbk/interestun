@@ -1,0 +1,38 @@
+{
+  "baseline_commit": "630e9dcff4290ff7f3471576db2be8cd266374bc",
+  "baseline_binary_sha256": "f918b00ea320f02fe317c30d28454c1d369ef41f2d16743db16c244055e62564",
+  "selected_binary_sha256": "adf6e467e86f60d08e6caf809bac1dd217892d416cf67321115630df159630b8",
+  "os": "ProductName:\t\tmacOS\nProductVersion:\t\t27.0\nBuildVersion:\t\t26A428\n",
+  "hardware": "Apple M2 Pro",
+  "cache_line_bytes": 128,
+  "link": "en8 10 GbE",
+  "outer_addresses": [
+    "192.168.1.211:51820",
+    "192.168.1.226:51820"
+  ],
+  "inner_addresses": [
+    "10.20.0.2",
+    "10.20.0.1"
+  ],
+  "cipher": "AES-256-GCM",
+  "mtu": 1420,
+  "utun": "utun14",
+  "utun_pending": 1024,
+  "utun_receive_bytes": 4194304,
+  "rust_utun_batch": 128,
+  "selected_framework_receive_max": 256,
+  "selected_ring_slots": 1024,
+  "selected_framework_send_credits": 1024,
+  "selected_features": [
+    "apple-network-multiple",
+    "apple-coalesce"
+  ],
+  "benchmark_harness": "../macos-native-workers/measure.py",
+  "notes": [
+    "All traffic is TCP iperf encapsulated inside encrypted UDP to the Windows peer.",
+    "Exploratory variants were sequential screening, not randomized trials.",
+    "No-copy send variants were rejected; current TX still copies.",
+    "Original and candidate throughput varied; the repeatable gain is receive CPU."
+  ],
+  "selected_bridge_sha256": "b15b2ebf3f81bbddcac3ec1d7eb9fa4960be1590c3335170c508ca1ffe8bbbfe"
+}

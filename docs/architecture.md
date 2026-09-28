@@ -132,7 +132,7 @@ threading, backpressure, control ownership, and validation differences.
 
 The macOS experiment selects the [UDP backend at build time](apple-udp-backends.md).
 Network.framework is now the default and uses no BSD UDP listeners. It retains
-BoringTun's TX/RX ownership, with a bounded retained-message ring and atomic
+BoringTun's TX/RX ownership, with a bounded SPSC retained-message ring and atomic
 worker signals. A native kqueue loop replaces mio on macOS, and active batches
 usually collect callback signals without a kernel call. Default macOS builds
 coalesce compatible authenticated TCP segments for local delivery before utun
@@ -149,3 +149,9 @@ hand ownership between peer workers without rekeying. Neither improvement should
 be claimed until benchmarked under the same packet/byte accounting.
 
 See the [native worker measurements](native-worker-performance.md) for the current optimization sweep.
+
+The [Network.framework audit](network-framework-audit.md) records the subsequent
+receive batching change, private SPI compatibility limits, and rejected payload
+ownership experiments. The default experimental build receives groups of up to
+256 datagrams and publishes/signals once per group; Rust and utun batches remain
+128 with 1024 pending slots.

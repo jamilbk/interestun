@@ -1,26 +1,46 @@
-// Callback delivery remains serial; packet handoff uses a short ring lock.
+// Callback delivery remains serial; packet handoff uses a bounded SPSC ring.
 // Rust never waits for the callback queue in the send/receive hot paths.
 #import <Foundation/Foundation.h>
 #import <Network/Network.h>
 #include <errno.h>
-#include <os/lock.h>
+#include <dlfcn.h>
 #include <stdatomic.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
 #define RX_SLOTS 1024
+#ifdef IN_NETWORK_MULTIPLE
+#define RX_WINDOW 256
+#else
 #define RX_WINDOW 128
+#endif
 #define RX_BATCH 128
 #define TX_SLOTS 1024
 #define PACKET_CAPACITY 2048
 
+#ifdef IN_NETWORK_MULTIPLE
+// Private SPI: verified against macOS 27.0 (26A428), not a public SDK contract.
+// The final callback flag means last in this group, NOT message completeness.
+// See docs/network-framework-audit.md and tests/network_multiple.m.
+typedef void (*INReceiveMultiple)(nw_connection_t, uint32_t, uint32_t, nw_connection_receive_completion_t);
+#endif
+
 @interface INFlow : NSObject {
 @public
-    os_unfair_lock ringLock;
-    dispatch_data_t packets[RX_SLOTS];
+    // One producer (the serial callback queue) and one Rust receive consumer.
+    void *packets[RX_SLOTS];
     size_t lengths[RX_SLOTS];
-    size_t head, count, reserved;
-    bool refillScheduled, notifyScheduled; // ringLock protects these and the ring.
+    _Atomic(size_t) readIndex;
+    char readPadding[128];
+    _Atomic(size_t) writeIndex;
+    char writePadding[128];
+    _Atomic(size_t) reserved;
+    _Atomic(bool) refillScheduled;
+#ifdef IN_NETWORK_MULTIPLE
+    INReceiveMultiple receiveMultiple;
+#else
+    bool notifyScheduled; // Only the callback queue accesses this.
+#endif
     _Atomic(size_t) pending;
     _Atomic(int) error;
     _Atomic(bool) closing, ready;
@@ -28,11 +48,14 @@
     void (*wakeWorker)(void *, bool);
     void (*releaseContext)(void *);
 }
-@property nw_connection_t connection;
-@property dispatch_queue_t queue;
+// Set once before publishing the handle; immutable during worker access.
+@property (nonatomic, strong) nw_connection_t connection;
+@property (nonatomic, strong) dispatch_queue_t queue;
 - (void)refill;
 - (void)scheduleRefill;
+#ifndef IN_NETWORK_MULTIPLE
 - (void)scheduleNotify;
+#endif
 @end
 
 static void notify(INFlow *flow, bool tx) {
@@ -53,43 +76,92 @@ static void fail(INFlow *flow, int error) {
 - (void)dealloc {
     if (releaseContext) releaseContext(wakeContext);
 }
+#ifndef IN_NETWORK_MULTIPLE
 - (void)scheduleNotify {
-    os_unfair_lock_lock(&ringLock);
-    bool schedule = !notifyScheduled && count != 0;
-    if (schedule) notifyScheduled = true;
-    os_unfair_lock_unlock(&ringLock);
-    if (!schedule) return;
-    // Run after callbacks already queued for this batch. No timer or minimum
-    // packet threshold: a lone handshake/datagram is notified too.
+    if (notifyScheduled) return;
+    notifyScheduled = true;
+    // Always schedule a notification for a published group. Testing an
+    // empty-to-nonempty transition from two independently changing cursors can
+    // miss a consumer's final drain. This task also handles a lone datagram.
     dispatch_async(self.queue, ^{
-        os_unfair_lock_lock(&self->ringLock);
         self->notifyScheduled = false;
-        bool queued = self->count != 0;
-        os_unfair_lock_unlock(&self->ringLock);
-        if (queued && !atomic_load_explicit(&self->closing, memory_order_acquire)) notify(self, false);
+        if (atomic_load_explicit(&self->writeIndex, memory_order_acquire) !=
+            atomic_load_explicit(&self->readIndex, memory_order_acquire) &&
+            !atomic_load_explicit(&self->closing, memory_order_acquire)) notify(self, false);
     });
 }
+#endif
 - (void)scheduleRefill {
-    os_unfair_lock_lock(&ringLock);
-    bool schedule = !refillScheduled && reserved <= RX_WINDOW / 2 && count + reserved < RX_SLOTS;
-    if (schedule) refillScheduled = true;
-    os_unfair_lock_unlock(&ringLock);
-    if (!schedule) return;
+    if (atomic_load_explicit(&reserved, memory_order_relaxed) > RX_WINDOW / 2 ||
+        !atomic_load_explicit(&ready, memory_order_acquire) ||
+        atomic_load_explicit(&closing, memory_order_acquire) ||
+        atomic_exchange_explicit(&refillScheduled, true, memory_order_acq_rel)) return;
     dispatch_async(self.queue, ^{
-        os_unfair_lock_lock(&self->ringLock);
-        self->refillScheduled = false;
-        os_unfair_lock_unlock(&self->ringLock);
+        atomic_store_explicit(&self->refillScheduled, false, memory_order_release);
         [self refill];
     });
 }
+#ifdef IN_NETWORK_MULTIPLE
+- (void)refill {
+    if (atomic_load_explicit(&closing, memory_order_acquire) ||
+        atomic_load_explicit(&error, memory_order_acquire) ||
+        !atomic_load_explicit(&ready, memory_order_acquire) ||
+        atomic_load_explicit(&reserved, memory_order_relaxed)) return;
+    size_t start = atomic_load_explicit(&writeIndex, memory_order_relaxed);
+    size_t read = atomic_load_explicit(&readIndex, memory_order_acquire);
+    size_t n = MIN(RX_WINDOW, RX_SLOTS - (start - read));
+    if (!n) return;
+    atomic_store_explicit(&reserved, n, memory_order_relaxed);
+    __block size_t write = start;
+    receiveMultiple(self.connection, 1, (uint32_t)n,
+        ^(dispatch_data_t data, nw_content_context_t context, bool last, nw_error_t e) {
+            (void)context;
+            if (atomic_load_explicit(&self->closing, memory_order_acquire)) {
+                // Close can begin between inline callbacks in this group.
+                // Those references were never published to the Rust consumer.
+                if (last) {
+                    for (size_t i = start; i != write; i++) {
+                        dispatch_data_t abandoned = (__bridge_transfer dispatch_data_t)self->packets[i % RX_SLOTS];
+                        (void)abandoned;
+                    }
+                    atomic_store_explicit(&self->reserved, 0, memory_order_relaxed);
+                }
+                return;
+            }
+            size_t length = data ? dispatch_data_get_size(data) : 0;
+            if (!e && length > 0 && length <= PACKET_CAPACITY) {
+                if (write - start >= n) {
+                    fail(self, EOVERFLOW);
+                } else {
+                    size_t slot = write++ % RX_SLOTS;
+                    self->packets[slot] = (__bridge_retained void *)data;
+                    self->lengths[slot] = length;
+                }
+            }
+            if (e) fail(self, posix_error(e));
+            // This SPI calls the block inline for each datagram in its batch.
+            // The boolean means LAST IN BATCH, not message completeness.
+            if (last) {
+                // A consumer acquiring this publication must also observe
+                // that reservation has ended, so it can request a refill if
+                // this group fills the ring before the producer posts again.
+                atomic_store_explicit(&self->reserved, 0, memory_order_relaxed);
+                atomic_store_explicit(&self->writeIndex, write, memory_order_release);
+                if (write != start) notify(self, false);
+                [self refill];
+            }
+        });
+}
+#else
 - (void)refill {
     if (atomic_load_explicit(&closing, memory_order_acquire) ||
         atomic_load_explicit(&error, memory_order_acquire) ||
         !atomic_load_explicit(&ready, memory_order_acquire)) return;
-    os_unfair_lock_lock(&ringLock);
-    size_t n = MIN(RX_WINDOW - reserved, RX_SLOTS - count - reserved);
-    reserved += n; // Reserve ring capacity for every outstanding callback.
-    os_unfair_lock_unlock(&ringLock);
+    size_t write = atomic_load_explicit(&writeIndex, memory_order_relaxed);
+    size_t read = atomic_load_explicit(&readIndex, memory_order_acquire);
+    size_t posted = atomic_load_explicit(&reserved, memory_order_relaxed);
+    size_t n = MIN(RX_WINDOW - posted, RX_SLOTS - (write - read) - posted);
+    atomic_store_explicit(&reserved, posted + n, memory_order_relaxed);
     if (!n) return;
     nw_connection_batch(self.connection, ^{
         for (size_t i = 0; i < n; i++) {
@@ -98,38 +170,52 @@ static void fail(INFlow *flow, int error) {
                 if (atomic_load_explicit(&self->closing, memory_order_acquire)) return;
                 size_t length = data ? dispatch_data_get_size(data) : 0;
                 bool valid = !e && complete && length > 0 && length <= PACKET_CAPACITY;
-                os_unfair_lock_lock(&self->ringLock);
-                self->reserved--;
-                bool wasEmpty = self->count == 0;
+                atomic_fetch_sub_explicit(&self->reserved, 1, memory_order_relaxed);
                 if (valid) {
-                    size_t slot = (self->head + self->count) % RX_SLOTS;
-                    self->packets[slot] = data; // ARC retains immutable framework storage.
+                    size_t write = atomic_load_explicit(&self->writeIndex, memory_order_relaxed);
+                    size_t slot = write % RX_SLOTS;
+                    self->packets[slot] = (__bridge_retained void *)data;
                     self->lengths[slot] = length;
-                    self->count++;
+                    atomic_store_explicit(&self->writeIndex, write + 1, memory_order_release);
+                    [self scheduleNotify];
                 }
-                os_unfair_lock_unlock(&self->ringLock);
                 if (e) { fail(self, posix_error(e)); return; }
-                if (valid && wasEmpty) [self scheduleNotify];
                 [self scheduleRefill];
 
             });
         }
     });
 }
+#endif
+
 @end
 
 void *in_flow_open(const char *host, const char *port, const char *localHost,
                    const char *localPort, void *context, void (*wake)(void *, bool), void (*release)(void *)) {
     @autoreleasepool {
         INFlow *flow = [INFlow new];
-        flow->ringLock = (os_unfair_lock)OS_UNFAIR_LOCK_INIT;
+        atomic_init(&flow->readIndex, 0);
+        atomic_init(&flow->writeIndex, 0);
+        atomic_init(&flow->reserved, 0);
         atomic_init(&flow->pending, 0);
         atomic_init(&flow->error, 0);
         atomic_init(&flow->closing, false);
         atomic_init(&flow->ready, false);
+        atomic_init(&flow->refillScheduled, false);
         flow->wakeContext = context;
         flow->wakeWorker = wake;
         flow->releaseContext = release;
+        #ifdef IN_NETWORK_MULTIPLE
+        flow->receiveMultiple = (INReceiveMultiple)dlsym(RTLD_DEFAULT, "nw_connection_receive_multiple");
+        if (!flow->receiveMultiple) {
+            fprintf(stderr, "Network.framework: private receive_multiple SPI unavailable; rebuild without apple-network-multiple\n");
+            errno = ENOTSUP;
+            return NULL;
+        }
+        fprintf(stderr, "Network.framework receive: experimental private receive_multiple (max %d)\n", RX_WINDOW);
+        #else
+        fprintf(stderr, "Network.framework receive: public receive_message (window %d)\n", RX_WINDOW);
+        #endif
         flow.queue = dispatch_queue_create("interestun.udp.network", DISPATCH_QUEUE_SERIAL);
         nw_parameters_t parameters = nw_parameters_create_secure_udp(
             NW_PARAMETERS_DISABLE_PROTOCOL, NW_PARAMETERS_DEFAULT_CONFIGURATION);
@@ -191,20 +277,19 @@ int in_flow_receive(void *handle, uint8_t *const *buffers, size_t *lengths, size
     @autoreleasepool {
         INFlow *flow = (__bridge INFlow *)handle;
         dispatch_data_t batch[RX_BATCH];
-        os_unfair_lock_lock(&flow->ringLock);
-        size_t available = MIN(MIN(capacity, RX_BATCH), flow->count);
+        size_t read = atomic_load_explicit(&flow->readIndex, memory_order_relaxed);
+        size_t write = atomic_load_explicit(&flow->writeIndex, memory_order_acquire);
+        size_t available = MIN(MIN(capacity, RX_BATCH), write - read);
         for (size_t i = 0; i < available; i++) {
-            size_t slot = flow->head;
-            batch[i] = flow->packets[slot];
-            flow->packets[slot] = nil;
+            size_t slot = (read + i) % RX_SLOTS;
+            batch[i] = (__bridge_transfer dispatch_data_t)flow->packets[slot];
             lengths[i] = flow->lengths[slot];
-            flow->head = (slot + 1) % RX_SLOTS;
         }
-        flow->count -= available;
-        os_unfair_lock_unlock(&flow->ringLock);
+        // Release slots only after their references have moved into this batch.
+        atomic_store_explicit(&flow->readIndex, read + available, memory_order_release);
         if (available) [flow scheduleRefill];
         // No staging-payload copy and no dispatch_sync: transfer retained data
-        // references under the lock, then copy directly into Rust's cached slots.
+        // references through the SPSC ring, then copy into Rust's cached slots.
         for (size_t i = 0; i < available; i++) {
             dispatch_data_apply(batch[i], ^bool(dispatch_data_t region, size_t offset, const void *buffer, size_t size) {
                 (void)region;
@@ -225,10 +310,13 @@ void in_flow_close(void *handle) {
         dispatch_sync(flow.queue, ^{
             nw_connection_set_state_changed_handler(flow.connection, nil);
             nw_connection_cancel(flow.connection);
-            os_unfair_lock_lock(&flow->ringLock);
-            for (size_t i = 0; i < RX_SLOTS; i++) flow->packets[i] = nil;
-            flow->count = 0;
-            os_unfair_lock_unlock(&flow->ringLock);
+            size_t read = atomic_load_explicit(&flow->readIndex, memory_order_relaxed);
+            size_t write = atomic_load_explicit(&flow->writeIndex, memory_order_acquire);
+            for (; read != write; read++) {
+                dispatch_data_t data = (__bridge_transfer dispatch_data_t)flow->packets[read % RX_SLOTS];
+                (void)data;
+            }
+            atomic_store_explicit(&flow->readIndex, write, memory_order_release);
         });
     }
 }

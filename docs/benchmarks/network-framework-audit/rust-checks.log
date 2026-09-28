@@ -1,0 +1,271 @@
+
+RUN cargo fmt --check
+
+RUN cargo clippy --locked --all-targets --all-features -- -D warnings
+   Compiling interestun v0.1.0 (/Users/jamil/tmp/interestun)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.84s
+
+RUN cargo test --locked --all-features
+   Compiling interestun v0.1.0 (/Users/jamil/tmp/interestun)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.78s
+     Running unittests src/lib.rs (/Users/jamil/.cache/cargo/target/debug/deps/interestun-dad7ce69d8a08750)
+
+running 16 tests
+test platform::coalesce::tests::timestamps_must_match_and_options_must_be_understood ... ok
+test platform::coalesce::tests::coalesces_v4_v6_wraparound_odd_lengths_and_psh ... ok
+test platform::coalesce::tests::ring_full_preserves_prepared_bytes_and_queue_order ... ok
+test config::tests::transactional_and_prefix_transfer ... ok
+test platform::batch::tests::pool_exhaustion_is_not_socket_would_block ... ok
+test platform::coalesce::tests::incompatible_segments_and_bad_checksums_are_barriers ... ok
+test platform::readiness::tests::active_work_still_probes_descriptors_and_observes_callbacks ... ok
+test platform::batch::tests::maximum_utun_packet_roundtrips_with_header_space ... ok
+test platform::readiness::tests::coalesces_callbacks_and_preserves_descriptor_edges ... ok
+test platform::batch::tests::truncation_and_invalid_utun_family_are_dropped ... ok
+test platform::coalesce_macos::tests::local_delivery_merges_but_forwarded_packets_keep_their_mtu ... ok
+test platform::coalesce::tests::fairness_budget_requests_immediate_progress_but_blocking_does_not ... ok
+test platform::batch::tests::layout_and_connected_udp_batch ... ok
+test platform::coalesce::tests::rejects_fragments_options_and_oversize_aggregates ... ok
+test platform::coalesce::tests::checksum_matches_scalar_reference_on_unaligned_odd_and_large_slices ... ok
+test platform::readiness::tests::callback_racing_sleep_is_never_lost ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running unittests src/main.rs (/Users/jamil/.cache/cargo/target/debug/deps/interestun-c637c889fc1bd7eb)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/ciphers.rs (/Users/jamil/.cache/cargo/target/debug/deps/ciphers-e61d4dea6246fa74)
+
+running 2 tests
+test mismatched_suite_fails_handshake ... ok
+test both_suites_handshake_transport_replay_and_tamper ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/dataplane.rs (/Users/jamil/.cache/cargo/target/debug/deps/dataplane-459b4a7a863f540d)
+
+running 4 tests
+test network_framework_rejects_unknown_endpoint_without_fallback ... ok
+Network.framework receive: experimental private receive_multiple (max 256)
+Network.framework receive: experimental private receive_multiple (max 256)
+Network.framework peer: [C1 connected ::1.59718 udp, local: ::.0, attribution: developer, path satisfied (Path is satisfied), viable, interface: lo0]
+Network.framework peer: [C2 connected 127.0.0.1:59248 udp, local: 0.0.0.0:0, attribution: developer, path satisfied (Path is satisfied), viable, interface: lo0]
+test only_authenticated_packets_roam_the_udp_endpoint ... ok
+Network.framework receive: experimental private receive_multiple (max 256)
+Network.framework receive: experimental private receive_multiple (max 256)
+Network.framework peer: [C3 connected ::1.49635 udp, local: ::.0, attribution: developer, path satisfied (Path is satisfied), viable, interface: lo0]
+Network.framework peer: [C4 connected 127.0.0.1:52343 udp, local: 0.0.0.0:0, attribution: developer, path satisfied (Path is satisfied), viable, interface: lo0]
+test two_peers_share_adapter_and_use_their_own_workers ... ok
+test network_framework_configured_peers_against_wireguard_fixtures ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.35s
+
+     Running tests/live_macos.rs (/Users/jamil/.cache/cargo/target/debug/deps/live_macos-7de986703fa7902b)
+
+running 1 test
+test real_utun_two_peers_ipv4_ipv6_both_ciphers ... ignored, creates real utun and temporary test routes; requires configured noninteractive sudo
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/uapi.rs (/Users/jamil/.cache/cargo/target/debug/deps/uapi-8b5c80417d7ed9c6)
+
+running 1 test
+test ipc_get_set_invalid_request_and_optional_real_wg ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/utun_privileged.rs (/Users/jamil/.cache/cargo/target/debug/deps/utun_privileged-553c6adc37745082)
+
+running 1 test
+test open_real_utun_and_verify_mtu ... ignored, requires root and creates a real temporary BSD utun
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/wintun_privileged.rs (/Users/jamil/.cache/cargo/target/debug/deps/wintun_privileged-ed50fcc0cb7e0ff0)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests interestun
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+RUN cargo test --locked --no-default-features --features apple-network,apple-coalesce
+   Compiling interestun v0.1.0 (/Users/jamil/tmp/interestun)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.23s
+     Running unittests src/lib.rs (/Users/jamil/.cache/cargo/target/debug/deps/interestun-765ab67ea7c4cde0)
+
+running 16 tests
+test platform::coalesce::tests::timestamps_must_match_and_options_must_be_understood ... ok
+test platform::coalesce::tests::coalesces_v4_v6_wraparound_odd_lengths_and_psh ... ok
+test platform::coalesce::tests::ring_full_preserves_prepared_bytes_and_queue_order ... ok
+test config::tests::transactional_and_prefix_transfer ... ok
+test platform::coalesce::tests::incompatible_segments_and_bad_checksums_are_barriers ... ok
+test platform::batch::tests::pool_exhaustion_is_not_socket_would_block ... ok
+test platform::readiness::tests::active_work_still_probes_descriptors_and_observes_callbacks ... ok
+test platform::batch::tests::maximum_utun_packet_roundtrips_with_header_space ... ok
+test platform::readiness::tests::coalesces_callbacks_and_preserves_descriptor_edges ... ok
+test platform::batch::tests::truncation_and_invalid_utun_family_are_dropped ... ok
+test platform::coalesce_macos::tests::local_delivery_merges_but_forwarded_packets_keep_their_mtu ... ok
+test platform::batch::tests::layout_and_connected_udp_batch ... ok
+test platform::coalesce::tests::fairness_budget_requests_immediate_progress_but_blocking_does_not ... ok
+test platform::coalesce::tests::rejects_fragments_options_and_oversize_aggregates ... ok
+test platform::coalesce::tests::checksum_matches_scalar_reference_on_unaligned_odd_and_large_slices ... ok
+test platform::readiness::tests::callback_racing_sleep_is_never_lost ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running unittests src/main.rs (/Users/jamil/.cache/cargo/target/debug/deps/interestun-f810533f08f691fc)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/ciphers.rs (/Users/jamil/.cache/cargo/target/debug/deps/ciphers-55bbc1c16de527b0)
+
+running 2 tests
+test mismatched_suite_fails_handshake ... ok
+test both_suites_handshake_transport_replay_and_tamper ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/dataplane.rs (/Users/jamil/.cache/cargo/target/debug/deps/dataplane-bfc53d7ef24e9323)
+
+running 4 tests
+test network_framework_rejects_unknown_endpoint_without_fallback ... ok
+Network.framework receive: public receive_message (window 128)
+Network.framework receive: public receive_message (window 128)
+Network.framework peer: [C1 connected ::1.60100 udp, local: ::.0, attribution: developer, path satisfied (Path is satisfied), viable, interface: lo0]
+Network.framework peer: [C2 connected 127.0.0.1:64582 udp, local: 0.0.0.0:0, attribution: developer, path satisfied (Path is satisfied), viable, interface: lo0]
+test only_authenticated_packets_roam_the_udp_endpoint ... ok
+Network.framework receive: public receive_message (window 128)
+Network.framework receive: public receive_message (window 128)
+Network.framework peer: [C3 connected ::1.64466 udp, local: ::.0, attribution: developer, path satisfied (Path is satisfied), viable, interface: lo0]
+Network.framework peer: [C4 connected 127.0.0.1:49675 udp, local: 0.0.0.0:0, attribution: developer, path satisfied (Path is satisfied), viable, interface: lo0]
+test two_peers_share_adapter_and_use_their_own_workers ... ok
+test network_framework_configured_peers_against_wireguard_fixtures ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.36s
+
+     Running tests/live_macos.rs (/Users/jamil/.cache/cargo/target/debug/deps/live_macos-4f86c0c45d754dc5)
+
+running 1 test
+test real_utun_two_peers_ipv4_ipv6_both_ciphers ... ignored, creates real utun and temporary test routes; requires configured noninteractive sudo
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/uapi.rs (/Users/jamil/.cache/cargo/target/debug/deps/uapi-5a572a57184159cc)
+
+running 1 test
+test ipc_get_set_invalid_request_and_optional_real_wg ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/utun_privileged.rs (/Users/jamil/.cache/cargo/target/debug/deps/utun_privileged-dd8bd6fc4b6b8c1f)
+
+running 1 test
+test open_real_utun_and_verify_mtu ... ignored, requires root and creates a real temporary BSD utun
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/wintun_privileged.rs (/Users/jamil/.cache/cargo/target/debug/deps/wintun_privileged-cb8791af9330cfa8)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests interestun
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+RUN cargo test --locked --no-default-features
+   Compiling interestun v0.1.0 (/Users/jamil/tmp/interestun)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 1.31s
+     Running unittests src/lib.rs (/Users/jamil/.cache/cargo/target/debug/deps/interestun-344312ac87c8b6ab)
+
+running 15 tests
+test platform::coalesce::tests::ring_full_preserves_prepared_bytes_and_queue_order ... ok
+test platform::coalesce::tests::timestamps_must_match_and_options_must_be_understood ... ok
+test platform::coalesce::tests::coalesces_v4_v6_wraparound_odd_lengths_and_psh ... ok
+test config::tests::transactional_and_prefix_transfer ... ok
+test platform::batch::tests::pool_exhaustion_is_not_socket_would_block ... ok
+test platform::coalesce::tests::incompatible_segments_and_bad_checksums_are_barriers ... ok
+test platform::batch::tests::maximum_utun_packet_roundtrips_with_header_space ... ok
+test platform::readiness::tests::active_work_still_probes_descriptors_and_observes_callbacks ... ok
+test platform::readiness::tests::coalesces_callbacks_and_preserves_descriptor_edges ... ok
+test platform::batch::tests::truncation_and_invalid_utun_family_are_dropped ... ok
+test platform::coalesce::tests::fairness_budget_requests_immediate_progress_but_blocking_does_not ... ok
+test platform::batch::tests::layout_and_connected_udp_batch ... ok
+test platform::coalesce::tests::rejects_fragments_options_and_oversize_aggregates ... ok
+test platform::coalesce::tests::checksum_matches_scalar_reference_on_unaligned_odd_and_large_slices ... ok
+test platform::readiness::tests::callback_racing_sleep_is_never_lost ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.05s
+
+     Running unittests src/main.rs (/Users/jamil/.cache/cargo/target/debug/deps/interestun-78b8ea718c4473d8)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/ciphers.rs (/Users/jamil/.cache/cargo/target/debug/deps/ciphers-9f7b7aadaf58a32f)
+
+running 2 tests
+test mismatched_suite_fails_handshake ... ok
+test both_suites_handshake_transport_replay_and_tamper ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.01s
+
+     Running tests/dataplane.rs (/Users/jamil/.cache/cargo/target/debug/deps/dataplane-22b9a37fffdcb870)
+
+running 2 tests
+test only_authenticated_packets_roam_the_udp_endpoint ... ok
+test two_peers_share_adapter_and_use_their_own_workers ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.31s
+
+     Running tests/live_macos.rs (/Users/jamil/.cache/cargo/target/debug/deps/live_macos-903f63a3492e4a87)
+
+running 1 test
+test real_utun_two_peers_ipv4_ipv6_both_ciphers ... ignored, creates real utun and temporary test routes; requires configured noninteractive sudo
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/uapi.rs (/Users/jamil/.cache/cargo/target/debug/deps/uapi-f4778a709f332bed)
+
+running 1 test
+test ipc_get_set_invalid_request_and_optional_real_wg ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/utun_privileged.rs (/Users/jamil/.cache/cargo/target/debug/deps/utun_privileged-37ba01308d983079)
+
+running 1 test
+test open_real_utun_and_verify_mtu ... ignored, requires root and creates a real temporary BSD utun
+
+test result: ok. 0 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/wintun_privileged.rs (/Users/jamil/.cache/cargo/target/debug/deps/wintun_privileged-c373ed87a4913db2)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests interestun
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+
+RUN cargo build --release --locked
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.07s
