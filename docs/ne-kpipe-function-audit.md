@@ -153,6 +153,11 @@ for the different public filtering contract.
 
 ## What remains open
 
+Subsequent [system-wide entitlement inventory](system-network-entitlements.md)
+identified RemotePairing's `SkywalkChannelVirtualInterface` as an external
+caller requesting one utun kernel-pipe channel and opening its nexus. This
+advances the external-caller lead below; access for Interestun is still unproven.
+
 We have a more complete inventory of the installed NetworkExtension creation
 surface, not a newly working attachment. The strongest remaining lead is a
 caller **outside** this framework that requests nonzero utun/IPsec channels

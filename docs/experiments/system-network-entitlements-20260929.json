@@ -1,0 +1,483 @@
+{
+  "os_build": "26A428",
+  "date": "2026-09-29",
+  "scope": {
+    "roots": [
+      "/System/Library",
+      "/System/Applications",
+      "/System/DriverKit",
+      "/System/iOSSupport",
+      "/System/Cryptexes",
+      "/usr",
+      "/bin",
+      "/sbin",
+      "/Library",
+      "/Applications",
+      "/opt",
+      "/Users/jamil/Applications",
+      "/System/Volumes/Preboot/Cryptexes/OS",
+      "/System/Volumes/Preboot/Cryptexes/App",
+      "/System/Volumes/Preboot/Cryptexes/ExclaveOS",
+      "/System/Volumes/Preboot/Cryptexes/Rosetta"
+    ],
+    "unique_files_examined": 1921015,
+    "macho_candidates": 22737,
+    "signature_results": {
+      "no-entitlements": 16157,
+      "other-entitlements": 5315,
+      "unsigned-or-no-entitlements": 1178,
+      "matched": 87
+    },
+    "access_errors": 3868,
+    "inspection_errors": 0,
+    "limitations": "Installed files only, default architecture selected by codesign; does not establish runtime authorization or service accessibility."
+  },
+  "matches": [
+    {
+      "path": "/System/Library/Templates/Data/Library/Apple/System/Library/PrivateFrameworks/RemotePairing.framework/Versions/A/XPCServices/remotepairingd.xpc/Contents/MacOS/remotepairingd",
+      "entitlements": {
+        "com.apple.private.nehelper.privileged": true,
+        "com.apple.private.skywalk.register-kernel-pipe": true,
+        "com.apple.private.skywalk.register-user-pipe": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.CoreDevice.remotepairingd",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "96a81c27d53092d9f166b54da46beaa6d4a8c930a63284e130687a43d37b67e6"
+    },
+    {
+      "path": "/System/Library/PrivateFrameworks/ChronoCore.framework/Support/chronod",
+      "entitlements": {
+        "com.apple.private.nehelper.privileged": true,
+        "com.apple.private.skywalk.observe-stats": true,
+        "com.apple.private.skywalk.register-kernel-pipe": true,
+        "com.apple.private.skywalk.register-user-pipe": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.chronod",
+        "Platform identifier": "26",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "3f046ec25d0b83beb6ce392a7ab873ef67659387d733efd313cd07d6295dfa36"
+    },
+    {
+      "path": "/System/Library/PrivateFrameworks/ReplicatorCore.framework/Support/replicatord",
+      "entitlements": {
+        "com.apple.private.nehelper.privileged": true,
+        "com.apple.private.skywalk.observe-stats": true,
+        "com.apple.private.skywalk.register-kernel-pipe": true,
+        "com.apple.private.skywalk.register-user-pipe": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.replicatord",
+        "Platform identifier": "26",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "6d2d24fe29bb139bdd0c2bd30dec0bb87d98bf4de0d0570456b995244a93e6f4"
+    },
+    {
+      "path": "/System/Library/PrivateFrameworks/CoreThreadRadio.framework/threadradiod",
+      "entitlements": {
+        "com.apple.private.nehelper.privileged": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.threadradiod",
+        "Platform identifier": "26",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "e97474401ad34e5d25c72211543e4f3a7f56371e1078d66a72ac16e28229ad6c"
+    },
+    {
+      "path": "/System/Library/PrivateFrameworks/IDS.framework/identityservicesd.app/Contents/MacOS/identityservicesd",
+      "entitlements": {
+        "com.apple.private.nehelper.privileged": true,
+        "com.apple.private.skywalk.observe-stats": true,
+        "com.apple.private.skywalk.register-kernel-pipe": true,
+        "com.apple.private.skywalk.register-user-pipe": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.identityservicesd",
+        "Platform identifier": "26",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "87e8fd9dfe9d030878cb74e730c753ca28085bd4c84cf5016590478421d8bcc7"
+    },
+    {
+      "path": "/System/Library/PrivateFrameworks/MediaRemote.framework/Support/mediaremoted",
+      "entitlements": {
+        "com.apple.private.nehelper.privileged": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.mediaremoted",
+        "Platform identifier": "26",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "2898e294ae4fb2bd4b367741fe1aa60c30133f598f71396d636f893fd0dacf96"
+    },
+    {
+      "path": "/System/Library/Frameworks/CoreTelephony.framework/Support/CommCenter",
+      "entitlements": {
+        "com.apple.private.nehelper.privileged": true,
+        "com.apple.private.skywalk.observe-stats": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.CommCenter",
+        "Platform identifier": "26",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "edbde4bd9c0ad04a86ea488a80bc55e41a86e29dba993cc3dadf4892fc24c452"
+    },
+    {
+      "path": "/System/Applications/iPhone Mirroring.app/Contents/MacOS/iPhone Mirroring",
+      "entitlements": {
+        "com.apple.private.nehelper.privileged": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.ScreenContinuity",
+        "Platform identifier": "26",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "e3a69d71d709340bba1b57298fb2542c952c6b398ebfd7be91af7f3fd8e619ff"
+    },
+    {
+      "path": "/usr/bin/mpsgraphtool",
+      "entitlements": {
+        "com.apple.networking.ethernet.user-access": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.mpsgraphtool",
+        "Platform identifier": "26",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "f3f145b55fcc88283530347e86d8f789911edca4ec6d4c0a6266747b251d7933"
+    },
+    {
+      "path": "/usr/libexec/ContinuityCaptureAgent",
+      "entitlements": {
+        "com.apple.private.nehelper.privileged": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.cmio.ContinuityCaptureAgent",
+        "Platform identifier": "26",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "58bb05081f4b4a094685ed10f1970ec22442b9b9e3b2b1248a813fd84945ecf0"
+    },
+    {
+      "path": "/usr/libexec/nehelper",
+      "entitlements": {
+        "com.apple.private.nehelper.privileged": true,
+        "com.apple.private.skywalk.register-kernel-pipe": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.nehelper",
+        "Platform identifier": "26",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "f8cbbcf2995db706d11bfca83b02658eab39307489b6612c731fe5cc6ed704c9"
+    },
+    {
+      "path": "/usr/libexec/neagent",
+      "entitlements": {
+        "com.apple.private.skywalk.observe-stats": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.neagent",
+        "Platform identifier": "26",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "26ff4a76799339231bfe776c4f8aa9a767c6efd41a0bb1c7c113accce07c6fd9"
+    },
+    {
+      "path": "/usr/libexec/networkserviceproxy",
+      "entitlements": {
+        "com.apple.private.nehelper.privileged": true,
+        "com.apple.private.skywalk.observe-stats": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.networkserviceproxy",
+        "Platform identifier": "26",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "50bd0d7754a4646280ee32befb70954c76b072a8febbf54d60872e6cd7f46b28"
+    },
+    {
+      "path": "/usr/libexec/sharingd",
+      "entitlements": {
+        "com.apple.private.nehelper.privileged": true,
+        "com.apple.private.skywalk.register-kernel-pipe": true,
+        "com.apple.private.skywalk.register-user-pipe": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.sharingd",
+        "Platform identifier": "26",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "bc10c83aa0d6f197f0c97c92fab0423764073490a411881684a3b17d047f88a7"
+    },
+    {
+      "path": "/usr/libexec/srp-mdns-proxy",
+      "entitlements": {
+        "com.apple.private.nehelper.privileged": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.srp-mdns-proxy",
+        "Platform identifier": "26",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "26bb612a26eac9879df031ecbc849556a3debd155907c013babd8e42193f9a1f"
+    },
+    {
+      "path": "/usr/libexec/wifip2pd",
+      "entitlements": {
+        "com.apple.private.nehelper.privileged": true,
+        "com.apple.private.skywalk.observe-all": true,
+        "com.apple.private.skywalk.observe-stats": true,
+        "com.apple.private.skywalk.register-user-pipe": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.wifip2pd",
+        "Platform identifier": "26",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "bb5706af1e0e9acf078a1ca7558a49f7265755410d4fe96be01ffa2c4a45d0e1"
+    },
+    {
+      "path": "/usr/libexec/assessmentagent",
+      "entitlements": {
+        "com.apple.private.nehelper.privileged": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.assessmentagent",
+        "Platform identifier": "26",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "96be515f8cbd0773656893e9fd3847438727ac656750af2850ec1201a82cfe33"
+    },
+    {
+      "path": "/usr/libexec/rapportd",
+      "entitlements": {
+        "com.apple.private.nehelper.privileged": true,
+        "com.apple.private.skywalk.observe-all": true,
+        "com.apple.private.skywalk.observe-stats": true,
+        "com.apple.private.skywalk.register-kernel-pipe": true,
+        "com.apple.private.skywalk.register-user-pipe": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.rapportd",
+        "Platform identifier": "26",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "464b1c78b75e464ef5d4661d9e922d017b00bdcaeed822269502217ca1705f88"
+    },
+    {
+      "path": "/usr/libexec/remotecompositorclientd",
+      "entitlements": {
+        "com.apple.private.nehelper.privileged": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.CompositorServices.RemoteClient",
+        "Platform identifier": "26",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "c01ed7f275b0e190e3385d5e05b14d1a61327d1ba0b521e044bbb020932e6d68"
+    },
+    {
+      "path": "/usr/libexec/nesessionmanager",
+      "entitlements": {
+        "com.apple.private.nehelper.privileged": true,
+        "com.apple.private.skywalk.default-drop": true,
+        "com.apple.private.skywalk.observe-stats": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.nesessionmanager",
+        "Platform identifier": "26",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "7cf25060e0a692245749f50d27a064d40fd0cc5090eea881596d3918d2ae996c"
+    },
+    {
+      "path": "/usr/libexec/InternetSharing",
+      "entitlements": {
+        "com.apple.networking.ethernet.user-access": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.InternetSharing",
+        "Platform identifier": "26",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "8fe71540954a1a84c40db63521ab11a22bedbb2b33f1090fcc5544e1cb29be4e"
+    },
+    {
+      "path": "/usr/libexec/UserEventAgent",
+      "entitlements": {
+        "com.apple.private.nehelper.privileged": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.UserEventAgent",
+        "Platform identifier": "26",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "f9137f670668079533e4b100d4581bd1c152fabcb94fa1f8f524b915961e6e23"
+    },
+    {
+      "path": "/usr/libexec/symptomsd",
+      "entitlements": {
+        "com.apple.private.nehelper.privileged": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.symptomsd",
+        "Platform identifier": "26",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "662dc204fbf3819ac8e47beb3527f2b9de6e15b99f1fc56ab6a2f6df286bf5a9"
+    },
+    {
+      "path": "/usr/sbin/mDNSResponder",
+      "entitlements": {
+        "com.apple.private.nehelper.privileged": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.mDNSResponder",
+        "Platform identifier": "26",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "ce2377b147c3343e97805c9836e1d7218035b9c5aa37f39849a2391e8128bb0c"
+    },
+    {
+      "path": "/usr/sbin/racoon",
+      "entitlements": {
+        "com.apple.private.nehelper.privileged": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.racoon",
+        "Platform identifier": "26",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "971429336001f6db8723b383ba812aa171943ef0145f384b2866d822b346ea27"
+    },
+    {
+      "path": "/usr/sbin/bluetoothd",
+      "entitlements": {
+        "com.apple.networking.ethernet.user-access": true,
+        "com.apple.private.skywalk.register-user-pipe": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.bluetoothd",
+        "Platform identifier": "26",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "65dbb5f681ea7dc4e429d13a9d2a4dfd18d61afce49d7cf50717565bf241f429"
+    },
+    {
+      "path": "/usr/sbin/tcpdump",
+      "entitlements": {
+        "com.apple.private.skywalk.observe-all": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.tcpdump",
+        "Platform identifier": "26",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "594c9f551c728fcdbf12c43232dcb4f38480742adeb2e4578bb68515e8e783bb"
+    },
+    {
+      "path": "/Library/Apple/System/Library/PrivateFrameworks/RemotePairing.framework/Versions/A/XPCServices/remotepairingd.xpc/Contents/MacOS/remotepairingd",
+      "entitlements": {
+        "com.apple.private.nehelper.privileged": true,
+        "com.apple.private.skywalk.register-kernel-pipe": true,
+        "com.apple.private.skywalk.register-user-pipe": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.CoreDevice.remotepairingd",
+        "TeamIdentifier": "not set"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "34db68f7fbea1c26ba2867b4065170606cf7399c41b796473228226696a8d054"
+    },
+    {
+      "path": "/Library/Developer/PrivateFrameworks/CoreDevice.framework/Versions/A/XPCServices/CoreDeviceService.xpc/Contents/MacOS/CoreDeviceService",
+      "entitlements": {
+        "com.apple.private.nehelper.privileged": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.CoreDevice.CoreDeviceService",
+        "TeamIdentifier": "59GAB85EFG"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "670acc492e59ae73d6a6f6a0e5f6eb53a1e72f50517db1b55c5cca6c21569347"
+    },
+    {
+      "path": "/Applications/Xcode.app/Contents/SharedFrameworks/DVTInstrumentsFoundation.framework/Versions/A/Resources/DTServiceHub",
+      "entitlements": {
+        "com.apple.private.skywalk.observe-all": true,
+        "com.apple.private.skywalk.register-flow-switch": true,
+        "com.apple.private.skywalk.register-user-pipe": true
+      },
+      "signature_metadata": {
+        "Identifier": "com.apple.DTServiceHub",
+        "TeamIdentifier": "59GAB85EFG"
+      },
+      "apple_anchor_verified": true,
+      "verification_error": null,
+      "sha256": "1deb4ce97f683690f6643e46ec99003055894c2de876e8bc740ae824b5fe83f7"
+    }
+  ]
+}
