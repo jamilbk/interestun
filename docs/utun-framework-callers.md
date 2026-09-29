@@ -9,6 +9,10 @@ The question is whether an Apple caller leads back to a usable public API for
 API using Skywalk internally is not sufficient: it must expose the required
 packet ownership and host injection behavior.
 
+The [Ethernet-provider follow-up](apple-ethernet-path.md) traces its IOKit
+creation path and confirms that its provider boundary also uses batched
+control-socket I/O.
+
 ## Concrete consumers and candidates
 
 | Consumer | Installed-code evidence | Does it expose our required public API? |
