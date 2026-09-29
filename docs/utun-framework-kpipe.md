@@ -7,6 +7,8 @@ evidence, rather than assuming the public API describes all implementation paths
 
 See also the [caller and public-API audit](utun-framework-callers.md).
 
+Follow-up: [local signing probes and creator authorization](utun-kpipe-access.md).
+
 ## Finding
 
 **A private framework path exists for requesting utun kernel-pipe channels.**
