@@ -1,5 +1,8 @@
 # Offline utun / Skywalk investigation
 
+The [2026-09-29 datapath follow-up](utun-skywalk-datapath.md) traces both
+directions, kernel copy points, callback batching, and queue-option scope.
+
 Audited 2026-09-28. The live probe remains disabled. The original audit consisted of
 reading saved crash reports, local binaries, SDK headers, and published source.
 No experimental interface or channel was created during that offline phase.

@@ -154,8 +154,11 @@ Startup option readback showed:
 
 Queue settings are raised only if needed and read back; unsupported or clamped
 requests fail startup explicitly. `interestunctl show` exposes before/after
-values in `utun_options`. The two limits control different resources: raising
-the packet threshold does not enlarge the socket's byte capacity.
+values in `utun_options`. A later [source-only datapath audit](utun-skywalk-datapath.md)
+found that the explicit `MAX_PENDING_PACKETS` admission check applies to legacy
+`utun_start`, not the Skywalk netif TX socket fallback. The readback therefore
+does not establish an effective 1024-packet Skywalk queue. Socket byte capacity
+and the separate provider-to-host input-chain limit are different resources.
 
 The following covers every `UTUN_OPT_*` in the audited
 [XNU header](https://github.com/apple-oss-distributions/xnu/blob/f6217f891ac0bb64f3d375211650a4c1ff8ca1ea/bsd/net/if_utun.h).
@@ -168,7 +171,7 @@ Setter restrictions come from [utun option handling](https://github.com/apple-os
 | `EXT_IFDATA_STATS` | 3 | External accounting; retain automatic stats. |
 | `INC_IFDATA_STATS_IN`, `INC_IFDATA_STATS_OUT` | 4, 5 | Manual accounting, not throughput controls. |
 | `SET_DELEGATE_INTERFACE` | 15 | Interface delegation; leave framework policy intact. |
-| `MAX_PENDING_PACKETS` | 16 | Live socket-read queue threshold; raise to 1024. |
+| `MAX_PENDING_PACKETS` | 16 | Set/read back as 1024; explicit admission check is on the legacy path, not netif TX. See follow-up audit. |
 | `ENABLE_CHANNEL` | 17 | Creation-time kernel-pipe setup; do not enable. |
 | `GET_CHANNEL_UUID` | 18 | Channel identity, not a tuning control. |
 | `ENABLE_FLOWSWITCH` | 19 | Advertises netagent provider/listener capability; already enabled. |
