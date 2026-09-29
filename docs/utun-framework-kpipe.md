@@ -9,6 +9,8 @@ See also the [caller and public-API audit](utun-framework-callers.md).
 
 Follow-up: [local signing probes and creator authorization](utun-kpipe-access.md).
 
+Broader follow-up: [whole-framework function inventory and resolved call targets](ne-kpipe-function-audit.md).
+
 ## Finding
 
 **A private framework path exists for requesting utun kernel-pipe channels.**
