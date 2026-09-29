@@ -187,3 +187,44 @@ provider and launched its process. Applying Ethernet settings produced the same
 disconnected. Thus reusing the original packet-provider bundle ID is not necessary
 to reproduce this failure. Fresh build artifacts are in
 `target/apple-ethernet-fresh/`; the original identity was not removed.
+
+
+## App-extension packaging and live result
+
+The builder also supports a user-context app extension:
+
+```sh
+python3 scripts/build-apple.py --ethernet --app-extension \
+  --bundle-id dev.jamilbk.interestun.ethernetapp \
+  --automatic-signing --team-id 47R2M6779T \
+  --output target/apple-ethernet-appex
+```
+
+This option currently requires automatic development signing. It creates a
+`Contents/PlugIns/*.appex`, `NSExtensionPointIdentifier` and principal-class
+registration, and a native Xcode app-extension target. Xcode supplies the
+app-extension entry point; `NEProvider.startSystemExtensionMode()` is excluded.
+The extension has App Sandbox and inbound/outbound network permissions. The host
+has the packet-tunnel capability but no system-extension install entitlement.
+The CLI detects this packaging and does not submit system-extension activation
+or status requests. Existing system-extension builds remain the default.
+
+For the live test, installed the containing app at
+`/Applications/InterestunEthernetApp.app`, registered it with LaunchServices and
+its extension with PlugInKit, and started a new VPN configuration using the same
+peer configuration. PlugInKit listed the new `.appex`. The provider launched as
+PID 81587 and ran its network-settings code. At 12:15:25.333 on 2026-09-29,
+`nesessionmanager` again failed Ethernet controller creation with the kernel's
+`com.apple.networking.ethernet.user-access entitlement missing` message. The
+provider received `NEAgentErrorDomain` error 1 and the VPN disconnected.
+
+This is a successfully launched app-extension reproduction, not a plugin
+registration failure. The Rust engine never started. The packaging change did
+not resolve the failure. Both the app-extension signed build and a regression
+build of system-extension packaging compiled and passed codesign verification.
+
+Apple's [deployment table](https://developer.apple.com/documentation/technotes/tn3134-network-extension-provider-deployment)
+lists macOS Ethernet app extensions from 13.0 with App Store-only distribution.
+This local development-signed test does not establish Developer ID distribution
+support for `.appex` packaging. See also Apple's
+[app-extension creation guide](https://developer.apple.com/library/archive/documentation/General/Conceptual/ExtensibilityPG/ExtensionCreation.html).

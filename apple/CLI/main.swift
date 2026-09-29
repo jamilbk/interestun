@@ -174,11 +174,19 @@ func run() async throws {
     try requireProvisioning()
     switch command {
     case "install":
-        let request = ExtensionRequest()
-        print(try await request.perform(install: true))
+        if Bundle.main.object(forInfoDictionaryKey: "InterestunAppExtension") as? Bool == true {
+            print("App extensions register through the containing app; use start after installing the app in /Applications.")
+        } else {
+            let request = ExtensionRequest()
+            print(try await request.perform(install: true))
+        }
     case "status":
-        let request = ExtensionRequest()
-        print(try await request.perform(install: false))
+        if Bundle.main.object(forInfoDictionaryKey: "InterestunAppExtension") as? Bool == true {
+            print("Provider packaging: app extension")
+        } else {
+            let request = ExtensionRequest()
+            print(try await request.perform(install: false))
+        }
         let id = try extensionID()
         for manager in try await managers() where (manager.protocolConfiguration as? NETunnelProviderProtocol)?.providerBundleIdentifier == id {
             print("VPN: \(state(manager.connection.status))")

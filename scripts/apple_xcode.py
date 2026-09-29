@@ -3,7 +3,7 @@ from pathlib import Path
 import plistlib
 
 
-def generate(stage: Path, root: Path, app: Path, extension: Path, library: Path, team: str, *, packet_flow=False, ethernet=False):
+def generate(stage: Path, root: Path, app: Path, extension: Path, library: Path, team: str, *, packet_flow=False, ethernet=False, app_extension=False):
     objects = {}
 
     def add(isa, **values):
@@ -25,7 +25,7 @@ def generate(stage: Path, root: Path, app: Path, extension: Path, library: Path,
     provider = source(root / "apple/Extension/PacketTunnelProvider.swift")
     entry = source(root / "apple/Extension/main.swift")
     app_product = add("PBXFileReference", explicitFileType="wrapper.application", path="Interestun.app", sourceTree="BUILT_PRODUCTS_DIR")
-    ext_product = add("PBXFileReference", explicitFileType="wrapper.system-extension", path=extension.name, sourceTree="BUILT_PRODUCTS_DIR")
+    ext_product = add("PBXFileReference", explicitFileType="wrapper.app-extension" if app_extension else "wrapper.system-extension", path=extension.name, sourceTree="BUILT_PRODUCTS_DIR")
     products = add("PBXGroup", name="Products", children=[app_product, ext_product], sourceTree="<group>")
     group = add("PBXGroup", children=[shared[0], cli[0], provider[0], entry[0], products], sourceTree="<group>")
 
@@ -49,17 +49,20 @@ def generate(stage: Path, root: Path, app: Path, extension: Path, library: Path,
                     "PRODUCT_NAME": name, "PRODUCT_MODULE_NAME": module, "EXECUTABLE_NAME": executable,
                     "INFOPLIST_FILE": str(bundle / "Contents/Info.plist"),
                     "CODE_SIGN_ENTITLEMENTS": str(stage / (bundle.name + ".entitlements"))}
+        if product_type == "com.apple.product-type.app-extension":
+            settings["APPLICATION_EXTENSION_API_ONLY"] = "YES"
         phase = add("PBXSourcesBuildPhase", buildActionMask=2147483647, files=files, runOnlyForDeploymentPostprocessing=0)
         return add("PBXNativeTarget", name=name, productName=name, productReference=product, productType=product_type,
                    buildConfigurationList=configs(settings), buildPhases=[phase], buildRules=[], dependencies=[])
 
     ext = target(extension.stem, extension, ext_product, "InterestunPacketTunnel", "InterestunPacketTunnel",
-                 [shared[1], provider[1], entry[1]], "com.apple.product-type.system-extension")
+                 [shared[1], provider[1]] + ([] if app_extension else [entry[1]]),
+                 "com.apple.product-type.app-extension" if app_extension else "com.apple.product-type.system-extension")
     host = target("Interestun", app, app_product, "InterestunCLI", "interestunctl",
                   [shared[1], cli[1]], "com.apple.product-type.application")
     copy = add("PBXBuildFile", fileRef=ext_product, settings={"ATTRIBUTES": ["RemoveHeadersOnCopy"]})
-    embed = add("PBXCopyFilesBuildPhase", buildActionMask=2147483647, dstPath="$(SYSTEM_EXTENSIONS_FOLDER_PATH)",
-                dstSubfolderSpec=16, files=[copy], name="Embed System Extensions", runOnlyForDeploymentPostprocessing=0)
+    embed = add("PBXCopyFilesBuildPhase", buildActionMask=2147483647, dstPath="" if app_extension else "$(SYSTEM_EXTENSIONS_FOLDER_PATH)",
+                dstSubfolderSpec=13 if app_extension else 16, files=[copy], name="Embed Extensions", runOnlyForDeploymentPostprocessing=0)
     objects[host]["buildPhases"].append(embed)
     project = add("PBXProject", buildConfigurationList=configs({}), compatibilityVersion="Xcode 14.0",
                   mainGroup=group, productRefGroup=products, projectDirPath="", projectRoot="", targets=[host, ext],

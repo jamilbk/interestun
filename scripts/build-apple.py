@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the CLI containing app and packet-tunnel system extension. Never install/start."""
+"""Build the CLI containing app and packet-tunnel extension. Never install/start."""
 import argparse
 import datetime
 import hashlib
@@ -61,13 +61,19 @@ def main():
     parser.add_argument("--app-profile", type=Path)
     parser.add_argument("--extension-profile", type=Path)
     parser.add_argument("--output", type=Path, default=ROOT / "target/apple")
+    parser.add_argument("--app-extension", action="store_true", help="Package as a user-context .appex (automatic development signing)")
     parser.add_argument("--ethernet", action="store_true", help="Build the experimental IPv4 NEEthernetTunnelProvider backend")
     parser.add_argument("--packet-flow", action="store_true", help="Build the public packet-flow frontend instead of using the existing NE utun descriptor")
     args = parser.parse_args()
+    if args.app_extension and not args.automatic_signing:
+        parser.error("--app-extension currently requires --automatic-signing")
     if args.ethernet and args.packet_flow:
         parser.error("Choose --ethernet or --packet-flow, not both")
-    if args.ethernet and args.output == ROOT / "target/apple":
-        args.output = ROOT / "target/apple-ethernet"
+    if args.output == ROOT / "target/apple":
+        if args.app_extension:
+            args.output = ROOT / "target/apple-appex"
+        elif args.ethernet:
+            args.output = ROOT / "target/apple-ethernet"
     provisioned = bool(args.identity or args.automatic_signing)
     if args.automatic_signing:
         if not args.team_id or any([args.identity, args.app_profile, args.extension_profile]):
@@ -88,7 +94,13 @@ def main():
         # Development profiles use the unsuffixed capability, including when
         # packaging a system extension. Developer ID profiles use the suffix.
         ext_ent = {"com.apple.developer.networking.networkextension": ["packet-tunnel-provider"]}
-        app_ent = {**ext_ent, "com.apple.developer.system-extension.install": True}
+        app_ent = dict(ext_ent)
+        if not args.app_extension:
+            app_ent["com.apple.developer.system-extension.install"] = True
+        else:
+            ext_ent.update({"com.apple.security.app-sandbox": True,
+                            "com.apple.security.network.client": True,
+                            "com.apple.security.network.server": True})
     if provisioned:
         for ent in (app_ent, ext_ent):
             ent["com.apple.security.application-groups"] = [app_group]
@@ -97,7 +109,8 @@ def main():
     stage = Path(tempfile.mkdtemp(prefix=".build-", dir=output))
     version = str(int(time.time()))
     app = stage / "Interestun.app"
-    extension = app / "Contents/Library/SystemExtensions" / (extension_id + ".systemextension")
+    extension_relative = Path("Contents/PlugIns" if args.app_extension else "Contents/Library/SystemExtensions") / (extension_id + (".appex" if args.app_extension else ".systemextension"))
+    extension = app / extension_relative
     for bundle in (app, extension):
         (bundle / "Contents/MacOS").mkdir(parents=True)
     common = {
@@ -108,17 +121,21 @@ def main():
     plist(app / "Contents/Info.plist", {
         **common, "CFBundleIdentifier": args.bundle_id, "CFBundleExecutable": "interestunctl",
         "CFBundleName": "Interestun", "CFBundlePackageType": "APPL", "LSUIElement": True,
+        "InterestunAppExtension": args.app_extension,
         "InterestunExtensionIdentifier": extension_id, "InterestunSignedForActivation": provisioned,
         "NSSystemExtensionUsageDescription": "Interestun uses a packet tunnel system extension to test encrypted networking.",
     })
     plist(extension / "Contents/Info.plist", {
         **common, "CFBundleIdentifier": extension_id, "CFBundleExecutable": "InterestunPacketTunnel",
-        "CFBundleName": "InterestunPacketTunnel", "CFBundlePackageType": "SYSX",
+        "CFBundleName": "InterestunPacketTunnel", "CFBundlePackageType": "XPC!" if args.app_extension else "SYSX",
         "NSSystemExtensionUsageDescription": "Provides the Interestun packet tunnel.",
-        "NetworkExtension": {
+        **({"NSExtension": {
+            "NSExtensionPointIdentifier": "com.apple.networkextension.packet-tunnel",
+            "NSExtensionPrincipalClass": "InterestunPacketTunnel.PacketTunnelProvider",
+        }} if args.app_extension else {"NetworkExtension": {
             "NEMachServiceName": app_group + ".packet-tunnel",
             "NEProviderClasses": {"com.apple.networkextension.packet-tunnel": "InterestunPacketTunnel.PacketTunnelProvider"},
-        },
+        }}),
     })
     run("cargo", "build", "--locked", "--release", "--lib", "--features", "apple-packet-tunnel", cwd=ROOT,
         env={**os.environ, "MACOSX_DEPLOYMENT_TARGET": "15.0"})
@@ -139,7 +156,7 @@ def main():
         from apple_xcode import generate
         plist(stage / (app.name + ".entitlements"), app_ent)
         plist(stage / (extension.name + ".entitlements"), ext_ent)
-        project = generate(stage, ROOT, app, extension, library, args.team_id, packet_flow=args.packet_flow, ethernet=args.ethernet)
+        project = generate(stage, ROOT, app, extension, library, args.team_id, packet_flow=args.packet_flow, ethernet=args.ethernet, app_extension=args.app_extension)
         log = stage / "xcodebuild.log"
         products = stage / "products"
         with log.open("wb") as f:
@@ -149,7 +166,7 @@ def main():
         if built.returncode:
             raise RuntimeError(f"Xcode build/provisioning failed; inspect {log}")
         app = products / "Interestun.app"
-        extension = app / "Contents/Library/SystemExtensions" / (extension_id + ".systemextension")
+        extension = app / extension_relative
         run("codesign", "--verify", "--strict", extension)
         run("codesign", "--verify", "--strict", app)
     else:
@@ -176,6 +193,7 @@ def main():
         "version": version, "architecture": arch, "app_id": args.bundle_id, "extension_id": extension_id,
         "provisioned": provisioned, "installed": False, "tunnel_started": False,
         "signing": "automatic development" if args.automatic_signing else "manual" if args.identity else "ad-hoc",
+        "packaging": "app-extension" if args.app_extension else "system-extension",
         "team_id": args.team_id,
         "app_group": app_group,
         "rust_features": ["default", "apple-packet-tunnel"], "skywalk": "unverified",
