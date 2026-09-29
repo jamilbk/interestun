@@ -84,3 +84,27 @@ loopback UDP exchanges; it is not the offline Ethernet test.
 Build and offline tests are not a connectivity or performance result. Live
 activation, host routes/ARP behavior, framework frame delivery, Windows tunnel
 exchange, and throughput/CPU still require a separately authorized live run.
+
+## First live activation, 2026-09-29
+
+The Firezone-team signed Ethernet extension activated successfully. Starting with
+IPv4 settings failed before Rust startup: `setTunnelNetworkSettings` returned
+`NEAgentErrorDomain` error 1. At the same timestamp (11:53:22 local), the kernel
+logged:
+
+```
+(IOUserEthernet) IOUE_UC:: com.apple.networking.ethernet.user-access entitlement missing
+```
+
+`nesessionmanager` then logged `Failed to create a ethernet controller` and
+`Failed to create a user ethernet interface`. The driver is loaded and its
+`IOUserEthernetResource` service is registered, matched, and active, so this is
+not an absent-driver finding. Static codesign inspection found the named
+entitlement absent from both the installed `nesessionmanager` and our extension.
+The earlier static trace places controller creation in `nesessionmanager`;
+which task identity the driver's entitlement check uses still needs confirmation.
+Adding an entitlement to our extension is therefore not an established fix.
+
+The tunnel was left stopped, with the Ethernet build installed. No handshake or
+throughput result exists for this backend. The previous installed app was backed
+up locally to `target/apple-ethernet/pre-ethernet-installed.app`.
