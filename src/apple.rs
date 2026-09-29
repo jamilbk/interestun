@@ -29,6 +29,7 @@ pub type WriteCallback =
     unsafe extern "C" fn(*mut c_void, *const PacketView, usize, *const c_void) -> bool;
 pub type ReleaseCallback = unsafe extern "C" fn(*mut c_void);
 struct Writer {
+    ethernet: bool,
     context: *mut c_void,
     write: WriteCallback,
     release: ReleaseCallback,
@@ -53,7 +54,9 @@ impl WriteBatch for Writer {
             *view = PacketView {
                 bytes: packet.data().as_ptr(),
                 len: packet.len,
-                family: if packet.data()[0] >> 4 == 4 {
+                family: if self.ethernet {
+                    libc::AF_UNSPEC as u32
+                } else if packet.data()[0] >> 4 == 4 {
                     libc::AF_INET as u32
                 } else {
                     libc::AF_INET6 as u32
@@ -181,7 +184,39 @@ pub unsafe extern "C" fn interestun_ne_start(
     release: ReleaseCallback,
     out_error: *mut *mut c_char,
 ) -> *mut Session {
+    unsafe {
+        interestun_ne_start_flow(
+            config,
+            cipher,
+            mtu,
+            name,
+            ptr::null(),
+            context,
+            write,
+            release,
+            out_error,
+        )
+    }
+}
+
+/// Start public IP flow, or IPv4 Ethernet flow when local_addresses is non-null.
+/// # Safety
+/// Same ownership/lifetime contract as interestun_ne_start. local_addresses is
+/// null or a NUL-terminated comma-separated list of local IPv4 addresses.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn interestun_ne_start_flow(
+    config: *const c_char,
+    cipher: u32,
+    mtu: u32,
+    name: *const c_char,
+    local_addresses: *const c_char,
+    context: *mut c_void,
+    write: WriteCallback,
+    release: ReleaseCallback,
+    out_error: *mut *mut c_char,
+) -> *mut Session {
     let writer = Writer {
+        ethernet: !local_addresses.is_null(),
         context,
         write,
         release,
@@ -194,7 +229,22 @@ pub unsafe extern "C" fn interestun_ne_start(
                 name.len() <= 64 && name.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-'),
                 "invalid interface label"
             );
-            let adapter = Arc::new(Adapter::new(mtu as usize, Box::new(writer))?);
+            let mut adapter = Adapter::new(mtu as usize, Box::new(writer))?;
+            if !local_addresses.is_null() {
+                let local = string(local_addresses)?
+                    .split(',')
+                    .map(str::parse::<std::net::Ipv4Addr>)
+                    .collect::<Result<Vec<_>, _>>()?;
+                anyhow::ensure!(!local.is_empty(), "Ethernet requires local IPv4 addresses");
+                let routes = config
+                    .peers
+                    .values()
+                    .flat_map(|p| &p.allowed_ips)
+                    .map(|r| r.to_string().parse::<ipnet::Ipv4Net>())
+                    .collect::<Result<Vec<_>, _>>()?;
+                adapter.ethernet = Some(crate::platform::ethernet::Ethernet { routes, local });
+            }
+            let adapter = Arc::new(adapter);
             let tun = Arc::new(Tunnel::from_packet_flow(adapter.clone(), name.clone()));
             // The extension always uses Network.framework, independent of default features.
             let runtime = Runtime::start_with_backend(&config, cipher, tun, Backend::Network)?;
@@ -301,7 +351,13 @@ pub unsafe extern "C" fn interestun_ne_status(session: *mut Session) -> *mut c_c
         }
         value
     }).collect();
-    let backend = if session.adapter.is_some() {
+    let backend = if session
+        .adapter
+        .as_ref()
+        .is_some_and(|a| a.ethernet.is_some())
+    {
+        "NEEthernetTunnelProvider packet flow (IPv4)"
+    } else if session.adapter.is_some() {
         "NEPacketTunnelFlow"
     } else {
         "Network Extension utun descriptor"

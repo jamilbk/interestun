@@ -122,6 +122,11 @@ struct TunnelConfiguration: Codable {
     func validate() throws {
         guard (1280...2000).contains(mtu), cipher <= 1 else { throw TunnelError("Invalid MTU or cipher") }
         guard !addresses.isEmpty, !routes.isEmpty else { throw TunnelError("Address and AllowedIPs are required") }
+        #if INTERESTUN_ETHERNET
+        guard try (addresses + routes).allSatisfy({ try CIDR($0).family == AF_INET }) else {
+            throw TunnelError("The experimental Ethernet backend currently supports IPv4 only")
+        }
+        #endif
         let families = Set(try addresses.map { try CIDR($0).family })
         for route in routes where !families.contains(try CIDR(route).family) {
             throw TunnelError("Each route family needs a tunnel address of that family")
@@ -140,7 +145,12 @@ struct TunnelConfiguration: Codable {
     }
 
     func networkSettings() throws -> NEPacketTunnelNetworkSettings {
+        #if INTERESTUN_ETHERNET
+        let settings = NEEthernetTunnelNetworkSettings(tunnelRemoteAddress: try remoteAddress(),
+            ethernetAddress: "02:49:54:00:00:01", mtu: Int(mtu))
+        #else
         let settings = NEPacketTunnelNetworkSettings(tunnelRemoteAddress: try remoteAddress())
+        #endif
         settings.mtu = NSNumber(value: mtu)
         let addresses = try addresses.map(CIDR.init)
         let routes = try routes.map(CIDR.init)

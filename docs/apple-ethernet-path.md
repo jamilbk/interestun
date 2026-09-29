@@ -77,7 +77,10 @@ IOUserEthernet kext directory contains metadata but no standalone executable;
 extracting and tracing its kernel-collection code would be separate offline
 work. Published IONetworkingFamily's inspected tree did not contain that driver.
 
-## Implementation decision
+## Original audit decision
+
+A subsequent explicit request added an experimental [Ethernet backend](apple-ethernet-backend.md).
+The following describes the decision at the time of this audit.
 
 No new adapter implementation was added on the strength of this finding. The
 conditional plan was to prototype if this path offered a useful packet-boundary

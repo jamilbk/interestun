@@ -22,6 +22,10 @@ char *interestun_ne_utun_options(const char *name, uint32_t receive_bytes, uint3
 // Consumes writer context on both success and failure. Cipher 0=AES, 1=ChaCha.
 InterestunSession *interestun_ne_start(const char *, uint32_t cipher, uint32_t mtu,
     const char *name, void *context, InterestunWrite, InterestunRelease, char **error);
+// Non-null local_addresses selects IPv4 Ethernet framing; comma-separated IPs.
+// Consumes context on success and failure, just like interestun_ne_start.
+InterestunSession *interestun_ne_start_flow(const char *, uint32_t cipher, uint32_t mtu,
+    const char *name, const char *local_addresses, void *context, InterestunWrite, InterestunRelease, char **error);
 // Duplicates the provider-owned utun descriptor. Do not also use packetFlow I/O.
 InterestunSession *interestun_ne_start_utun(const char *, uint32_t cipher, const char *name, char **error);
 // Provider serializes receive/tick/status/stop. At most 128 input views per call.

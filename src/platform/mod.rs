@@ -31,3 +31,6 @@ pub mod packet_flow;
 
 #[cfg(all(target_os = "macos", feature = "apple-packet-tunnel"))]
 pub mod ne_utun;
+
+#[cfg(all(target_os = "macos", feature = "apple-packet-tunnel"))]
+pub mod ethernet;

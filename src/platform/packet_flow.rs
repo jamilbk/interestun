@@ -38,6 +38,7 @@ pub struct Metrics {
 }
 
 pub struct Adapter {
+    pub ethernet: Option<super::ethernet::Ethernet>,
     incoming: ArrayQueue<Packet>,
     pool: Pool,
     reader: Mutex<Option<Waker>>,
@@ -56,6 +57,7 @@ impl Adapter {
             ));
         }
         Ok(Self {
+            ethernet: None,
             incoming: ArrayQueue::new(PENDING),
             pool: packet::pool(PENDING + BATCH),
             reader: Mutex::new(None),
@@ -84,6 +86,37 @@ impl Adapter {
         self.counters[0].fetch_add(1, Ordering::Relaxed);
         let mut accepted = 0;
         for (bytes, family) in packets {
+            if self.failed.load(Ordering::Acquire) {
+                self.counters[2].fetch_add(1, Ordering::Relaxed);
+                continue;
+            }
+            let (bytes, family) = if let Some(ethernet) = &self.ethernet {
+                match ethernet.input(bytes) {
+                    super::ethernet::Input::Ip(ip) => (ip, libc::AF_INET as u32),
+                    super::ethernet::Input::Arp(reply) => {
+                        if let Some(mut packet) = Packet::new(&self.pool) {
+                            packet.len = reply.len();
+                            packet.data_mut().copy_from_slice(&reply);
+                            let batch = Arc::new(OutputBatch {
+                                packets: vec![packet],
+                            });
+                            if !self.writer.write(&batch) {
+                                self.counters[5].fetch_add(1, Ordering::Relaxed);
+                                self.failed.store(true, Ordering::Release);
+                            }
+                        } else {
+                            self.counters[2].fetch_add(1, Ordering::Relaxed);
+                        }
+                        continue;
+                    }
+                    super::ethernet::Input::Drop => {
+                        self.counters[2].fetch_add(1, Ordering::Relaxed);
+                        continue;
+                    }
+                }
+            } else {
+                (bytes, family)
+            };
             let valid_family = matches!((bytes.first().map(|v| v >> 4), family),
                 (Some(4), x) if x == libc::AF_INET as u32)
                 || matches!((bytes.first().map(|v| v >> 4), family),
@@ -161,11 +194,11 @@ impl Adapter {
         if count == 0 {
             return Ok(0);
         }
-        if queue
-            .iter()
-            .take(count)
-            .any(|p| p.len > self.mtu || packet::addresses(p.data()).is_none())
-        {
+        if queue.iter().take(count).any(|p| {
+            p.len > self.mtu
+                || packet::addresses(p.data()).is_none()
+                || (self.ethernet.is_some() && p.data()[0] >> 4 != 4)
+        }) {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
                 "invalid packet flow output",
@@ -173,9 +206,16 @@ impl Adapter {
         }
         // One ownership allocation per batch; the payload stays in its existing
         // pool buffer. Swift retains this lease for each Foundation packet data.
-        let batch = Arc::new(OutputBatch {
-            packets: queue.drain(..count).collect(),
-        });
+        let packets = queue
+            .drain(..count)
+            .map(|mut packet| {
+                if let Some(ethernet) = &self.ethernet {
+                    ethernet.wrap(&mut packet);
+                }
+                packet
+            })
+            .collect();
+        let batch = Arc::new(OutputBatch { packets });
         self.counters[3].fetch_add(1, Ordering::Relaxed);
         if !self.writer.write(&batch) {
             self.counters[5].fetch_add(1, Ordering::Relaxed);
@@ -225,6 +265,35 @@ mod tests {
         ip[16] = 11;
         ip
     }
+    #[test]
+    fn ethernet_batches_strip_frames_and_lease_in_place_output() {
+        use super::super::ethernet::{Ethernet, HOST, ROUTER};
+        let sink = Arc::new(Sink::default());
+        let mut adapter = Adapter::new(1420, Box::new(sink.clone())).unwrap();
+        adapter.ethernet = Some(Ethernet {
+            routes: vec!["11.0.0.0/8".parse().unwrap()],
+            local: vec!["10.0.0.0".parse().unwrap()],
+        });
+        let mut frame = Vec::from(ROUTER);
+        frame.extend(HOST);
+        frame.extend([8, 0]);
+        frame.extend(ip());
+        assert_eq!(adapter.feed((0..130).map(|_| (frame.as_slice(), 0))), 130);
+        let mut queue = VecDeque::new();
+        assert_eq!(adapter.receive(|p| queue.push_back(p.packet)).unwrap(), 128);
+        let pointer = queue[0].data().as_ptr();
+        assert_eq!(adapter.flush(&mut queue).unwrap(), 128);
+        assert!(queue.is_empty());
+        let batches = sink.0.lock().unwrap();
+        assert_eq!(batches[0].packets.len(), 128);
+        let packet = &batches[0].packets[0];
+        assert_eq!(&packet.data()[..6], &HOST);
+        assert_eq!(&packet.data()[14..34], &ip());
+        assert_eq!(packet.data()[14..].as_ptr(), pointer);
+        drop(adapter);
+        assert_eq!(&packet.data()[14..34], &ip());
+    }
+
     #[test]
     fn callback_wakes_reader_and_preserves_headroom_and_bounded_batches() {
         let adapter = Adapter::new(1420, Box::new(Arc::new(Sink::default()))).unwrap();

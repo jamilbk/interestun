@@ -3,7 +3,7 @@ from pathlib import Path
 import plistlib
 
 
-def generate(stage: Path, root: Path, app: Path, extension: Path, library: Path, team: str, *, packet_flow=False):
+def generate(stage: Path, root: Path, app: Path, extension: Path, library: Path, team: str, *, packet_flow=False, ethernet=False):
     objects = {}
 
     def add(isa, **values):
@@ -40,7 +40,7 @@ def generate(stage: Path, root: Path, app: Path, extension: Path, library: Path,
                           "-framework", "NetworkExtension", "-framework", "SystemExtensions"],
         "LD_RUNPATH_SEARCH_PATHS": ["$(inherited)", "@executable_path/../Frameworks"],
         "ONLY_ACTIVE_ARCH": "YES", "SKIP_INSTALL": "NO", "DEBUG_INFORMATION_FORMAT": "dwarf-with-dsym",
-        "SWIFT_ACTIVE_COMPILATION_CONDITIONS": "INTERESTUN_PACKET_FLOW" if packet_flow else "",
+        "SWIFT_ACTIVE_COMPILATION_CONDITIONS": "INTERESTUN_ETHERNET" if ethernet else "INTERESTUN_PACKET_FLOW" if packet_flow else "",
     }
 
     def target(name, bundle, product, module, executable, files, product_type):

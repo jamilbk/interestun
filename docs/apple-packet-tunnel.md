@@ -199,3 +199,10 @@ Sources: [provider deployment](https://developer.apple.com/documentation/technot
 [packet flow](https://developer.apple.com/documentation/networkextension/nepackettunnelflow),
 [provider lifecycle](https://developer.apple.com/documentation/networkextension/neprovider),
 and the local Firezone reference at `~/Developer/firezone/firezone/main/swift/apple`.
+
+## Experimental Ethernet build
+
+`--ethernet` selects `NEEthernetTunnelProvider` and public Ethernet packet flow
+at build time. See [Ethernet backend](apple-ethernet-backend.md) for IPv4 scope,
+framing, offline validation, and build instructions. It is mutually exclusive
+with `--packet-flow`; all variants retain Network.framework outer UDP.

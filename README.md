@@ -40,6 +40,8 @@ For a Network Extension-created adapter, build the minimal CLI containing app
 and system extension with `python3 scripts/build-apple.py`. Rust reads and writes
 the existing utun descriptor directly; Network.framework handles outer UDP.
 Add `--packet-flow` to build the public `NEPacketTunnelFlow` frontend instead.
+Add `--ethernet` to build the experimental IPv4 `NEEthernetTunnelProvider`
+backend with local proxy ARP; see [Ethernet backend](docs/apple-ethernet-backend.md).
 Signing, activation, configuration, and bridge tests are described in
 [Apple packet tunnel](docs/apple-packet-tunnel.md). The latest
 [packet pipeline audit](docs/apple-packet-pipeline-audit.md) documents copies,

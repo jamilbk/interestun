@@ -39,7 +39,13 @@ let releasePacketWriter: InterestunRelease = { context in
     if let context { Unmanaged<PacketWriter>.fromOpaque(context).release() }
 }
 
-final class PacketTunnelProvider: NEPacketTunnelProvider, @unchecked Sendable {
+#if INTERESTUN_ETHERNET
+typealias InterestunProviderBase = NEEthernetTunnelProvider
+#else
+typealias InterestunProviderBase = NEPacketTunnelProvider
+#endif
+
+final class PacketTunnelProvider: InterestunProviderBase, @unchecked Sendable {
     // Serializes lifecycle, input callbacks, housekeeping, and status. The Rust
     // peer threads write through the independent thread-safe PacketWriter.
     private let control = DispatchQueue(label: "dev.jamilbk.interestun.control", qos: .userInitiated)
@@ -73,17 +79,25 @@ final class PacketTunnelProvider: NEPacketTunnelProvider, @unchecked Sendable {
                             completionHandler(error); return
                         }
                         let name = self.virtualInterface?.name ?? "packet-flow"
+                        #if !INTERESTUN_ETHERNET
                         var optionError: UnsafeMutablePointer<CChar>?
                         guard let optionJSON = interestun_ne_utun_options(name, 4 * 1024 * 1024, 1024, &optionError) else {
                             completionHandler(takeRustError(optionError)); return
                         }
                         defer { interestun_ne_string_free(optionJSON) }
                         self.utunOptions = (try? JSONSerialization.jsonObject(with: Data(String(cString: optionJSON).utf8))) as? [String: Any] ?? [:]
+                        #endif
                         var error: UnsafeMutablePointer<CChar>?
-                        #if INTERESTUN_PACKET_FLOW
+                        #if INTERESTUN_PACKET_FLOW || INTERESTUN_ETHERNET
                         let writer = Unmanaged.passRetained(PacketWriter(self.packetFlow)).toOpaque()
+                        #if INTERESTUN_ETHERNET
+                        let localAddresses = configuration.addresses.map { String($0.split(separator: "/")[0]) }.joined(separator: ",")
+                        self.engine = interestun_ne_start_flow(configuration.uapi, configuration.cipher,
+                            configuration.mtu, name, localAddresses, writer, writePacketBatch, releasePacketWriter, &error)
+                        #else
                         self.engine = interestun_ne_start(configuration.uapi, configuration.cipher,
                             configuration.mtu, name, writer, writePacketBatch, releasePacketWriter, &error)
+                        #endif
                         #else
                         self.engine = interestun_ne_start_utun(configuration.uapi, configuration.cipher, name, &error)
                         #endif
@@ -94,9 +108,13 @@ final class PacketTunnelProvider: NEPacketTunnelProvider, @unchecked Sendable {
                         }
                         self.readCallbacks = 0; self.largestReadBatch = 0
                         self.startHousekeeping()
-                        #if INTERESTUN_PACKET_FLOW
+                        #if INTERESTUN_PACKET_FLOW || INTERESTUN_ETHERNET
                         self.readNext(generation: generation)
+                        #if INTERESTUN_ETHERNET
+                        logger.notice("Tunnel ready on \(name, privacy: .public); NEEthernetTunnelProvider IPv4 packet flow; mapped rings unverified")
+                        #else
                         logger.notice("Tunnel ready on \(name, privacy: .public); public NEPacketTunnelFlow; Skywalk path unverified")
+                        #endif
                         #else
                         logger.notice("Tunnel ready on \(name, privacy: .public); existing NE utun descriptor; Network.framework UDP")
                         #endif
@@ -168,11 +186,13 @@ final class PacketTunnelProvider: NEPacketTunnelProvider, @unchecked Sendable {
             do {
                 let data = Data(String(cString: text).utf8)
                 var status = try JSONSerialization.jsonObject(with: data) as? [String: Any] ?? [:]
-                #if INTERESTUN_PACKET_FLOW
+                #if INTERESTUN_PACKET_FLOW || INTERESTUN_ETHERNET
                 status["read_callbacks"] = self.readCallbacks
                 status["largest_read_callback"] = self.largestReadBatch
                 #endif
+                #if !INTERESTUN_ETHERNET
                 status["utun_options"] = self.utunOptions
+                #endif
                 completionHandler?(try JSONSerialization.data(withJSONObject: status, options: [.sortedKeys]))
             } catch { completionHandler?(nil) }
         }

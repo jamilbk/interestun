@@ -61,8 +61,13 @@ def main():
     parser.add_argument("--app-profile", type=Path)
     parser.add_argument("--extension-profile", type=Path)
     parser.add_argument("--output", type=Path, default=ROOT / "target/apple")
+    parser.add_argument("--ethernet", action="store_true", help="Build the experimental IPv4 NEEthernetTunnelProvider backend")
     parser.add_argument("--packet-flow", action="store_true", help="Build the public packet-flow frontend instead of using the existing NE utun descriptor")
     args = parser.parse_args()
+    if args.ethernet and args.packet_flow:
+        parser.error("Choose --ethernet or --packet-flow, not both")
+    if args.ethernet and args.output == ROOT / "target/apple":
+        args.output = ROOT / "target/apple-ethernet"
     provisioned = bool(args.identity or args.automatic_signing)
     if args.automatic_signing:
         if not args.team_id or any([args.identity, args.app_profile, args.extension_profile]):
@@ -126,13 +131,15 @@ def main():
              "-framework", "Foundation", "-framework", "NetworkExtension", "-framework", "Network",
              "-Xlinker", "-dead_strip", library]
     shared = ROOT / "apple/Shared/Configuration.swift"
+    if args.ethernet:
+        flags += ["-D", "INTERESTUN_ETHERNET"]
     if args.packet_flow:
         flags += ["-D", "INTERESTUN_PACKET_FLOW"]
     if args.automatic_signing:
         from apple_xcode import generate
         plist(stage / (app.name + ".entitlements"), app_ent)
         plist(stage / (extension.name + ".entitlements"), ext_ent)
-        project = generate(stage, ROOT, app, extension, library, args.team_id, packet_flow=args.packet_flow)
+        project = generate(stage, ROOT, app, extension, library, args.team_id, packet_flow=args.packet_flow, ethernet=args.ethernet)
         log = stage / "xcodebuild.log"
         products = stage / "products"
         with log.open("wb") as f:
@@ -172,7 +179,7 @@ def main():
         "team_id": args.team_id,
         "app_group": app_group,
         "rust_features": ["default", "apple-packet-tunnel"], "skywalk": "unverified",
-        "tun_frontend": "NEPacketTunnelFlow" if args.packet_flow else "Network Extension utun descriptor",
+        "tun_frontend": "NEEthernetTunnelProvider IPv4 packet flow" if args.ethernet else "NEPacketTunnelFlow" if args.packet_flow else "Network Extension utun descriptor",
         "sha256": {str(p.relative_to(app)): hashlib.sha256(p.read_bytes()).hexdigest() for p in
                    [app / "Contents/MacOS/interestunctl", extension / "Contents/MacOS/InterestunPacketTunnel"]},
     }
