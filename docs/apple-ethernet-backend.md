@@ -108,3 +108,39 @@ Adding an entitlement to our extension is therefore not an established fix.
 The tunnel was left stopped, with the Ethernet build installed. No handshake or
 throughput result exists for this backend. The previous installed app was backed
 up locally to `target/apple-ethernet/pre-ethernet-installed.app`.
+
+## Root cause traced in the loaded driver
+
+Follow-up static analysis resolved the task-identity question above. The decoded
+local kernelcache contains IOUserEthernet UUID
+`7D9B4C3B-9559-3443-9041-82C3D2ED258E`, matching `kmutil showloaded`, and the
+installed kernel build string `xnu-13432.1.9~1`.
+
+`IOUserEthernetResourceUserClient::initWithTask(task*, void*, unsigned)` starts
+at `0xfffffe000b65931c`. It preserves its incoming task argument (`x1`) in `x20`
+at `0xfffffe000b65934c`. After superclass initialization succeeds, it passes that
+same task and the string `com.apple.networking.ethernet.user-access` to
+`IOTaskHasEntitlement` at `0xfffffe000b659384`. Failure prints the observed
+`IOUE_UC` error and returns false. There is no root-UID bypass or alternative
+provider entitlement in this method.
+
+The installed IOKit `IOEthernetControllerCreate` opens the matching service with
+`IOServiceOpen` at `0x184dff104`, using a task port loaded from its process globals,
+not a provider task/audit-token argument. The caller is the already-traced
+`nesessionmanager` Ethernet branch at `0x1000263e8`. Our provider's settings reach
+that branch correctly. The daemon's signed entitlements lack the required grant.
+This places the failing entitlement check in Apple's controller-creation process,
+not our Rust engine or packet-flow callback code.
+
+Conclusion: this is strong evidence of an Apple OS entitlement mismatch on
+macOS 27.0 build `26A428`. Changing our packet-tunnel provisioning, MAC address,
+MTU, peer key, or adding a grant to our extension cannot fix this daemon's task
+check. An OS build whose daemon has the required grant (or whose supported
+creation path has been corrected) is needed for this public-framework path.
+No system daemon/kernel was modified, no extra private entitlement was added,
+and no alternate backend was started.
+
+Local diagnostic artifacts are in `target/apple-path/ethernet-startup/`. The
+kernelcache was decoded and inspected as data only, never loaded or executed.
+The extracted Mach-O's UUID and kernel build identify the exact inspected code;
+Apple binaries/disassembly are intentionally not committed.
