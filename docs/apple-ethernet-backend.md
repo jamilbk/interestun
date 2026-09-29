@@ -172,3 +172,18 @@ This review found no missing requirement in those documents. It does not turn a
 failed live start into a working implementation or prove all possible remedies
 have been ruled out. The precise current result is: documented public setup,
 valid provisioned extension, failed controller creation, unresolved remedy.
+
+## Fresh bundle-ID test
+
+On 2026-09-29, rebuilt with `--bundle-id dev.jamilbk.interestun.ethernet`,
+automatically provisioned under the same team, and installed as
+`/Applications/InterestunEthernet.app`. The new extension
+`dev.jamilbk.interestun.ethernet.packet-tunnel` activated successfully. The CLI
+created a distinct VPN configuration selected by that provider bundle ID.
+
+At 12:12:07 local, `nesessionmanager` found exactly one registration for the new
+provider and launched its process. Applying Ethernet settings produced the same
+`IOUE_UC` missing-entitlement error and failed controller creation. The VPN ended
+disconnected. Thus reusing the original packet-provider bundle ID is not necessary
+to reproduce this failure. Fresh build artifacts are in
+`target/apple-ethernet-fresh/`; the original identity was not removed.
