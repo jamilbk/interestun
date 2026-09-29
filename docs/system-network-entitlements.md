@@ -26,6 +26,8 @@ findings, not proof that each process currently has an open kernel-pipe channel.
 
 ## Positive consumer: RemotePairing
 
+Follow-up: [bounded delegation and channel-ownership trace](remote-pairing-ring-delegation.md).
+
 Following the new `remotepairingd` match revealed a concrete consumer of the
 utun kernel-pipe constructor in its RemotePairing framework. This closes an
 important gap in the earlier searches: an external Apple caller requesting
