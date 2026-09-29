@@ -5,6 +5,8 @@ creation, channel opening, or configuration change was performed. This extends
 [the XNU datapath audit](utun-skywalk-datapath.md) with installed Apple binary
 evidence, rather than assuming the public API describes all implementation paths.
 
+See also the [caller and public-API audit](utun-framework-callers.md).
+
 ## Finding
 
 **A private framework path exists for requesting utun kernel-pipe channels.**
