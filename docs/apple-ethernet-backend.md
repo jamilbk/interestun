@@ -132,11 +132,12 @@ that branch correctly. The daemon's signed entitlements lack the required grant.
 This places the failing entitlement check in Apple's controller-creation process,
 not our Rust engine or packet-flow callback code.
 
-Conclusion: this is strong evidence of an Apple OS entitlement mismatch on
-macOS 27.0 build `26A428`. Changing our packet-tunnel provisioning, MAC address,
-MTU, peer key, or adding a grant to our extension cannot fix this daemon's task
-check. An OS build whose daemon has the required grant (or whose supported
-creation path has been corrected) is needed for this public-framework path.
+Interpretation: this is evidence of an entitlement failure inside the Apple
+controller-creation path on macOS 27.0 build `26A428`. It does not establish that
+changing OS builds is the only remedy, or exhaust supported setup alternatives.
+Adding a grant to our extension would not change the daemon's task entitlement.
+The earlier categorical conclusion that an OS replacement/fix was required was
+premature. Startup remains unresolved.
 No system daemon/kernel was modified, no extra private entitlement was added,
 and no alternate backend was started.
 
@@ -144,3 +145,30 @@ Local diagnostic artifacts are in `target/apple-path/ethernet-startup/`. The
 kernelcache was decoded and inspected as data only, never loaded or executed.
 The extracted Mach-O's UUID and kernel build identify the exact inspected code;
 Apple binaries/disassembly are intentionally not committed.
+
+
+## Public documentation cross-check
+
+Apple's [TN3134](https://developer.apple.com/documentation/technotes/tn3134-network-extension-provider-deployment)
+explicitly supports Ethernet tunnel providers packaged as macOS system extensions
+from macOS 13.0, including direct distribution. The public API is supported;
+the private entitlement error is not a documented restriction on its availability.
+
+The [Network Extensions entitlement reference](https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.developer.networking.networkextension)
+lists `packet-tunnel-provider` and the Developer ID variant
+`packet-tunnel-provider-systemextension`; it lists no separate Ethernet-provider
+value. The installed development-signed extension has `packet-tunnel-provider`,
+and its embedded provisioning profile grants that value and expires 2027-09-28.
+The Developer ID suffix is not a missing flag in this development-signed build.
+
+Our provider subclasses `NEEthernetTunnelProvider`, constructs
+`NEEthernetTunnelNetworkSettings(tunnelRemoteAddress:ethernetAddress:mtu:)`, and
+passes it to `setTunnelNetworkSettings`. Its system-extension provider class is
+registered under `com.apple.networkextension.packet-tunnel`. These match the
+public API and inherited packet-provider registration. The framework recognizes
+the Ethernet settings and reaches its user-Ethernet creation branch.
+
+This review found no missing requirement in those documents. It does not turn a
+failed live start into a working implementation or prove all possible remedies
+have been ruled out. The precise current result is: documented public setup,
+valid provisioned extension, failed controller creation, unresolved remedy.
