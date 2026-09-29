@@ -9,6 +9,10 @@ Apple's published `main` when checked. The installed kernel was
 `xnu-13432.1.9~1` (macOS 27.0, 26A428). Published source explains the architecture;
 it is not an exact source match for this installed kernel.
 
+The [installed-framework follow-up](utun-framework-kpipe.md) identifies the
+private channel-count API, the session manager's hardcoded zero, and the
+helper's caller-entitlement gate.
+
 ## Three separate objects
 
 A Skywalk utun netif, its flowswitch, and its optional tunnel-provider
